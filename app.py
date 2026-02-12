@@ -2,12 +2,16 @@ from flask import Flask, render_template, request, jsonify
 import os
 import pymysql
 
-conn = pymysql.connect(
-    unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}",
-    user=os.environ["DB_USER"],
-    password=os.environ["DB_PASSWORD"],
-    database=os.environ["DB_NAME"]
-)
+app = Flask(__name__)
+
+def get_connection():
+    return pymysql.connect(
+        unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}",
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        database=os.environ["DB_NAME"]
+    )
+
 
 
 @app.route("/test-db")
