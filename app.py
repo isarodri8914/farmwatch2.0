@@ -6,11 +6,22 @@ app = Flask(__name__)
 # ---------- CONEXIÓN DB ----------
 def get_connection():
     return pymysql.connect(
-        host=os.environ.get("DB_HOST", "localhost"),
-        user=os.environ.get("DB_USER", "farmwatch_user"),
-        password=os.environ.get("DB_PASS", "Jihr8914."),
-        database=os.environ.get("DB_NAME", "farmwatch_db")
+        unix_socket=os.environ.get("DB_HOST"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        database=os.environ.get("DB_NAME"),
+        cursorclass=pymysql.cursors.DictCursor
     )
+
+@app.route("/test-db")
+def test_db():
+    try:
+        conn = get_connection()
+        conn.close()
+        return "Conexión exitosa a MySQL 🚀"
+    except Exception as e:
+        return f"Error de conexión: {str(e)}"
+
 
 # ---------- API ESP32 ----------
 @app.route("/api/sensores", methods=["POST"])
