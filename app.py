@@ -12,6 +12,14 @@ def get_connection():
         database=os.environ["DB_NAME"]
     )
 
+@app.route("/debug-env")
+def debug_env():
+    return {
+        "INSTANCE_CONNECTION_NAME": os.environ.get("INSTANCE_CONNECTION_NAME"),
+        "DB_USER": os.environ.get("DB_USER"),
+        "DB_NAME": os.environ.get("DB_NAME")
+    }
+
 
 
 @app.route("/test-db")
