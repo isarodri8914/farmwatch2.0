@@ -22,14 +22,17 @@ def debug_env():
         "DB_NAME": os.environ.get("DB_NAME")
     }
 
-
-@app.route("/check-socket")
-def check_socket():
-    path = f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
-    return {
-        "socket_path": path,
-        "exists": os.path.exists(path)
-    }
+@app.route("/test-db-full")
+def test_db_full():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        conn.close()
+        return {"status": "ok", "result": result}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.route("/test-db")
