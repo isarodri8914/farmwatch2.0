@@ -12,14 +12,7 @@ def get_connection():
         database=os.environ["DB_NAME"]
     )
     
-    @app.route("/check-socket")
-def check_socket():
-    path = f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
-    return {
-        "socket_path": path,
-        "exists": os.path.exists(path)
-    }
-
+    
 
 @app.route("/debug-env")
 def debug_env():
@@ -29,6 +22,14 @@ def debug_env():
         "DB_NAME": os.environ.get("DB_NAME")
     }
 
+
+@app.route("/check-socket")
+def check_socket():
+    path = f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}"
+    return {
+        "socket_path": path,
+        "exists": os.path.exists(path)
+    }
 
 
 @app.route("/test-db")
