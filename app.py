@@ -7,8 +7,8 @@ app = Flask(__name__)
 def get_connection():
     return pymysql.connect(
         host=os.environ.get("DB_HOST", "localhost"),
-        user=os.environ.get("DB_USER", "root"),
-        password=os.environ.get("DB_PASS", ""),
+        user=os.environ.get("DB_USER", "farmwatch_user"),
+        password=os.environ.get("DB_PASS", "Jihr8914."),
         database=os.environ.get("DB_NAME", "farmwatch_db")
     )
 
