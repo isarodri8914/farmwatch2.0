@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Sensores{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sensors.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <h1>Configuración de Sensores</h1>
+
+    <!-- =================== UMBRALES =================== -->
+    <div class="card">
+        <h2>Umbrales de alerta</h2>
+
+        <table class="table">
+            <tr>
+                <th>Parámetro</th>
+                <th>Valor actual</th>
+                <th>Modificar</th>
+            </tr>
+
+            <tr>
+                <td>Temperatura Máxima</td>
+                <td id="tempMaxValue">39.5 °C</td>
+                <td><button class="btn" onclick="openEditModal('Temperatura Máxima', 'tempMaxValue')">Editar</button></td>
+            </tr>
+
+            <tr>
+                <td>Temperatura Mínima</td>
+                <td id="tempMinValue">36.5 °C</td>
+                <td><button class="btn" onclick="openEditModal('Temperatura Mínima', 'tempMinValue')">Editar</button></td>
+            </tr>
+
+            <tr>
+                <td>Ritmo Cardíaco Máximo</td>
+                <td id="hrMaxValue">110 bpm</td>
+                <td><button class="btn" onclick="openEditModal('Ritmo Cardíaco Máximo', 'hrMaxValue')">Editar</button></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- =================== LISTA DE SENSORES =================== -->
+<div class="card">
+    <h2>Sensores instalados</h2>
+
+    <div id="sensor-grid" class="sensor-grid">
+        <!-- Se llenará con JS -->
+    </div>
+    </div>
+
+
+
+
+</div>
+
+<!-- =================== MODAL EDITAR =================== -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle"></h3>
+
+        <input type="text" id="newValue" placeholder="Nuevo valor">
+
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="btn-save" onclick="saveValue()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/sensors.js') }}"></script>
+{% endblock %}

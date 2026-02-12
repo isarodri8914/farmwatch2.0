@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmWatch</title>
+
+    <!-- CSS global -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+    <!-- Icons -->
+    <script src="https://kit.fontawesome.com/a2d9d6a36f.js" crossorigin="anonymous"></script>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    {% if not login_page %}
+   
+    <!-- NAVBAR PROFESIONAL -->
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="nav-logo">
+                <i class="fas fa-paw"></i> FarmWatch
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="/dashboard"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="/cows"><i class="fas fa-cow"></i> Vacas</a></li>
+                <li><a href="/sensors"><i class="fas fa-microchip"></i> Sensores</a></li>
+                <li><a href="/alerts"><i class="fas fa-bell"></i> Alertas</a></li>
+                <li><a href="/data"><i class="fas fa-table"></i> Datos</a></li>
+                <li><a href="/map"><i class="fas fa-map-marked-alt"></i> Mapa</a></li>
+                 <li><a href="/"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a></li>
+            </ul>
+        </div>
+
+        <div class="nav-right">
+            <div class="user-menu">
+                <i class="fas fa-user-circle"></i>
+            </div>
+
+            <div class="hamburger" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MENU MOVIL -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/dashboard"><i class="fas fa-chart-line"></i> Dashboard</a>
+        <a href="/cows"><i class="fas fa-cow"></i> Vacas</a>
+        <a href="/sensors"><i class="fas fa-microchip"></i> Sensores</a>
+        <a href="/alerts"><i class="fas fa-bell"></i> Alertas</a>
+        <a href="/data"><i class="fas fa-table"></i> Datos</a>
+        <a href="/map"><i class="fas fa-map-marked-alt"></i> Mapa</a>
+        <a href="/"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+    </div>
+    {% endif %}
+
+    <main class="page-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- JS global -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/navbar.js') }}"></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

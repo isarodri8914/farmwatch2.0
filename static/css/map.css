@@ -1,0 +1,92 @@
+.map-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.cow-sidebar {
+    width: 260px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    height: 600px;
+    overflow-y: auto;
+}
+
+.cow-sidebar h3 {
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+#cowSearch {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #aaa;
+    margin-bottom: 15px;
+}
+
+#cowList {
+    list-style: none;
+    padding-left: 0;
+}
+
+#cowList li {
+    padding: 10px;
+    background: #f7f7f7;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+#cowList li:hover {
+    background: #e9ecef;
+}
+
+#map {
+    flex: 1;
+    height: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 25px;
+    border-radius: 12px;
+    width: 450px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.close {
+    float: right;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.modal-btn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: #2e86de;
+    color: white;
+    padding: 10px 0;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-top: 15px;
+}

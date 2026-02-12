@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Mapa de Ubicación</h1>
+
+<div class="map-container">
+
+    <!-- SIDEBAR LISTA DE VACAS -->
+    <div class="cow-sidebar">
+        <h3>Vacas</h3>
+        <input type="text" id="cowSearch" placeholder="Buscar vaca...">
+
+        <ul id="cowList"></ul>
+    </div>
+
+    <!-- MAPA -->
+    <div id="map"></div>
+</div>
+
+<!-- MODAL -->
+<div id="cowModal" class="modal">
+    <div class="modal-content">
+        <span id="closeModal" class="close">&times;</span>
+
+        <h2 id="modalName">Vaca</h2>
+
+        <div class="modal-data">
+            <p><b>Temperatura:</b> <span id="m_temp">--</span> °C</p>
+            <p><b>Ritmo cardiaco:</b> <span id="m_hr">--</span> BPM</p>
+            <p><b>Actividad:</b> <span id="m_act">--</span></p>
+            <p><b>Última ubicación:</b> <span id="m_loc">--</span></p>
+            <p><b>Estado:</b> <span id="m_state">--</span></p>
+        </div>
+
+        <h3>Mini Gráficas</h3>
+        <canvas id="chartTemp" height="90"></canvas>
+        <canvas id="chartHR" height="90"></canvas>
+
+        <div class="modal-footer">
+            <a id="modalDetails" href="#" class="modal-btn">Ver detalle</a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+{% endblock %}

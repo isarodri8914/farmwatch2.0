@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Datos{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/data.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="data-container">
+
+    <h1 class="page-title">📊 Historial de Datos</h1>
+
+    <!-- BUSCADOR -->
+    <div class="search-box">
+        <input type="text" id="search-input" placeholder="🔍 Buscar por vaca, temperatura, ritmo, fecha...">
+    </div>
+
+    <!-- FILTRO -->
+    <div class="filter-box">
+        <label>Filtrar por vaca:</label>
+        <select id="cow-filter">
+            <option value="all">Todas</option>
+            <option value="101">#101</option>
+            <option value="104">#104</option>
+            <option value="109">#109</option>
+        </select>
+    </div>
+
+    <!-- TABLA -->
+    <div class="card">
+        <table class="styled-table" id="data-table">
+            <thead>
+                <tr>
+                    <th>Vaca</th>
+                    <th>Temperatura</th>
+                    <th>Ritmo</th>
+                    <th>Ubicación</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <!-- EXPORTAR -->
+    <div class="export-box">
+        <button class="btn export" id="export-excel">📥 Exportar Excel</button>
+        <button class="btn export" id="export-pdf">📄 Exportar PDF</button>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/data.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% endblock %}
+
+{% block content %}
+<main class="dash-shell container">
+
+  <!-- TOP ROW: resumen + estado -->
+  <section class="top-row">
+    <div class="top-cards">
+      <article class="card summary">
+        <div class="meta">Vacas totales</div>
+        <div class="big" id="stat-total">--</div>
+        <div class="hint">Registradas en el sistema</div>
+      </article>
+
+      <article class="card summary">
+        <div class="meta">En alerta</div>
+        <div class="big alert" id="stat-alerts">--</div>
+        <div class="hint">Requieren atención</div>
+      </article>
+
+      <article class="card summary">
+        <div class="meta">Sensores offline</div>
+        <div class="big warn" id="stat-offline">--</div>
+        <div class="hint">Sin conexión</div>
+      </article>
+
+      <article class="card summary">
+        <div class="meta">Sensores con batería baja</div>
+        <div class="big warn" id="stat-battlow">--</div>
+        <div class="hint">Reemplazar pronto</div>
+      </article>
+
+      <article class="card summary">
+        <div class="meta">Última sync</div>
+        <div class="big" id="stat-updated">--</div>
+        <div class="hint">Actualización automática</div>
+      </article>
+
+      <article class="card system-card">
+        <div class="meta">Estado del sistema</div>
+        <div class="system-list">
+          <div class="sys-row"><span>Cloud SQL</span><span id="sys-db">OK</span></div>
+          <div class="sys-row"><span>API</span><span id="sys-api">OK</span></div>
+          <div class="sys-row"><span>Sensores online</span><span id="sys-sensors">--</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- MIDDLE ROW: charts (izq) + map (der) -->
+  <section class="middle-row">
+    <div class="left-pan">
+
+      <div class="chart-row">
+        <div class="card chart-card">
+          <h4>Temperatura promedio (12 h)</h4>
+          <canvas id="tempChart"></canvas>
+        </div>
+
+        <div class="card chart-card">
+          <h4>Ritmo cardiaco (12 h)</h4>
+          <canvas id="hrChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card small-cards">
+        <div class="mini">
+          <h5>Estado del hato</h5>
+          <canvas id="cowDonut" width="220" height="220"></canvas>
+        </div>
+
+        <div class="mini">
+          <h5>Estado de sensores</h5>
+          <canvas id="sensorDonut" width="220" height="220"></canvas>
+        </div>
+      </div>
+
+      <div class="card alerts-panel">
+        <h4>Alertas recientes</h4>
+        <ul id="alertsList" class="alerts-list"></ul>
+      </div>
+
+    </div>
+
+    <aside class="right-pan">
+      <div class="map-wrapper card">
+        <div id="map" class="map"></div>
+      </div>
+    </aside>
+  </section>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

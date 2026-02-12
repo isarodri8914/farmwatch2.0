@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<h1>Centro de Alertas</h1>
+
+<div class="alerts-container">
+
+    <div id="alertasSistema">
+        <h2>⚠️ Sistema</h2>
+        <ul id="listaSistema"></ul>
+    </div>
+
+    <div id="alertasVacas">
+        <h2>🐄 Salud de Vacas</h2>
+        <ul id="listaVacas"></ul>
+    </div>
+
+    <div id="alertasSensores">
+        <h2>📡 Sensores</h2>
+        <ul id="listaSensores"></ul>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/alerts.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% set login_page = True %}
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <h2 class="title">FarmWatch</h2>
+        <p class="subtitle">Monitoreo inteligente de ganado</p>
+
+        <form id="login-form" action="/dashboard" method="get">
+            <div class="input-group">
+                <span class="icon">👤</span>
+                <input type="text" id="username" placeholder="Usuario" required>
+            </div>
+
+            <div class="input-group">
+                <span class="icon">🔒</span>
+                <input type="password" id="password" placeholder="Contraseña" required>
+            </div>
+
+            <button type="submit" class="btn-primary">Iniciar sesión</button>
+
+            <p class="switch-link">
+                ¿No tienes cuenta?
+                <a href="/register">Crear cuenta</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}

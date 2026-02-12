@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/cows.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="cows-header">
+    <h1>Administrar Vacas</h1>
+    <button id="btnNuevaVaca" class="btn-primary">+ Nueva Vaca</button>
+</div>
+
+<div class="apple-card table-wrapper">
+    <table class="apple-table">
+        <thead>
+            <tr>
+                <th>Identificador ESP32</th>
+                <th>Nombre</th>
+                <th>Raza</th>
+                <th>Edad</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+
+        <tbody id="tablaVacas">
+            <!-- Llenado con JS -->
+        </tbody>
+    </table>
+</div>
+
+<!-- MODAL NUEVA / EDITAR -->
+<div id="modalVaca" class="modal hidden">
+    <div class="modal-content">
+        <h2 id="modalTitulo">Nueva vaca</h2>
+
+        <label>Identificador del ESP32:</label>
+        <select id="selectIdVaca">
+            <option value="">-- Selecciona una vaca detectada --</option>
+            <option value="vaca 1">vaca 1</option>
+            <option value="vaca 2">vaca 2</option>
+            <option value="vaca 3">vaca 3</option>
+            <option value="vaca 4">vaca 4</option>
+        </select>
+
+        <label>Nombre:</label>
+        <input id="inputNombre">
+
+        <label>Raza:</label>
+        <input id="inputRaza">
+
+        <label>Edad:</label>
+        <input type="number" id="inputEdad">
+
+        <label>Peso (kg):</label>
+        <input type="number" id="inputPeso">
+
+        <label>Notas:</label>
+        <textarea id="inputNotas"></textarea>
+
+        <div class="modal-footer">
+            <button class="btn-secondary" id="btnCancelar">Cancelar</button>
+            <button class="btn-primary" id="btnGuardarVaca">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL HISTORIAL -->
+<div id="modalHistorial" class="modal hidden">
+    <div class="modal-content">
+        <h2>Historial de la vaca</h2>
+        <ul id="listaHistorial"></ul>
+
+        <div class="modal-footer">
+            <button class="btn-primary" id="btnCerrarHistorial">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/cows.js') }}"></script>
+{% endblock %}
