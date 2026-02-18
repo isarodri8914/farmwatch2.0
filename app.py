@@ -14,35 +14,33 @@ def get_connection():
     
     
 
-@app.route("/debug-env")
-def debug_env():
-    return {
-        "INSTANCE_CONNECTION_NAME": os.environ.get("INSTANCE_CONNECTION_NAME"),
-        "DB_USER": os.environ.get("DB_USER"),
-        "DB_NAME": os.environ.get("DB_NAME")
-    }
-
-@app.route("/test-db-full")
-def test_db_full():
+@app.route("/api/datos")
+def api_datos():
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT 1")
-        result = cursor.fetchone()
-        conn.close()
-        return {"status": "ok", "result": result}
-    except Exception as e:
-        return {"error": str(e)}
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
+        cursor.execute("""
+            SELECT 
+                id_vaca,
+                temp_objeto AS temperatura,
+                ritmo_cardiaco AS ritmo,
+                CONCAT(latitud, ',', longitud) AS ubicacion,
+                fecha
+            FROM sensores
+            ORDER BY fecha DESC
+            LIMIT 100
+        """)
 
-@app.route("/test-db")
-def test_db():
-    try:
-        conn = get_connection()
+        datos = cursor.fetchall()
+
+        cursor.close()
         conn.close()
-        return "Conexión exitosa a MySQL 🚀"
+
+        return jsonify(datos)
+
     except Exception as e:
-        return f"Error de conexión: {str(e)}"
+        return jsonify({"error": str(e)}), 500
 
 
 # ---------- API ESP32 ----------
