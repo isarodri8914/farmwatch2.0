@@ -23,9 +23,15 @@ def api_datos():
         cursor.execute("""
             SELECT 
                 id_vaca,
-                temp_objeto AS temperatura,
-                ritmo_cardiaco AS ritmo,
-                CONCAT(latitud, ',', longitud) AS ubicacion,
+                temp_ambiente,
+                temp_objeto,
+                ritmo_cardiaco,
+                oxigeno,
+                gyro_x,
+                gyro_y,
+                gyro_z,
+                latitud,
+                longitud,
                 fecha
             FROM sensores
             ORDER BY fecha DESC

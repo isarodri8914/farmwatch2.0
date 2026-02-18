@@ -5,15 +5,7 @@ async function fetchData() {
         const response = await fetch("/api/datos");
         cowData = await response.json();
 
-        // Formatear fecha
-        cowData = cowData.map(d => ({
-            vaca: d.id_vaca,
-            temp: d.temperatura,
-            ritmo: d.ritmo,
-            ubicacion: d.ubicacion,
-            fecha: new Date(d.fecha).toLocaleString()
-        }));
-
+        // No convertimos fecha, la dejamos tal cual viene de MySQL
         renderTable(cowData);
 
     } catch (error) {
@@ -29,36 +21,27 @@ function renderTable(data) {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-            <td>${row.vaca}</td>
-            <td>${row.temp} °C</td>
-            <td>${row.ritmo} bpm</td>
-            <td>${row.ubicacion}</td>
+            <td>${row.id_vaca}</td>
+            <td>${row.temp_ambiente ?? 0} °C</td>
+            <td>${row.temp_objeto ?? 0} °C</td>
+            <td>${row.ritmo_cardiaco ?? 0} bpm</td>
+            <td>${row.oxigeno ?? 0}</td>
+            <td>${row.gyro_x ?? 0}</td>
+            <td>${row.gyro_y ?? 0}</td>
+            <td>${row.gyro_z ?? 0}</td>
+            <td>${row.latitud ?? 0}, ${row.longitud ?? 0}</td>
             <td>${row.fecha}</td>
         `;
 
-        tr.addEventListener("click", () => openCowDetails(row));
         tbody.appendChild(tr);
     });
-}
-
-function openCowDetails(row) {
-    alert(
-`🐄 Vaca #${row.vaca}
-
-Temperatura: ${row.temp} °C
-Ritmo cardiaco: ${row.ritmo} bpm
-Ubicación: ${row.ubicacion}
-Fecha: ${row.fecha}`
-    );
 }
 
 document.getElementById("search-input").addEventListener("input", function () {
     const value = this.value.toLowerCase();
 
     const filtered = cowData.filter(d =>
-        d.vaca.toString().includes(value) ||
-        d.temp.toString().includes(value) ||
-        d.ritmo.toString().includes(value) ||
+        d.id_vaca.toLowerCase().includes(value) ||
         d.fecha.toLowerCase().includes(value)
     );
 
@@ -71,41 +54,10 @@ document.getElementById("cow-filter").addEventListener("change", function () {
     if (value === "all") {
         renderTable(cowData);
     } else {
-        renderTable(cowData.filter(d => d.vaca.toString() === value));
+        renderTable(cowData.filter(d => d.id_vaca === value));
     }
-});
-
-document.getElementById("export-excel").addEventListener("click", () => {
-    let csvContent = "Vaca,Temperatura,Ritmo,Ubicación,Fecha\n";
-
-    cowData.forEach(row => {
-        csvContent += `${row.vaca},${row.temp},${row.ritmo},${row.ubicacion},${row.fecha}\n`;
-    });
-
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "datos_vacas.csv";
-    link.click();
-});
-
-document.getElementById("export-pdf").addEventListener("click", () => {
-    const pdfContent = cowData.map(row =>
-`Vaca: ${row.vaca}
-Temp: ${row.temp} °C
-Ritmo: ${row.ritmo} bpm
-Ubicación: ${row.ubicacion}
-Fecha: ${row.fecha}
-
-`
-    ).join("");
-
-    const blob = new Blob([pdfContent], { type: "text/plain" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "datos_vacas.txt";
-    link.click();
 });
 
 // Cargar datos al iniciar
 fetchData();
+setInterval(fetchData, 10000);
