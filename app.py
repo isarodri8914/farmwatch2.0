@@ -167,24 +167,25 @@ def historial_vaca(id_esp32):
     try:
         conn = get_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
-
+        
         cursor.execute("""
-            SELECT temp_ambiente, ritmo_cardiaco, fecha
-            FROM sensores
-            WHERE id_vaca=%s
-            ORDER BY fecha DESC
-            LIMIT 20
+             SELECT temp_ambiente, ritmo_cardiaco, fecha
+             FROM sensores
+             WHERE id_vaca=%s
+             ORDER BY fecha DESC
+             LIMIT 1
         """, (id_esp32,))
 
-        datos = cursor.fetchall()
+        dato = cursor.fetchone()
 
         cursor.close()
         conn.close()
 
-        return jsonify(datos)
+        return jsonify(dato)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 # ---------- API ESP32 ----------

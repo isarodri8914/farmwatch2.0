@@ -148,20 +148,30 @@ async function borrarVaca(id) {
 // ===============================
 async function mostrarHistorial(idEsp32) {
     const res = await fetch(`/api/vacas/${idEsp32}/historial`);
-    const datos = await res.json();
+    const dato = await res.json(); // ahora es UN solo objeto
 
     const lista = document.getElementById("listaHistorial");
     lista.innerHTML = "";
 
-    datos.forEach(d => {
-        const li = document.createElement("li");
-        li.textContent =
-            `${d.fecha} | Temp: ${d.temp_ambiente} °C | Ritmo: ${d.ritmo_cardiaco}`;
-        lista.appendChild(li);
-    });
+    if (!dato) {
+        lista.innerHTML = "<li>No hay datos disponibles</li>";
+        return;
+    }
+
+    const li = document.createElement("li");
+    li.textContent = `
+        ${dato.fecha} | 
+        Temp: ${dato.temp_ambiente} °C | 
+        Ritmo: ${dato.ritmo_cardiaco} | 
+        Oxígeno: ${dato.oxigeno} | 
+        Gyro: X:${dato.gyro_x} Y:${dato.gyro_y} Z:${dato.gyro_z}
+    `;
+
+    lista.appendChild(li);
 
     document.getElementById("modalHistorial").classList.remove("hidden");
 }
+
 
 document.getElementById("btnCerrarHistorial").addEventListener("click", () => {
     document.getElementById("modalHistorial").classList.add("hidden");
