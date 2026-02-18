@@ -1,80 +1,28 @@
-// ========================
-//  DATOS TEMPORALES (Mockup)
-// ========================
-let vacas = [
-    {
-        idEsp32: "vaca 1",
-        nombre: "Margarita",
-        raza: "Holstein",
-        edad: 3,
-        peso: 540,
-        notas: "Vaca tranquila",
-        estado: "saludable",
-        historial: [
-            "Temperatura normal 37.8 °C",
-            "Chequeo cardiaco OK"
-        ]
-    },
-    {
-        idEsp32: "vaca 2",
-        nombre: "Lola",
-        raza: "Jersey",
-        edad: 4,
-        peso: 490,
-        notas: "Produce buena leche",
-        estado: "advertencia",
-        historial: [
-            "Temperatura elevada 39.4 °C",
-            "Ritmo cardiaco alto"
-        ]
-    }
-];
+let vacas = [];
 
-// ========================
-//  ELEMENTOS DOM
-// ========================
-const tabla = document.getElementById("tablaVacas");
+async function cargarVacas() {
+    const res = await fetch("/api/vacas");
+    vacas = await res.json();
+    renderTabla();
+}
 
-const modal = document.getElementById("modalVaca");
-const modalTitulo = document.getElementById("modalTitulo");
-const btnNueva = document.getElementById("btnNuevaVaca");
-const btnGuardar = document.getElementById("btnGuardarVaca");
-const btnCancelar = document.getElementById("btnCancelar");
-
-const idSelect = document.getElementById("selectIdVaca");
-const inputNombre = document.getElementById("inputNombre");
-const inputRaza = document.getElementById("inputRaza");
-const inputEdad = document.getElementById("inputEdad");
-const inputPeso = document.getElementById("inputPeso");
-const inputNotas = document.getElementById("inputNotas");
-
-// Historial
-const modalHistorial = document.getElementById("modalHistorial");
-const listaHistorial = document.getElementById("listaHistorial");
-const btnCerrarHistorial = document.getElementById("btnCerrarHistorial");
-
-// Estado de edición
-let vacaEditando = null;
-
-// ========================
-//   RENDERIZAR TABLA
-// ========================
 function renderTabla() {
+    const tabla = document.getElementById("tablaVacas");
     tabla.innerHTML = "";
 
     vacas.forEach((v, index) => {
         const tr = document.createElement("tr");
 
         tr.innerHTML = `
-            <td>${v.idEsp32}</td>
+            <td>${v.id_esp32}</td>
             <td>${v.nombre}</td>
             <td>${v.raza}</td>
             <td>${v.edad} años</td>
             <td>${estadoBadge(v.estado)}</td>
             <td>
-                <button class="btn-secondary" onclick="editarVaca(${index})">Editar</button>
-                <button class="btn-primary" onclick="mostrarHistorial(${index})">Historial</button>
-                <button class="btn-secondary" onclick="eliminarVaca(${index})">Borrar</button>
+                <button onclick="editarVaca(${index})">Editar</button>
+                <button onclick="mostrarHistorial('${v.id_esp32}')">Historial</button>
+                <button onclick="borrarVaca(${v.id})">Borrar</button>
             </td>
         `;
 
@@ -90,98 +38,49 @@ function estadoBadge(estado) {
     return `<span class="badge badge-danger">Crítico</span>`;
 }
 
-// ========================
-//   NUEVA VACA
-// ========================
-btnNueva.addEventListener("click", () => {
-    vacaEditando = null;
-    modalTitulo.textContent = "Nueva vaca";
-
-    idSelect.value = "";
-    inputNombre.value = "";
-    inputRaza.value = "";
-    inputEdad.value = "";
-    inputPeso.value = "";
-    inputNotas.value = "";
-
-    modal.classList.remove("hidden");
-});
-
-// ========================
-//   GUARDAR VACA
-// ========================
-btnGuardar.addEventListener("click", () => {
-    const nueva = {
-        idEsp32: idSelect.value,
-        nombre: inputNombre.value,
-        raza: inputRaza.value,
-        edad: inputEdad.value,
-        peso: inputPeso.value,
-        notas: inputNotas.value,
-        estado: "saludable",
-        historial: []
+async function guardarVaca() {
+    const data = {
+        id: vacaEditando ? vacaEditando.id : null,
+        id_esp32: document.getElementById("selectIdVaca").value,
+        nombre: document.getElementById("inputNombre").value,
+        raza: document.getElementById("inputRaza").value,
+        edad: document.getElementById("inputEdad").value,
+        peso: document.getElementById("inputPeso").value,
+        notas: document.getElementById("inputNotas").value
     };
 
-    if (vacaEditando !== null) {
-        vacas[vacaEditando] = nueva;
-    } else {
-        vacas.push(nueva);
-    }
-
-    modal.classList.add("hidden");
-    renderTabla();
-});
-
-// ========================
-//   EDITAR
-// ========================
-function editarVaca(i) {
-    vacaEditando = i;
-    const v = vacas[i];
-
-    modalTitulo.textContent = "Editar vaca";
-    idSelect.value = v.idEsp32;
-    inputNombre.value = v.nombre;
-    inputRaza.value = v.raza;
-    inputEdad.value = v.edad;
-    inputPeso.value = v.peso;
-    inputNotas.value = v.notas;
-
-    modal.classList.remove("hidden");
-}
-
-// ========================
-//   ELIMINAR
-// ========================
-function eliminarVaca(i) {
-    if (confirm("¿Deseas eliminar esta vaca?")) {
-        vacas.splice(i, 1);
-        renderTabla();
-    }
-}
-
-// ========================
-//   HISTORIAL
-// ========================
-function mostrarHistorial(i) {
-    listaHistorial.innerHTML = "";
-    vacas[i].historial.forEach(h => {
-        const li = document.createElement("li");
-        li.textContent = h;
-        listaHistorial.appendChild(li);
+    await fetch("/api/vacas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
     });
 
-    modalHistorial.classList.remove("hidden");
+    location.reload();
 }
 
-btnCerrarHistorial.addEventListener("click", () => {
-    modalHistorial.classList.add("hidden");
-});
+async function borrarVaca(id) {
+    if (!confirm("¿Eliminar vaca?")) return;
 
-// ========================
-btnCancelar.addEventListener("click", () => {
-    modal.classList.add("hidden");
-});
+    await fetch(`/api/vacas/${id}`, { method: "DELETE" });
+    location.reload();
+}
 
-// ========================
-renderTabla();
+async function mostrarHistorial(idEsp32) {
+    const res = await fetch(`/api/vacas/${idEsp32}/historial`);
+    const datos = await res.json();
+
+    const lista = document.getElementById("listaHistorial");
+    lista.innerHTML = "";
+
+    datos.forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = `${d.fecha} | Temp: ${d.temp_ambiente} °C | Ritmo: ${d.ritmo_cardiaco}`;
+        lista.appendChild(li);
+    });
+
+    document.getElementById("modalHistorial").classList.remove("hidden");
+}
+
+document.getElementById("btnGuardarVaca").addEventListener("click", guardarVaca);
+
+cargarVacas();

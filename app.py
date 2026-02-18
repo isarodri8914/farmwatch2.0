@@ -12,7 +12,7 @@ def get_connection():
         database=os.environ["DB_NAME"]
     )
     
-    
+    #API PARA DATOS 
 
 @app.route("/api/datos")
 def api_datos():
@@ -37,6 +37,123 @@ def api_datos():
             ORDER BY fecha DESC
             LIMIT 100
         """)
+
+        datos = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(datos)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    #API PARA COWS.HTML
+@app.route("/api/vacas")
+def obtener_vacas():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        cursor.execute("SELECT * FROM vacas ORDER BY id DESC")
+        vacas = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(vacas)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+    #CREAR O EDITAR VACAS EN COWS.HTML
+
+@app.route("/api/vacas", methods=["POST"])
+def guardar_vaca():
+    data = request.get_json()
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        if data.get("id"):  # editar
+            sql = """
+                UPDATE vacas SET
+                id_esp32=%s,
+                nombre=%s,
+                raza=%s,
+                edad=%s,
+                peso=%s,
+                notas=%s
+                WHERE id=%s
+            """
+            cursor.execute(sql, (
+                data["id_esp32"],
+                data["nombre"],
+                data["raza"],
+                data["edad"],
+                data["peso"],
+                data["notas"],
+                data["id"]
+            ))
+
+        else:  # nueva
+            sql = """
+                INSERT INTO vacas
+                (id_esp32, nombre, raza, edad, peso, notas)
+                VALUES (%s,%s,%s,%s,%s,%s)
+            """
+            cursor.execute(sql, (
+                data["id_esp32"],
+                data["nombre"],
+                data["raza"],
+                data["edad"],
+                data["peso"],
+                data["notas"]
+            ))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "ok"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+#ELIMINAR VACA EN COWS.HTML
+
+@app.route("/api/vacas/<int:id>", methods=["DELETE"])
+def eliminar_vaca(id):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM vacas WHERE id=%s", (id,))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({"status": "deleted"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+#VERIFICAR HISTORIAL EN COWS.HTML
+@app.route("/api/vacas/<id_esp32>/historial")
+def historial_vaca(id_esp32):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        cursor.execute("""
+            SELECT temp_ambiente, ritmo_cardiaco, fecha
+            FROM sensores
+            WHERE id_vaca=%s
+            ORDER BY fecha DESC
+            LIMIT 20
+        """, (id_esp32,))
 
         datos = cursor.fetchall()
 
