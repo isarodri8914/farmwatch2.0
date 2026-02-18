@@ -72,7 +72,8 @@ def obtener_vacas():
 def vacas_detectadas():
     try:
         conn = get_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
 
         cursor.execute("SELECT DISTINCT id_vaca FROM sensores")
         resultados = cursor.fetchall()
