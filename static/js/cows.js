@@ -1,11 +1,18 @@
 let vacas = [];
+let vacaEditando = null;
 
+// ===============================
+// CARGAR VACAS DESDE LA BD
+// ===============================
 async function cargarVacas() {
     const res = await fetch("/api/vacas");
     vacas = await res.json();
     renderTabla();
 }
 
+// ===============================
+// RENDER TABLA
+// ===============================
 function renderTabla() {
     const tabla = document.getElementById("tablaVacas");
     tabla.innerHTML = "";
@@ -38,9 +45,38 @@ function estadoBadge(estado) {
     return `<span class="badge badge-danger">Crítico</span>`;
 }
 
-async function guardarVaca() {
+// ===============================
+// MODAL NUEVA VACA
+// ===============================
+document.getElementById("btnNuevaVaca").addEventListener("click", () => {
+    vacaEditando = null;
+
+    document.getElementById("modalTitulo").textContent = "Nueva vaca";
+
+    document.getElementById("selectIdVaca").value = "";
+    document.getElementById("inputNombre").value = "";
+    document.getElementById("inputRaza").value = "";
+    document.getElementById("inputEdad").value = "";
+    document.getElementById("inputPeso").value = "";
+    document.getElementById("inputNotas").value = "";
+
+    document.getElementById("modalVaca").classList.remove("hidden");
+});
+
+// ===============================
+// CANCELAR MODAL
+// ===============================
+document.getElementById("btnCancelar").addEventListener("click", () => {
+    document.getElementById("modalVaca").classList.add("hidden");
+});
+
+// ===============================
+// GUARDAR VACA
+// ===============================
+document.getElementById("btnGuardarVaca").addEventListener("click", async () => {
+
     const data = {
-        id: vacaEditando ? vacaEditando.id : null,
+        id: vacaEditando ? vacas[vacaEditando].id : null,
         id_esp32: document.getElementById("selectIdVaca").value,
         nombre: document.getElementById("inputNombre").value,
         raza: document.getElementById("inputRaza").value,
@@ -55,16 +91,44 @@ async function guardarVaca() {
         body: JSON.stringify(data)
     });
 
-    location.reload();
+    document.getElementById("modalVaca").classList.add("hidden");
+
+    cargarVacas();
+});
+
+// ===============================
+// EDITAR
+// ===============================
+function editarVaca(index) {
+    vacaEditando = index;
+    const v = vacas[index];
+
+    document.getElementById("modalTitulo").textContent = "Editar vaca";
+
+    document.getElementById("selectIdVaca").value = v.id_esp32;
+    document.getElementById("inputNombre").value = v.nombre;
+    document.getElementById("inputRaza").value = v.raza;
+    document.getElementById("inputEdad").value = v.edad;
+    document.getElementById("inputPeso").value = v.peso;
+    document.getElementById("inputNotas").value = v.notas;
+
+    document.getElementById("modalVaca").classList.remove("hidden");
 }
 
+// ===============================
+// BORRAR
+// ===============================
 async function borrarVaca(id) {
     if (!confirm("¿Eliminar vaca?")) return;
 
     await fetch(`/api/vacas/${id}`, { method: "DELETE" });
-    location.reload();
+
+    cargarVacas();
 }
 
+// ===============================
+// HISTORIAL DESDE BD
+// ===============================
 async function mostrarHistorial(idEsp32) {
     const res = await fetch(`/api/vacas/${idEsp32}/historial`);
     const datos = await res.json();
@@ -74,13 +138,17 @@ async function mostrarHistorial(idEsp32) {
 
     datos.forEach(d => {
         const li = document.createElement("li");
-        li.textContent = `${d.fecha} | Temp: ${d.temp_ambiente} °C | Ritmo: ${d.ritmo_cardiaco}`;
+        li.textContent =
+            `${d.fecha} | Temp: ${d.temp_ambiente} °C | Ritmo: ${d.ritmo_cardiaco}`;
         lista.appendChild(li);
     });
 
     document.getElementById("modalHistorial").classList.remove("hidden");
 }
 
-document.getElementById("btnGuardarVaca").addEventListener("click", guardarVaca);
+document.getElementById("btnCerrarHistorial").addEventListener("click", () => {
+    document.getElementById("modalHistorial").classList.add("hidden");
+});
 
+// ===============================
 cargarVacas();
