@@ -66,6 +66,26 @@ def obtener_vacas():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+    #DETECTAR VACAS
+    
+@app.route("/api/vacas/detectadas")
+def vacas_detectadas():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT DISTINCT id_vaca FROM sensores")
+        resultados = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(resultados)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    
     #CREAR O EDITAR VACAS EN COWS.HTML
 
 @app.route("/api/vacas", methods=["POST"])

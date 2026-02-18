@@ -10,6 +10,23 @@ async function cargarVacas() {
     renderTabla();
 }
 
+//CARGAR VACAS
+async function cargarIdsDetectados() {
+    const res = await fetch("/api/vacas/detectadas");
+    const ids = await res.json();
+
+    const select = document.getElementById("selectIdVaca");
+    select.innerHTML = '<option value="">-- Selecciona una vaca detectada --</option>';
+
+    ids.forEach(obj => {
+        const option = document.createElement("option");
+        option.value = obj.id_vaca;
+        option.textContent = obj.id_vaca;
+        select.appendChild(option);
+    });
+}
+
+
 // ===============================
 // RENDER TABLA
 // ===============================
@@ -152,3 +169,4 @@ document.getElementById("btnCerrarHistorial").addEventListener("click", () => {
 
 // ===============================
 cargarVacas();
+cargarIdsDetectados();
