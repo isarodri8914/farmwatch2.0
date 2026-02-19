@@ -4,82 +4,118 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaVacas = document.getElementById("listaVacas");
     const listaSensores = document.getElementById("listaSensores");
 
-    fetch("/api/estado-sistema")
-        .then(res => res.json())
-        .then(data => {
+    function limpiarListas() {
+        listaSistema.innerHTML = "";
+        listaVacas.innerHTML = "";
+        listaSensores.innerHTML = "";
+    }
 
-            // =============================
-            // ⚠️ ESTADO CLOUD SQL
-            // =============================
-            if (!data.sql_conectado) {
+    function cargarEstado() {
 
-                listaSistema.appendChild(
-                    crearAlerta("❌ Cloud SQL desconectado", "critical")
-                );
+        fetch("/api/estado-sistema")
+            .then(res => res.json())
+            .then(data => {
 
-                listaSistema.appendChild(
-                    crearAlerta("⚠️ No se pueden obtener datos del sistema", "warning")
-                );
+                limpiarListas();
 
-                // Sensores offline
-                listaSensores.appendChild(
-                    crearAlerta("📡 Todos los sensores fuera de línea", "critical")
-                );
+                // =============================
+                // ⚠️ ESTADO CLOUD SQL
+                // =============================
+                if (!data.sql_conectado) {
 
-                // Vacas sin datos
-                listaVacas.appendChild(
-                    crearAlerta("🐄 No hay datos disponibles de las vacas", "critical")
-                );
+                    listaSistema.appendChild(
+                        crearAlerta("❌ Cloud SQL desconectado", "critical")
+                    );
 
-                return;
-            }
+                    listaSistema.appendChild(
+                        crearAlerta("⚠️ No se pueden obtener datos del sistema", "warning")
+                    );
 
-            // =============================
-            // SI HAY CONEXIÓN
-            // =============================
-
-            listaSistema.appendChild(
-                crearAlerta("✅ Cloud SQL conectada correctamente", "success")
-            );
-
-            // Sensores
-            data.sensores.forEach(sensor => {
-                if (sensor.estado !== "activo") {
                     listaSensores.appendChild(
-                        crearAlerta(`📡 Sensor ${sensor.id} fuera de línea`, "warning")
+                        crearAlerta("📡 Todos los sensores fuera de línea", "critical")
                     );
-                }
-            });
 
-            // Vacas
-            data.vacas.forEach(vaca => {
-
-                if (vaca.temperatura > 40) {
                     listaVacas.appendChild(
-                        crearAlerta(`🐄 Vaca ${vaca.id} con temperatura alta (${vaca.temperatura}°C)`, "critical")
+                        crearAlerta("🐄 No hay datos disponibles de las vacas", "critical")
+                    );
+
+                    return;
+                }
+
+                // =============================
+                // ✅ SI HAY CONEXIÓN
+                // =============================
+
+                listaSistema.appendChild(
+                    crearAlerta("✅ Cloud SQL conectada correctamente", "success")
+                );
+
+                let hayAlertaSensores = false;
+                let hayAlertaVacas = false;
+
+                // Sensores
+                data.sensores.forEach(sensor => {
+                    if (sensor.estado !== "activo") {
+                        hayAlertaSensores = true;
+                        listaSensores.appendChild(
+                            crearAlerta(`📡 Sensor ${sensor.id} fuera de línea`, "warning")
+                        );
+                    }
+                });
+
+                if (!hayAlertaSensores) {
+                    listaSensores.appendChild(
+                        crearAlerta("✅ Todos los sensores operando correctamente", "success")
                     );
                 }
 
-                if (vaca.ritmo > 120) {
+                // Vacas
+                data.vacas.forEach(vaca => {
+
+                    if (vaca.temperatura > 40) {
+                        hayAlertaVacas = true;
+                        listaVacas.appendChild(
+                            crearAlerta(`🐄 Vaca ${vaca.id} con temperatura alta (${vaca.temperatura}°C)`, "critical")
+                        );
+                    }
+
+                    if (vaca.ritmo > 120) {
+                        hayAlertaVacas = true;
+                        listaVacas.appendChild(
+                            crearAlerta(`🐄 Vaca ${vaca.id} con ritmo cardíaco elevado (${vaca.ritmo} BPM)`, "warning")
+                        );
+                    }
+
+                });
+
+                if (!hayAlertaVacas) {
                     listaVacas.appendChild(
-                        crearAlerta(`🐄 Vaca ${vaca.id} con ritmo cardíaco elevado (${vaca.ritmo} BPM)`, "warning")
+                        crearAlerta("✅ Todas las vacas en estado normal", "success")
                     );
                 }
 
+            })
+            .catch(error => {
+
+                limpiarListas();
+
+                listaSistema.appendChild(
+                    crearAlerta("❌ Error crítico al consultar el backend", "critical")
+                );
+
+                listaSistema.appendChild(
+                    crearAlerta("⚠️ El servidor no responde", "warning")
+                );
             });
+    }
 
-        })
-        .catch(error => {
+    // 🔥 Ejecuta inmediatamente
+    cargarEstado();
 
-            listaSistema.appendChild(
-                crearAlerta("❌ Error crítico al consultar el backend", "critical")
-            );
-
-            listaSistema.appendChild(
-                crearAlerta("⚠️ El servidor no responde", "warning")
-            );
-        });
+    // 🔥 Y luego cada 5 segundos
+    setInterval(cargarEstado, 5000);
 });
+
 
 function crearAlerta(texto, nivel) {
     const li = document.createElement("li");
