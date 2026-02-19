@@ -56,67 +56,84 @@ async function getLastSensorData() {
     }
 }
 
-// ==========================
-// EVALUAR SENSORES
-// ==========================
-function evaluateSensors(data) {
+function sensorEstaCongelado(valores) {
+    if (valores.length < 3) return false;
 
-    if (!data) {
+    return valores.every(v => v === valores[0]);
+}
+
+function evaluateSensors(datos) {
+
+    if (!datos || datos.length === 0) {
         return [
-            { name: "ESP32", type: "Microcontrolador", icon: "⚡", status: "Offline" }
+            { name: "ESP32", icon: "⚡", status: "Offline" }
         ];
     }
+
+    const ultima = datos[0];
 
     const now = new Date();
-    const last = new Date(data.fecha);
+    const last = new Date(ultima.fecha);
     const diffSeconds = (now - last) / 1000;
 
-    // Si no hay datos en 30 segundos → todo offline
     if (diffSeconds > 30) {
         return [
-            { name: "ESP32", type: "Microcontrolador", icon: "⚡", status: "Offline" }
+            { name: "ESP32", icon: "⚡", status: "Offline" }
         ];
     }
+
+    // ===== MPU6050 =====
+    const gyroX = datos.map(d => d.gyro_x);
+    const gyroY = datos.map(d => d.gyro_y);
+    const gyroZ = datos.map(d => d.gyro_z);
+
+    const mpuCongelado =
+        sensorEstaCongelado(gyroX) &&
+        sensorEstaCongelado(gyroY) &&
+        sensorEstaCongelado(gyroZ);
+
+    // ===== MAX30100 =====
+    const ritmos = datos.map(d => d.ritmo_cardiaco);
+    const oxigenos = datos.map(d => d.oxigeno);
+
+    const maxCongelado =
+        sensorEstaCongelado(ritmos) &&
+        sensorEstaCongelado(oxigenos);
 
     return [
 
-        // MAX30100
         {
             name: "MAX30100",
             type: "Ritmo cardíaco y oxígeno",
             icon: "❤️",
-            status: "Activo"  // Siempre activo si ESP32 está enviando
+            status: maxCongelado ? "Sin señal" : "Activo"
         },
 
-        // MLX90614
         {
             name: "MLX90614",
             type: "Temperatura corporal",
             icon: "🌡️",
-            status: (data.temp_objeto > 0 || data.temp_ambiente > 0)
+            status: (ultima.temp_objeto > 0 || ultima.temp_ambiente > 0)
                 ? "Activo"
                 : "Sin señal"
         },
 
-        // MPU6050
         {
             name: "MPU6050",
             type: "Acelerómetro / Giroscopio",
             icon: "📐",
-            status: "Activo"  // Está enviando datos aunque esté quieto
+            status: mpuCongelado ? "Sin señal" : "Activo"
         },
 
-        // GPS
         {
             name: "GPS NEO6MV2",
             type: "Geolocalización",
             icon: "📍",
-            status: (data.latitud == 0 && data.longitud == 0)
+            status: (ultima.latitud == 0 && ultima.longitud == 0)
                 ? "Sin señal"
                 : "Activo"
         },
 
-        // ESP32
         {
             name: "ESP32",
             type: "Microcontrolador",
@@ -125,6 +142,7 @@ function evaluateSensors(data) {
         }
     ];
 }
+
 
 
 // ==========================

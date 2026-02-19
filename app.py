@@ -273,6 +273,40 @@ def ultima_lectura():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/vacas/<id_esp32>/ultimos")
+def ultimos_datos(id_esp32):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        cursor.execute("""
+            SELECT 
+                temp_ambiente,
+                temp_objeto,
+                ritmo_cardiaco,
+                oxigeno,
+                gyro_x,
+                gyro_y,
+                gyro_z,
+                latitud,
+                longitud,
+                fecha
+            FROM sensores
+            WHERE id_vaca=%s
+            ORDER BY fecha DESC
+            LIMIT 5
+        """, (id_esp32,))
+
+        datos = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(datos)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # ---------- RUTAS ----------
 
 @app.route('/')
