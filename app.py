@@ -354,9 +354,7 @@ def obtener_alertas():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-    from flask import jsonify
-import pymysql
-import os
+
 
 #ESTADO DEL SISTEMA ALERTAS
 
