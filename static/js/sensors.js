@@ -44,7 +44,7 @@ function mapStatus(status) {
 // ==========================
 async function getLastSensorData() {
     try {
-        const res = await fetch("/api/ultima-lectura");
+        const res = await fetch("/api/sensores/ultimos");
 
         if (!res.ok) return null;
 

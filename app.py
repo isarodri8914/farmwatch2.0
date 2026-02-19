@@ -235,8 +235,9 @@ def recibir_datos():
 
 # API: OBTENER ÚLTIMA LECTURA DE SENSORES
 # =========================================
-@app.route("/api/ultima-lectura")
-def ultima_lectura():
+
+@app.route("/api/sensores/ultimos")
+def ultimos_datos():
     try:
         conn = get_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -256,46 +257,8 @@ def ultima_lectura():
                 fecha
             FROM sensores
             ORDER BY fecha DESC
-            LIMIT 1
-        """)
-
-        data = cursor.fetchone()
-
-        cursor.close()
-        conn.close()
-
-        if not data:
-            return jsonify({"error": "No hay datos"}), 404
-
-        return jsonify(data)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/vacas/<id_esp32>/ultimos")
-def ultimos_datos(id_esp32):
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-        cursor.execute("""
-            SELECT 
-                temp_ambiente,
-                temp_objeto,
-                ritmo_cardiaco,
-                oxigeno,
-                gyro_x,
-                gyro_y,
-                gyro_z,
-                latitud,
-                longitud,
-                fecha
-            FROM sensores
-            WHERE id_vaca=%s
-            ORDER BY fecha DESC
             LIMIT 5
-        """, (id_esp32,))
+        """)
 
         datos = cursor.fetchall()
 
@@ -306,6 +269,7 @@ def ultimos_datos(id_esp32):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ---------- RUTAS ----------
 
