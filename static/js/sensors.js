@@ -67,15 +67,28 @@ function evaluateSensors(data) {
         ];
     }
 
+    const now = new Date();
+    const last = new Date(data.fecha);
+    const diffSeconds = (now - last) / 1000;
+
+    // Si no hay datos en 30 segundos → todo offline
+    if (diffSeconds > 30) {
+        return [
+            { name: "ESP32", type: "Microcontrolador", icon: "⚡", status: "Offline" }
+        ];
+    }
+
     return [
+
+        // MAX30100
         {
             name: "MAX30100",
             type: "Ritmo cardíaco y oxígeno",
             icon: "❤️",
-            status: (data.ritmo_cardiaco > 0 || data.oxigeno > 0)
-                ? "Activo"
-                : "Sin señal"
+            status: "Activo"  // Siempre activo si ESP32 está enviando
         },
+
+        // MLX90614
         {
             name: "MLX90614",
             type: "Temperatura corporal",
@@ -84,22 +97,26 @@ function evaluateSensors(data) {
                 ? "Activo"
                 : "Sin señal"
         },
+
+        // MPU6050
         {
             name: "MPU6050",
             type: "Acelerómetro / Giroscopio",
             icon: "📐",
-            status: (data.gyro_x != 0 || data.gyro_y != 0 || data.gyro_z != 0)
-                ? "Activo"
-                : "Sin señal"
+            status: "Activo"  // Está enviando datos aunque esté quieto
         },
+
+        // GPS
         {
             name: "GPS NEO6MV2",
             type: "Geolocalización",
             icon: "📍",
-            status: (data.latitud != 0 && data.longitud != 0)
-                ? "Activo"
-                : "Sin señal"
+            status: (data.latitud == 0 && data.longitud == 0)
+                ? "Sin señal"
+                : "Activo"
         },
+
+        // ESP32
         {
             name: "ESP32",
             type: "Microcontrolador",
@@ -108,6 +125,7 @@ function evaluateSensors(data) {
         }
     ];
 }
+
 
 // ==========================
 // CARGAR SENSORES DINÁMICAMENTE
