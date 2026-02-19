@@ -4,59 +4,92 @@ document.addEventListener("DOMContentLoaded", () => {
     const listaVacas = document.getElementById("listaVacas");
     const listaSensores = document.getElementById("listaSensores");
 
-    cargarAlertas();
+    fetch("/api/estado-sistema")
+        .then(res => res.json())
+        .then(data => {
 
-    async function cargarAlertas() {
+            // =============================
+            // ⚠️ ESTADO CLOUD SQL
+            // =============================
+            if (!data.sql_conectado) {
 
-        const res = await fetch("/api/alertas");
-        const data = await res.json();
+                listaSistema.appendChild(
+                    crearAlerta("❌ Cloud SQL desconectado", "critical")
+                );
 
-        listaSistema.innerHTML = "";
-        listaVacas.innerHTML = "";
-        listaSensores.innerHTML = "";
+                listaSistema.appendChild(
+                    crearAlerta("⚠️ No se pueden obtener datos del sistema", "warning")
+                );
 
-        // ======================
-        // SISTEMA
-        // ======================
-        if (data.sistema.length === 0) {
-            listaSistema.appendChild(crearAlerta("Sin alertas del sistema", "ok"));
-        } else {
-            data.sistema.forEach(a => {
-                listaSistema.appendChild(crearAlerta(a.mensaje, a.nivel));
+                // Sensores offline
+                listaSensores.appendChild(
+                    crearAlerta("📡 Todos los sensores fuera de línea", "critical")
+                );
+
+                // Vacas sin datos
+                listaVacas.appendChild(
+                    crearAlerta("🐄 No hay datos disponibles de las vacas", "critical")
+                );
+
+                return;
+            }
+
+            // =============================
+            // SI HAY CONEXIÓN
+            // =============================
+
+            listaSistema.appendChild(
+                crearAlerta("✅ Cloud SQL conectada correctamente", "success")
+            );
+
+            // Sensores
+            data.sensores.forEach(sensor => {
+                if (sensor.estado !== "activo") {
+                    listaSensores.appendChild(
+                        crearAlerta(`📡 Sensor ${sensor.id} fuera de línea`, "warning")
+                    );
+                }
             });
-        }
 
-        // ======================
-        // VACAS
-        // ======================
-        if (data.vacas.length === 0) {
-            listaVacas.appendChild(crearAlerta("Sin alertas de salud", "ok"));
-        } else {
-            data.vacas.forEach(a => {
-                listaVacas.appendChild(crearAlerta(a.mensaje, a.nivel));
-            });
-        }
+            // Vacas
+            data.vacas.forEach(vaca => {
 
-        // ======================
-        // SENSORES
-        // ======================
-        if (data.sensores.length === 0) {
-            listaSensores.appendChild(crearAlerta("Todos los sensores funcionando", "ok"));
-        } else {
-            data.sensores.forEach(a => {
-                listaSensores.appendChild(crearAlerta(a.mensaje, a.nivel));
+                if (vaca.temperatura > 40) {
+                    listaVacas.appendChild(
+                        crearAlerta(`🐄 Vaca ${vaca.id} con temperatura alta (${vaca.temperatura}°C)`, "critical")
+                    );
+                }
+
+                if (vaca.ritmo > 120) {
+                    listaVacas.appendChild(
+                        crearAlerta(`🐄 Vaca ${vaca.id} con ritmo cardíaco elevado (${vaca.ritmo} BPM)`, "warning")
+                    );
+                }
+
             });
-        }
-    }
+
+        })
+        .catch(error => {
+
+            listaSistema.appendChild(
+                crearAlerta("❌ Error crítico al consultar el backend", "critical")
+            );
+
+            listaSistema.appendChild(
+                crearAlerta("⚠️ El servidor no responde", "warning")
+            );
+        });
 });
 
 function crearAlerta(texto, nivel) {
     const li = document.createElement("li");
     li.className = `alert-item ${nivel}`;
 
+    const hora = new Date().toLocaleString();
+
     li.innerHTML = `
         <p class="alert-text">${texto}</p>
-        <p class="alert-time">${new Date().toLocaleString()}</p>
+        <p class="alert-time">${hora}</p>
     `;
 
     return li;

@@ -353,6 +353,62 @@ def obtener_alertas():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    from flask import jsonify
+import pymysql
+import os
+
+#ESTADO DEL SISTEMA ALERTAS
+
+@app.route("/api/estado-sistema")
+def estado_sistema():
+    estado = {
+        "sql_conectado": False,
+        "sensores": [],
+        "vacas": []
+    }
+
+    try:
+        connection = pymysql.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
+            connect_timeout=3
+        )
+
+        cursor = connection.cursor()
+
+        # Si llega aquí, hay conexión
+        estado["sql_conectado"] = True
+
+        # Sensores activos
+        cursor.execute("SELECT id, estado FROM sensores")
+        sensores = cursor.fetchall()
+
+        estado["sensores"] = [
+            {"id": s[0], "estado": s[1]} for s in sensores
+        ]
+
+        # Datos de vacas
+        cursor.execute("SELECT id, temperatura, ritmo_cardiaco FROM vacas")
+        vacas = cursor.fetchall()
+
+        estado["vacas"] = [
+            {
+                "id": v[0],
+                "temperatura": v[1],
+                "ritmo": v[2]
+            } for v in vacas
+        ]
+
+        connection.close()
+
+    except Exception as e:
+        print("Error SQL:", e)
+
+    return jsonify(estado)
+
 
 
 # ---------- RUTAS ----------
