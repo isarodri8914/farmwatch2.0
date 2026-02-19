@@ -360,6 +360,7 @@ def obtener_alertas():
 
 @app.route("/api/estado-sistema")
 def estado_sistema():
+
     estado = {
         "sql_conectado": False,
         "sensores": [],
@@ -367,46 +368,57 @@ def estado_sistema():
     }
 
     try:
-        connection = pymysql.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            database=os.getenv("DB_NAME"),
-            connect_timeout=3
-        )
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        cursor = connection.cursor()
-
-        # Si llega aquí, hay conexión
+        # Si conecta, SQL está activa
         estado["sql_conectado"] = True
 
-        # Sensores activos
-        cursor.execute("SELECT id, estado FROM sensores")
-        sensores = cursor.fetchall()
+        # =============================
+        # Última lectura por vaca
+        # =============================
+        cursor.execute("""
+            SELECT s1.*
+            FROM sensores s1
+            INNER JOIN (
+                SELECT id_vaca, MAX(fecha) as max_fecha
+                FROM sensores
+                GROUP BY id_vaca
+            ) s2
+            ON s1.id_vaca = s2.id_vaca AND s1.fecha = s2.max_fecha
+        """)
 
-        estado["sensores"] = [
-            {"id": s[0], "estado": s[1]} for s in sensores
-        ]
+        ultimos = cursor.fetchall()
 
-        # Datos de vacas
-        cursor.execute("SELECT id, temperatura, ritmo_cardiaco FROM vacas")
-        vacas = cursor.fetchall()
+        for d in ultimos:
 
-        estado["vacas"] = [
-            {
-                "id": v[0],
-                "temperatura": v[1],
-                "ritmo": v[2]
-            } for v in vacas
-        ]
+            # SENSOR ACTIVO SI NO TODO ESTÁ EN 0
+            activo = not (
+                d["gyro_x"] == 0 and
+                d["gyro_y"] == 0 and
+                d["gyro_z"] == 0 and
+                d["ritmo_cardiaco"] == 0 and
+                d["oxigeno"] == 0
+            )
 
-        connection.close()
+            estado["sensores"].append({
+                "id": d["id_vaca"],
+                "estado": "activo" if activo else "inactivo"
+            })
+
+            estado["vacas"].append({
+                "id": d["id_vaca"],
+                "temperatura": d["temp_objeto"] or 0,
+                "ritmo": d["ritmo_cardiaco"] or 0
+            })
+
+        cursor.close()
+        conn.close()
 
     except Exception as e:
-        print("Error SQL:", e)
+        print("Error en estado_sistema:", e)
 
     return jsonify(estado)
-
 
 
 # ---------- RUTAS ----------
