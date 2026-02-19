@@ -232,6 +232,44 @@ def recibir_datos():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+#SENSORES
+
+@app.route("/api/ultima-lectura")
+def ultima_lectura():
+
+    conn = get_db_connection()  # usa tu función de conexión
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    query = """
+        SELECT 
+            id_vaca,
+            temp_ambiente,
+            temp_objeto,
+            ritmo_cardiaco,
+            oxigeno,
+            gyro_x,
+            gyro_y,
+            gyro_z,
+            latitud,
+            longitud,
+            fecha
+        FROM datos_sensores
+        ORDER BY fecha DESC
+        LIMIT 1
+    """
+
+    cursor.execute(query)
+    data = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if not data:
+        return jsonify({"error": "No hay datos"}), 404
+
+    return jsonify(data)
+
+
 
 # ---------- RUTAS ----------
 
@@ -270,16 +308,6 @@ def register():
 @app.route('/registro', methods=['POST'])
 def registro():
     return render_template('registro_exitoso.html')
-
-@app.route("/api/vaca/<int:id>")
-def api_vaca(id):
-    # EJEMPLO: luego conectamos a tu base de datos
-    datos = {
-        1: {"temperatura": 38.4, "ritmo": 72, "actividad": "Moviéndose", "ubicacion": "19.4321,-99.1338", "estado": "Normal"},
-        2: {"temperatura": 40.1, "ritmo": 101, "actividad": "Inquieta", "ubicacion": "19.4329,-99.1321", "estado": "Alerta"},
-        3: {"temperatura": 41.3, "ritmo": 120, "actividad": "Alta actividad", "ubicacion": "19.4315,-99.1340", "estado": "Crítico"},
-    }
-    return datos.get(id, {})
 
 
 
