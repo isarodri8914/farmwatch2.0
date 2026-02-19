@@ -237,7 +237,7 @@ def recibir_datos():
 @app.route("/api/ultima-lectura")
 def ultima_lectura():
 
-    conn = get_db_connection()  # usa tu función de conexión
+    conn = get_connection()  # usa tu función de conexión
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     query = """
