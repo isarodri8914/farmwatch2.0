@@ -1,64 +1,63 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // --- Selección de listas ---
     const listaSistema = document.getElementById("listaSistema");
     const listaVacas = document.getElementById("listaVacas");
     const listaSensores = document.getElementById("listaSensores");
 
-    // --- Mockup Datos ---
-    // ⚠️ Alertas del sistema
-    const sistemaAlertas = [
-        { mensaje: "⚠️ Conexión con Cloud SQL inestable", nivel: "warning", hora: ahora() },
-        { mensaje: "❌ Cloud SQL desconectado", nivel: "critical", hora: ahora() }
-    ];
+    cargarAlertas();
 
-    // 🐄 Alertas de vacas
-    const alertasVacas = [
-        { vaca: "Vaca 03", tipo: "Temperatura Alta", nivel: "critical", valor: "41.2 °C", hora: ahora() },
-        { vaca: "Vaca 12", tipo: "Ritmo cardiaco elevado", nivel: "warning", valor: "128 BPM", hora: ahora() },
-        { vaca: "Vaca 22", tipo: "Sin movimiento detectado (30 min)", nivel: "critical", hora: ahora() }
-    ];
+    async function cargarAlertas() {
 
-    // 📡 Alertas de sensores
-    const alertasSensores = [
-        { sensor: "Sensor 01", tipo: "Batería baja", nivel: "warning", hora: ahora() },
-        { sensor: "Sensor 08", tipo: "Desconectado", nivel: "critical", hora: ahora() },
-        { sensor: "Sensor 10", tipo: "Señal débil", nivel: "warning", hora: ahora() }
-    ];
+        const res = await fetch("/api/alertas");
+        const data = await res.json();
 
-    // --- Renderización ---
-    sistemaAlertas.forEach(alert => {
-        listaSistema.appendChild(crearAlerta(alert.mensaje, alert.nivel, alert.hora));
-    });
+        listaSistema.innerHTML = "";
+        listaVacas.innerHTML = "";
+        listaSensores.innerHTML = "";
 
-    alertasVacas.forEach(a => {
-        listaVacas.appendChild(
-            crearAlerta(`🐄 ${a.vaca} — ${a.tipo}${a.valor ? " (" + a.valor + ")" : ""}`, a.nivel, a.hora)
-        );
-    });
+        // ======================
+        // SISTEMA
+        // ======================
+        if (data.sistema.length === 0) {
+            listaSistema.appendChild(crearAlerta("Sin alertas del sistema", "ok"));
+        } else {
+            data.sistema.forEach(a => {
+                listaSistema.appendChild(crearAlerta(a.mensaje, a.nivel));
+            });
+        }
 
-    alertasSensores.forEach(s => {
-        listaSensores.appendChild(
-            crearAlerta(`📡 ${s.sensor} — ${s.tipo}`, s.nivel, s.hora)
-        );
-    });
+        // ======================
+        // VACAS
+        // ======================
+        if (data.vacas.length === 0) {
+            listaVacas.appendChild(crearAlerta("Sin alertas de salud", "ok"));
+        } else {
+            data.vacas.forEach(a => {
+                listaVacas.appendChild(crearAlerta(a.mensaje, a.nivel));
+            });
+        }
+
+        // ======================
+        // SENSORES
+        // ======================
+        if (data.sensores.length === 0) {
+            listaSensores.appendChild(crearAlerta("Todos los sensores funcionando", "ok"));
+        } else {
+            data.sensores.forEach(a => {
+                listaSensores.appendChild(crearAlerta(a.mensaje, a.nivel));
+            });
+        }
+    }
 });
 
+function crearAlerta(texto, nivel) {
+    const li = document.createElement("li");
+    li.className = `alert-item ${nivel}`;
 
-//HOLA
-function crearAlerta(texto, nivel, hora) {
-    const div = document.createElement("li");
-    div.className = `alert-item ${nivel}`;
-
-    div.innerHTML = `
+    li.innerHTML = `
         <p class="alert-text">${texto}</p>
-        <p class="alert-time">${hora}</p>
+        <p class="alert-time">${new Date().toLocaleString()}</p>
     `;
 
-    return div;
-}
-
-function ahora() {
-    const d = new Date();
-    return d.toLocaleString();
+    return li;
 }

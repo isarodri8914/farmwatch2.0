@@ -271,6 +271,90 @@ def ultimos_datos():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/alertas")
+def obtener_alertas():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        alertas = {
+            "sistema": [],
+            "vacas": [],
+            "sensores": []
+        }
+
+        # ===============================
+        # 1. Verificar conexión / datos recientes
+        # ===============================
+        cursor.execute("""
+            SELECT *
+            FROM sensores
+            ORDER BY fecha DESC
+            LIMIT 1
+        """)
+        ultimo = cursor.fetchone()
+
+        if not ultimo:
+            alertas["sistema"].append({
+                "mensaje": "❌ No hay datos en la base de datos",
+                "nivel": "critical"
+            })
+        else:
+            alertas["sistema"].append({
+                "mensaje": "✅ Conexión con Cloud SQL activa",
+                "nivel": "ok"
+            })
+
+        # ===============================
+        # 2. Revisar últimas 5 lecturas
+        # ===============================
+        cursor.execute("""
+            SELECT *
+            FROM sensores
+            ORDER BY fecha DESC
+            LIMIT 5
+        """)
+        datos = cursor.fetchall()
+
+        for d in datos:
+
+            # 🔥 Temperatura alta
+            if d["temp_objeto"] and d["temp_objeto"] > 40:
+                alertas["vacas"].append({
+                    "mensaje": f"🐄 {d['id_vaca']} — Temperatura alta ({d['temp_objeto']} °C)",
+                    "nivel": "critical"
+                })
+
+            # ❤️ Ritmo elevado
+            if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 120:
+                alertas["vacas"].append({
+                    "mensaje": f"🐄 {d['id_vaca']} — Ritmo elevado ({d['ritmo_cardiaco']} BPM)",
+                    "nivel": "warning"
+                })
+
+            # 📡 MPU sin movimiento
+            if d["gyro_x"] == 0 and d["gyro_y"] == 0 and d["gyro_z"] == 0:
+                alertas["sensores"].append({
+                    "mensaje": f"MPU6050 sin movimiento detectado",
+                    "nivel": "warning"
+                })
+
+            # ❤️ MAX30100 sin señal
+            if d["ritmo_cardiaco"] == 0:
+                alertas["sensores"].append({
+                    "mensaje": "MAX30100 sin lectura detectada",
+                    "nivel": "warning"
+                })
+
+        cursor.close()
+        conn.close()
+
+        return jsonify(alertas)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ---------- RUTAS ----------
 
 @app.route('/')
