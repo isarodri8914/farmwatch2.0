@@ -270,91 +270,7 @@ def ultimos_datos():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-@app.route("/api/alertas")
-def obtener_alertas():
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-
-        alertas = {
-            "sistema": [],
-            "vacas": [],
-            "sensores": []
-        }
-
-        # ===============================
-        # 1. Verificar conexión / datos recientes
-        # ===============================
-        cursor.execute("""
-            SELECT *
-            FROM sensores
-            ORDER BY fecha DESC
-            LIMIT 1
-        """)
-        ultimo = cursor.fetchone()
-
-        if not ultimo:
-            alertas["sistema"].append({
-                "mensaje": "❌ No hay datos en la base de datos",
-                "nivel": "critical"
-            })
-        else:
-            alertas["sistema"].append({
-                "mensaje": "✅ Conexión con Cloud SQL activa",
-                "nivel": "ok"
-            })
-
-        # ===============================
-        # 2. Revisar últimas 5 lecturas
-        # ===============================
-        cursor.execute("""
-            SELECT *
-            FROM sensores
-            ORDER BY fecha DESC
-            LIMIT 5
-        """)
-        datos = cursor.fetchall()
-
-        for d in datos:
-
-            # 🔥 Temperatura alta
-            if d["temp_objeto"] and d["temp_objeto"] > 40:
-                alertas["vacas"].append({
-                    "mensaje": f"🐄 {d['id_vaca']} — Temperatura alta ({d['temp_objeto']} °C)",
-                    "nivel": "critical"
-                })
-
-            # ❤️ Ritmo elevado
-            if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 120:
-                alertas["vacas"].append({
-                    "mensaje": f"🐄 {d['id_vaca']} — Ritmo elevado ({d['ritmo_cardiaco']} BPM)",
-                    "nivel": "warning"
-                })
-
-            # 📡 MPU sin movimiento
-            if d["gyro_x"] == 0 and d["gyro_y"] == 0 and d["gyro_z"] == 0:
-                alertas["sensores"].append({
-                    "mensaje": f"MPU6050 sin movimiento detectado",
-                    "nivel": "warning"
-                })
-
-            # ❤️ MAX30100 sin señal
-            if d["ritmo_cardiaco"] == 0:
-                alertas["sensores"].append({
-                    "mensaje": "MAX30100 sin lectura detectada",
-                    "nivel": "warning"
-                })
-
-        cursor.close()
-        conn.close()
-
-        return jsonify(alertas)
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
     
-
 
 #ESTADO DEL SISTEMA ALERTAS
 
@@ -371,55 +287,92 @@ def estado_sistema():
         conn = get_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        # Si conecta, SQL está activa
         estado["sql_conectado"] = True
 
-        # =============================
-        # Última lectura por vaca
-        # =============================
+        # Obtener última lectura real
         cursor.execute("""
-            SELECT s1.*
-            FROM sensores s1
-            INNER JOIN (
-                SELECT id_vaca, MAX(fecha) as max_fecha
-                FROM sensores
-                GROUP BY id_vaca
-            ) s2
-            ON s1.id_vaca = s2.id_vaca AND s1.fecha = s2.max_fecha
+            SELECT *
+            FROM sensores
+            ORDER BY fecha DESC
+            LIMIT 1
         """)
 
-        ultimos = cursor.fetchall()
+        dato = cursor.fetchone()
 
-        for d in ultimos:
+        if not dato:
+            conn.close()
+            return jsonify(estado)
 
-            # SENSOR ACTIVO SI NO TODO ESTÁ EN 0
-            activo = not (
-                d["gyro_x"] == 0 and
-                d["gyro_y"] == 0 and
-                d["gyro_z"] == 0 and
-                d["ritmo_cardiaco"] == 0 and
-                d["oxigeno"] == 0
-            )
+        # ===============================
+        # 🔎 EVALUAR SENSORES
+        # ===============================
 
+        # MAX30100
+        if dato["ritmo_cardiaco"] == 0:
             estado["sensores"].append({
-                "id": d["id_vaca"],
-                "estado": "activo" if activo else "inactivo"
+                "id": "MAX30100",
+                "estado": "sin señal"
+            })
+        else:
+            estado["sensores"].append({
+                "id": "MAX30100",
+                "estado": "activo"
             })
 
-            estado["vacas"].append({
-                "id": d["id_vaca"],
-                "temperatura": d["temp_objeto"] or 0,
-                "ritmo": d["ritmo_cardiaco"] or 0
+        # MLX90614
+        if dato["temp_objeto"] == 0 and dato["temp_ambiente"] == 0:
+            estado["sensores"].append({
+                "id": "MLX90614",
+                "estado": "sin señal"
+            })
+        else:
+            estado["sensores"].append({
+                "id": "MLX90614",
+                "estado": "activo"
             })
 
-        cursor.close()
+        # MPU6050
+        if dato["gyro_x"] == 0 and dato["gyro_y"] == 0 and dato["gyro_z"] == 0:
+            estado["sensores"].append({
+                "id": "MPU6050",
+                "estado": "sin señal"
+            })
+        else:
+            estado["sensores"].append({
+                "id": "MPU6050",
+                "estado": "activo"
+            })
+
+        # GPS
+        if dato["latitud"] == 0 and dato["longitud"] == 0:
+            estado["sensores"].append({
+                "id": "GPS",
+                "estado": "sin señal"
+            })
+        else:
+            estado["sensores"].append({
+                "id": "GPS",
+                "estado": "activo"
+            })
+
+        # ===============================
+        # 🐄 EVALUAR VACA
+        # ===============================
+
+        vaca_estado = {
+            "id": dato["id_vaca"],
+            "temperatura": dato["temp_objeto"],
+            "ritmo": dato["ritmo_cardiaco"]
+        }
+
+        estado["vacas"].append(vaca_estado)
+
         conn.close()
 
     except Exception as e:
-        print("Error en estado_sistema:", e)
+        print("Error SQL:", e)
 
     return jsonify(estado)
-
 
 # ---------- RUTAS ----------
 
