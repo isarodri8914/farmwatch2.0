@@ -232,43 +232,45 @@ def recibir_datos():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-#SENSORES
 
+# API: OBTENER ÚLTIMA LECTURA DE SENSORES
+# =========================================
 @app.route("/api/ultima-lectura")
 def ultima_lectura():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-    conn = get_connection()  # usa tu función de conexión
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT 
+                id_vaca,
+                temp_ambiente,
+                temp_objeto,
+                ritmo_cardiaco,
+                oxigeno,
+                gyro_x,
+                gyro_y,
+                gyro_z,
+                latitud,
+                longitud,
+                fecha
+            FROM sensores
+            ORDER BY fecha DESC
+            LIMIT 1
+        """)
 
-    query = """
-        SELECT 
-            id_vaca,
-            temp_ambiente,
-            temp_objeto,
-            ritmo_cardiaco,
-            oxigeno,
-            gyro_x,
-            gyro_y,
-            gyro_z,
-            latitud,
-            longitud,
-            fecha
-        FROM datos_sensores
-        ORDER BY fecha DESC
-        LIMIT 1
-    """
+        data = cursor.fetchone()
 
-    cursor.execute(query)
-    data = cursor.fetchone()
+        cursor.close()
+        conn.close()
 
-    cursor.close()
-    conn.close()
+        if not data:
+            return jsonify({"error": "No hay datos"}), 404
 
-    if not data:
-        return jsonify({"error": "No hay datos"}), 404
+        return jsonify(data)
 
-    return jsonify(data)
-
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ---------- RUTAS ----------
