@@ -389,84 +389,59 @@ def estado_sistema():
 # =========================================
 # API DASHBOARD PRINCIPAL (TIEMPO REAL)
 # =========================================
-
 @app.route("/api/dashboard")
-def dashboard_data():
+def dashboard():
     try:
         conn = get_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        # Obtener última lectura de cada vaca
+        # 🔹 Obtener último registro por vaca
         cursor.execute("""
             SELECT s.*
             FROM sensores s
             INNER JOIN (
-                SELECT id_vaca, MAX(fecha) as max_fecha
+                SELECT id_vaca, MAX(fecha) as ultima_fecha
                 FROM sensores
                 GROUP BY id_vaca
-            ) grouped
-            ON s.id_vaca = grouped.id_vaca 
-            AND s.fecha = grouped.max_fecha
+            ) ult
+            ON s.id_vaca = ult.id_vaca AND s.fecha = ult.ultima_fecha
         """)
 
-        datos = cursor.fetchall()
+        registros = cursor.fetchall()
 
         cows = []
         alerts = []
+        last_update = None
 
-        now = datetime.utcnow()
-        OFFLINE_TIMEOUT = 30  # segundos
+        for r in registros:
 
-        for d in datos:
+            # Detectar desconexión (si lleva más de 2 min sin datos)
+            diferencia = datetime.now() - r["fecha"]
+            minutos = diferencia.total_seconds() / 60
 
-            estado = "ok"
-
-            # =============================
-            # DETECTAR OFFLINE (sin datos)
-            # =============================
-            if d["fecha"] and (now - d["fecha"]).total_seconds() > OFFLINE_TIMEOUT:
-                estado = "offline"
-
-            # =============================
-            # ALERTAS BIOMÉTRICAS
-            # =============================
-            if d["temp_objeto"] and d["temp_objeto"] > 39.5:
-                estado = "alert"
+            if minutos > 2:
+                status = "offline"
+            elif r["ritmo_cardiaco"] < 40 or r["ritmo_cardiaco"] > 120:
+                status = "alert"
                 alerts.append({
-                    "cow": f"Vaca {d['id_vaca']}",
-                    "text": f"Temperatura alta {d['temp_objeto']}°C",
-                    "time": "Ahora"
+                    "cow": f"Vaca {r['id_vaca']}",
+                    "text": "Ritmo cardiaco fuera de rango"
                 })
-
-            if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 95:
-                estado = "alert"
-                alerts.append({
-                    "cow": f"Vaca {d['id_vaca']}",
-                    "text": f"Ritmo alto {d['ritmo_cardiaco']} bpm",
-                    "time": "Ahora"
-                })
-
-            # =============================
-            # SENSOR DESCONECTADO
-            # =============================
-            if d["ritmo_cardiaco"] == 0 and d["oxigeno"] == 0:
-                estado = "offline"
-
-            if d["gyro_x"] == 0 and d["gyro_y"] == 0 and d["gyro_z"] == 0:
-                estado = "offline"
-
-            if d["latitud"] == 0 and d["longitud"] == 0:
-                estado = "offline"
+            else:
+                status = "ok"
 
             cows.append({
-                "id": d["id_vaca"],
-                "name": f"Vaca {d['id_vaca']}",
-                "lat": d["latitud"] or 19.4325,
-                "lng": d["longitud"] or -99.1332,
-                "temp": d["temp_objeto"],
-                "hr": d["ritmo_cardiaco"],
-                "status": estado
+                "id": r["id_vaca"],
+                "name": f"Vaca {r['id_vaca']}",
+                "temp": r["temp_objeto"],
+                "hr": r["ritmo_cardiaco"],
+                "lat": r["latitud"],
+                "lng": r["longitud"],
+                "status": status
             })
+
+            if not last_update or r["fecha"] > last_update:
+                last_update = r["fecha"]
 
         cursor.close()
         conn.close()
@@ -474,7 +449,7 @@ def dashboard_data():
         return jsonify({
             "cows": cows,
             "alerts": alerts,
-            "last_update": datetime.utcnow().strftime("%H:%M:%S")
+            "last_update": last_update.strftime("%H:%M:%S") if last_update else "--"
         })
 
     except Exception as e:
