@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import os
 import pymysql
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -373,6 +374,101 @@ def estado_sistema():
         print("Error SQL:", e)
 
     return jsonify(estado)
+
+
+# =========================================
+# API DASHBOARD PRINCIPAL (TIEMPO REAL)
+# =========================================
+
+@app.route("/api/dashboard")
+def dashboard_data():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+        # Obtener última lectura de cada vaca
+        cursor.execute("""
+            SELECT s.*
+            FROM sensores s
+            INNER JOIN (
+                SELECT id_vaca, MAX(fecha) as max_fecha
+                FROM sensores
+                GROUP BY id_vaca
+            ) grouped
+            ON s.id_vaca = grouped.id_vaca 
+            AND s.fecha = grouped.max_fecha
+        """)
+
+        datos = cursor.fetchall()
+
+        cows = []
+        alerts = []
+
+        now = datetime.utcnow()
+        OFFLINE_TIMEOUT = 30  # segundos
+
+        for d in datos:
+
+            estado = "ok"
+
+            # =============================
+            # DETECTAR OFFLINE (sin datos)
+            # =============================
+            if d["fecha"] and (now - d["fecha"]).total_seconds() > OFFLINE_TIMEOUT:
+                estado = "offline"
+
+            # =============================
+            # ALERTAS BIOMÉTRICAS
+            # =============================
+            if d["temp_objeto"] and d["temp_objeto"] > 39.5:
+                estado = "alert"
+                alerts.append({
+                    "cow": f"Vaca {d['id_vaca']}",
+                    "text": f"Temperatura alta {d['temp_objeto']}°C",
+                    "time": "Ahora"
+                })
+
+            if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 95:
+                estado = "alert"
+                alerts.append({
+                    "cow": f"Vaca {d['id_vaca']}",
+                    "text": f"Ritmo alto {d['ritmo_cardiaco']} bpm",
+                    "time": "Ahora"
+                })
+
+            # =============================
+            # SENSOR DESCONECTADO
+            # =============================
+            if d["ritmo_cardiaco"] == 0 and d["oxigeno"] == 0:
+                estado = "offline"
+
+            if d["gyro_x"] == 0 and d["gyro_y"] == 0 and d["gyro_z"] == 0:
+                estado = "offline"
+
+            if d["latitud"] == 0 and d["longitud"] == 0:
+                estado = "offline"
+
+            cows.append({
+                "id": d["id_vaca"],
+                "name": f"Vaca {d['id_vaca']}",
+                "lat": d["latitud"] or 19.4325,
+                "lng": d["longitud"] or -99.1332,
+                "temp": d["temp_objeto"],
+                "hr": d["ritmo_cardiaco"],
+                "status": estado
+            })
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "cows": cows,
+            "alerts": alerts,
+            "last_update": datetime.utcnow().strftime("%H:%M:%S")
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ---------- RUTAS ----------
 
