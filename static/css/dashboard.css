@@ -36,8 +36,6 @@
 .right-pan { width: 480px; }
 
 /* charts */
-.chart-row { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
-.chart-card h4 { margin: 0 0 8px 0; font-weight:600; color:#0f172a; }
 
 /* small cards with donuts */
 .small-cards { display:flex; gap:14px; padding:14px; align-items:center; justify-content:space-between; }
@@ -54,22 +52,28 @@
 .map-wrapper { padding: 8px; height: 100%; min-height: 680px; display:flex; flex-direction:column; gap:10px; }
 .map { flex:1; border-radius: 10px; overflow:hidden; height: calc(100vh - 280px); }
 
-.chart-card {
-  position: relative;           /* importante para posicionar el canvas */
-  height: 300px;                /* altura fija recomendada - ajusta según gustes */
-  padding: 1rem;
-  overflow: hidden;
+.chart-row {
+  display: flex;
+  flex-direction: column;      /* una debajo de la otra */
+  gap: 24px;                   /* más espacio entre ellas */
 }
 
-/* El canvas ocupa todo el espacio disponible dentro del contenedor */
+.chart-card {
+  position: relative;
+  height: 420px;               /* ¡más grandes! ajusta si quieres 350px o 500px */
+  padding: 1.5rem;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
 .chart-card canvas {
   position: absolute;
-  top: 50px;                    /* deja espacio para el título <h4> */
+  top: 60px;                   /* espacio para título */
   left: 0;
   right: 0;
-  bottom: 1rem;
+  bottom: 1.5rem;
   width: 100% !important;
-  height: calc(100% - 60px) !important;  /* resta el espacio del título */
+  height: calc(100% - 80px) !important;
 }
 
 #cowSelect {

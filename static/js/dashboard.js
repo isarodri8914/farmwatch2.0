@@ -6,7 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let hrChart = null;
   let cowDonut = null;
   let sensorDonut = null;
-  let allData = [];
 
   // ────────────────────────────────────────────────
   // Inicializar mapa centrado en Mérida
@@ -22,81 +21,154 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ────────────────────────────────────────────────
-  // Gráficas avanzadas (por vaca, últimos 10, tooltips claros)
+  // Gráficas grandes, una debajo de la otra, con puntos visibles
   // ────────────────────────────────────────────────
-async function updateCharts() {
-  try {
-    const res = await fetch("/api/datos");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const datos = await res.json();
+  async function updateCharts() {
+    try {
+      const res = await fetch("/api/datos");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const datos = await res.json();
 
-    if (!datos.length) {
-      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:2rem;'>Sin datos</p>";
-      return;
+      if (!Array.isArray(datos) || datos.length === 0) {
+        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
+        return;
+      }
+
+      // Tomar los últimos 20 datos (suficiente para ver tendencia sin saturar)
+      const sorted = datos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      const recent = sorted.slice(-20);
+
+      const labels = recent.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+      const temps = recent.map(d => Number(d.temp_objeto) || null);
+      const hrs   = recent.map(d => Number(d.ritmo_cardiaco) || null);
+
+      // Temperatura
+      if (tempChart) tempChart.destroy();
+      tempChart = new Chart(document.getElementById("tempChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Temperatura (°C)",
+            data: temps,
+            borderColor: "#ef4444",
+            backgroundColor: "rgba(239, 68, 68, 0.15)",
+            tension: 0.3,
+            fill: true,
+            pointRadius: 6,
+            pointBackgroundColor: "#ef4444",
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "top", labels: { font: { size: 14 } } },
+            tooltip: { mode: "index", intersect: false }
+          },
+          scales: {
+            y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
+            x: { title: { display: true, text: "Hora" } }
+          }
+        }
+      });
+
+      // Ritmo cardíaco
+      if (hrChart) hrChart.destroy();
+      hrChart = new Chart(document.getElementById("hrChart"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Ritmo cardíaco (bpm)",
+            data: hrs,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59, 130, 246, 0.15)",
+            tension: 0.3,
+            fill: true,
+            pointRadius: 6,
+            pointBackgroundColor: "#3b82f6",
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
+            pointHoverRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "top", labels: { font: { size: 14 } } },
+            tooltip: { mode: "index", intersect: false }
+          },
+          scales: {
+            y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
+            x: { title: { display: true, text: "Hora" } }
+          }
+        }
+      });
+
+      // Líneas de umbrales
+      await addThresholdLines();
+
+    } catch (err) {
+      console.error("Error cargando gráficas:", err);
     }
-
-    const sorted = datos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    const recent = sorted.slice(-20); // últimos 20 para no saturar
-
-    const labels = recent.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-    const temps = recent.map(d => Number(d.temp_objeto) || null);
-    const hrs   = recent.map(d => Number(d.ritmo_cardiaco) || null);
-
-    if (tempChart) tempChart.destroy();
-    tempChart = new Chart(document.getElementById("tempChart"), {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Temperatura (°C)",
-          data: temps,
-          borderColor: "#ef4444",
-          backgroundColor: "rgba(239,68,68,0.15)",
-          tension: 0.3,
-          fill: true,
-          pointRadius: 5,
-          pointBackgroundColor: "#ef4444"
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: "top" } },
-        scales: { y: { suggestedMin: 30, suggestedMax: 45 } }
-      }
-    });
-
-    if (hrChart) hrChart.destroy();
-    hrChart = new Chart(document.getElementById("hrChart"), {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Ritmo cardíaco (bpm)",
-          data: hrs,
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59,130,246,0.15)",
-          tension: 0.3,
-          fill: true,
-          pointRadius: 5,
-          pointBackgroundColor: "#3b82f6"
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: "top" } },
-        scales: { y: { suggestedMin: 40, suggestedMax: 140 } }
-      }
-    });
-
-    await addThresholdLines();
-
-  } catch (err) {
-    console.error(err);
   }
-}
-  
+
+  // ────────────────────────────────────────────────
+  // Líneas de umbrales (tu función, ya integrada)
+  // ────────────────────────────────────────────────
+  async function addThresholdLines() {
+    try {
+      const res = await fetch("/api/config/umbral");
+      if (!res.ok) return;
+      const umbrales = await res.json();
+
+      if (umbrales.temp_max && tempChart) {
+        tempChart.data.datasets.push({
+          label: `Umbral Máx (${umbrales.temp_max} °C)`,
+          data: Array(tempChart.data.labels.length).fill(umbrales.temp_max),
+          borderColor: "#dc2626",
+          borderDash: [5, 5],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
+        tempChart.update();
+      }
+
+      if (umbrales.temp_min && tempChart) {
+        tempChart.data.datasets.push({
+          label: `Umbral Mín (${umbrales.temp_min} °C)`,
+          data: Array(tempChart.data.labels.length).fill(umbrales.temp_min),
+          borderColor: "#60a5fa",
+          borderDash: [5, 5],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
+        tempChart.update();
+      }
+
+      if (umbrales.hr_max && hrChart) {
+        hrChart.data.datasets.push({
+          label: `Umbral Máx (${umbrales.hr_max} bpm)`,
+          data: Array(hrChart.data.labels.length).fill(umbrales.hr_max),
+          borderColor: "#f97316",
+          borderDash: [5, 5],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
+        hrChart.update();
+      }
+    } catch (err) {
+      console.warn("Umbrales no cargados:", err);
+    }
+  }
 
   // ────────────────────────────────────────────────
   // Donuts de estado
@@ -136,7 +208,7 @@ async function updateCharts() {
   }
 
   // ────────────────────────────────────────────────
-  // Carga principal
+  // Carga principal del dashboard
   // ────────────────────────────────────────────────
   async function loadDashboard() {
     try {
@@ -193,54 +265,47 @@ async function updateCharts() {
       updateDonuts(cows);
       await updateCharts();
 
-      // Actualizar dropdown con vacas
-      const select = document.getElementById("cowSelect");
-      if (select) {
-        select.innerHTML = '<option value="all">Todas las vacas</option>';
-        cows.forEach(c => {
-          const opt = document.createElement("option");
-          opt.value = c.id;
-          opt.textContent = c.name || `Vaca ${c.id}`;
-          select.appendChild(opt);
-        });
-      }
-
     } catch (err) {
       console.error("Error en loadDashboard:", err);
     }
   }
 
   // ────────────────────────────────────────────────
-  // Dropdown de vacas
+  // Selector pequeño y profesional arriba de las gráficas
   // ────────────────────────────────────────────────
-function initCowSelect() {
-  const chartRow = document.querySelector(".chart-row");
-  if (!chartRow) return;
+  function initCowSelect() {
+    const chartRow = document.querySelector(".chart-row");
+    if (!chartRow) return;
 
-  const container = document.createElement("div");
-  container.style.textAlign = "center";
-  container.style.margin = "1.5rem 0 1rem 0";
+    const container = document.createElement("div");
+    container.className = "filter-container";
+    container.style.textAlign = "center";
+    container.style.margin = "1rem 0 1.5rem 0";
 
-  const label = document.createElement("label");
-  label.textContent = "Mostrar: ";
-  label.style.marginRight = "8px";
-  label.style.fontWeight = "500";
-  label.style.color = "#374151";
+    const label = document.createElement("label");
+    label.textContent = "Mostrar: ";
+    label.style.marginRight = "8px";
+    label.style.fontWeight = "500";
+    label.style.color = "#374151";
 
-  const select = document.createElement("select");
-  select.id = "cowSelect";
-  select.innerHTML = '<option value="all">Todas las vacas</option>';
+    const select = document.createElement("select");
+    select.id = "cowSelect";
+    select.innerHTML = '<option value="all">Todas las vacas</option>';
 
-  container.appendChild(label);
-  container.appendChild(select);
-  chartRow.prepend(container);
+    container.appendChild(label);
+    container.appendChild(select);
+    chartRow.prepend(container);
 
-  select.addEventListener("change", e => updateCharts(e.target.value));
-}
+    // Evento de cambio (por ahora no filtra, pero lo dejamos preparado)
+    select.addEventListener("change", e => {
+      console.log("Filtro seleccionado:", e.target.value);
+      // Aquí puedes llamar a updateCharts(e.target.value) cuando implementes el filtro por vaca
+    });
+  }
 
   // Inicio
   initMap();
   initCowSelect();
   loadDashboard();
-  setInterval(loadDashboard, 15000);  // cada 15s para no saturar
+  setInterval(loadDashboard, 15000);  // refresco cada 15 segundos
 });
