@@ -170,11 +170,21 @@ def historial_vaca(id_esp32):
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         
         cursor.execute("""
-             SELECT temp_ambiente, ritmo_cardiaco, fecha
-             FROM sensores
-             WHERE id_vaca=%s
-             ORDER BY fecha DESC
-             LIMIT 1
+            SELECT 
+                temp_ambiente,
+                temp_objeto,
+                ritmo_cardiaco,
+                oxigeno,
+                gyro_x,
+                gyro_y,
+                gyro_z,
+                latitud,
+                longitud,
+                fecha
+            FROM sensores
+            WHERE id_vaca=%s
+            ORDER BY fecha DESC
+            LIMIT 1
         """, (id_esp32,))
 
         dato = cursor.fetchone()

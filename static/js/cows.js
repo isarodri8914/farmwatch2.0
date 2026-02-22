@@ -148,23 +148,31 @@ async function borrarVaca(id) {
 // ===============================
 async function mostrarHistorial(idEsp32) {
     const res = await fetch(`/api/vacas/${idEsp32}/historial`);
-    const dato = await res.json(); // ahora es UN solo objeto
+    const dato = await res.json();
 
     const lista = document.getElementById("listaHistorial");
     lista.innerHTML = "";
 
-    if (!dato) {
+    if (!dato || dato.error) {
         lista.innerHTML = "<li>No hay datos disponibles</li>";
+        document.getElementById("modalHistorial").classList.remove("hidden");
         return;
     }
 
     const li = document.createElement("li");
-    li.textContent = `
-        ${dato.fecha} | 
-        Temp: ${dato.temp_ambiente} °C | 
-        Ritmo: ${dato.ritmo_cardiaco} | 
-        Oxígeno: ${dato.oxigeno} | 
-        Gyro: X:${dato.gyro_x} Y:${dato.gyro_y} Z:${dato.gyro_z}
+
+    li.innerHTML = `
+        <strong>${new Date(dato.fecha).toLocaleString()}</strong><br>
+        🌡 Temp Amb: ${dato.temp_ambiente ?? "--"} °C<br>
+        🌡 Temp Obj: ${dato.temp_objeto ?? "--"} °C<br>
+        ❤️ Ritmo: ${dato.ritmo_cardiaco ?? "--"} bpm<br>
+        🫁 Oxígeno: ${dato.oxigeno ?? "--"} %<br>
+        📐 Gyro: 
+        X:${dato.gyro_x ?? "--"} 
+        Y:${dato.gyro_y ?? "--"} 
+        Z:${dato.gyro_z ?? "--"}<br>
+        📍 Ubicación: 
+        ${dato.latitud ?? "--"}, ${dato.longitud ?? "--"}
     `;
 
     lista.appendChild(li);
