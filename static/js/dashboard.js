@@ -24,141 +24,76 @@ document.addEventListener("DOMContentLoaded", () => {
   // ────────────────────────────────────────────────
   // Gráficas avanzadas (por vaca, últimos 10, tooltips claros)
   // ────────────────────────────────────────────────
-  async function updateCharts(selectedCow = "all") {
+async function updateCharts() {
   try {
     const res = await fetch("/api/datos");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const datos = await res.json();
 
-    if (!Array.isArray(datos) || datos.length === 0) {
-      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:2rem; color:#666;'>Sin datos disponibles</p>";
+    if (!datos.length) {
+      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:2rem;'>Sin datos</p>";
       return;
     }
 
-    const now = new Date();
-    const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
+    const sorted = datos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    const recent = sorted.slice(-20); // últimos 20 para no saturar
 
-    // Agrupar por vaca
-    const grouped = {};
-    datos.forEach(d => {
-      if (d.fecha) {
-        const date = new Date(d.fecha);
-        if (date >= twelveHoursAgo) {
-          const id = d.id_vaca || "Desconocida";
-          if (!grouped[id]) grouped[id] = [];
-          grouped[id].push({ ...d, fechaObj: date });
-        }
-      }
-    });
-
-    // Ordenar y limitar a últimos 10 por vaca
-    Object.keys(grouped).forEach(id => {
-      grouped[id].sort((a, b) => b.fechaObj - a.fechaObj); // DESC → más reciente primero
-      grouped[id] = grouped[id].slice(0, 10).reverse();   // reverse para mostrar cronológico
-    });
-
-    let filtered = grouped;
-    if (selectedCow !== "all" && grouped[selectedCow]) {
-      filtered = { [selectedCow]: grouped[selectedCow] };
-    }
-
-    if (Object.keys(filtered).length === 0) {
-      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:2rem; color:#666;'>No hay datos para la vaca seleccionada</p>";
-      return;
-    }
-
-    const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
-    let colorIndex = 0;
-
-    // Datasets para temperatura
-    const tempDatasets = [];
-    Object.keys(filtered).forEach(id => {
-      const group = filtered[id];
-      const labels = group.map(d => d.fechaObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-      const temps = group.map(d => Number(d.temp_objeto) || null);
-
-      tempDatasets.push({
-        label: `Vaca ${id}`,
-        data: temps,
-        borderColor: colors[colorIndex % colors.length],
-        backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-        tension: 0.3,
-        fill: true,
-        pointRadius: temps.some(t => t !== null) ? 4 : 0,
-        pointBackgroundColor: colors[colorIndex % colors.length]
-      });
-      colorIndex++;
-    });
+    const labels = recent.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+    const temps = recent.map(d => Number(d.temp_objeto) || null);
+    const hrs   = recent.map(d => Number(d.ritmo_cardiaco) || null);
 
     if (tempChart) tempChart.destroy();
     tempChart = new Chart(document.getElementById("tempChart"), {
       type: "line",
-      data: { datasets: tempDatasets },
+      data: {
+        labels,
+        datasets: [{
+          label: "Temperatura (°C)",
+          data: temps,
+          borderColor: "#ef4444",
+          backgroundColor: "rgba(239,68,68,0.15)",
+          tension: 0.3,
+          fill: true,
+          pointRadius: 5,
+          pointBackgroundColor: "#ef4444"
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "top", labels: { font: { size: 12 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
-            }
-          }
-        },
-        scales: {
-          y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
-          x: { title: { display: true, text: "Hora" } }
-        }
+        plugins: { legend: { position: "top" } },
+        scales: { y: { suggestedMin: 30, suggestedMax: 45 } }
       }
-    });
-
-    // Datasets para ritmo cardíaco (similar)
-    const hrDatasets = [];
-    colorIndex = 0;
-    Object.keys(filtered).forEach(id => {
-      const group = filtered[id];
-      const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
-
-      hrDatasets.push({
-        label: `Vaca ${id}`,
-        data: hrs,
-        borderColor: colors[colorIndex % colors.length],
-        backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-        tension: 0.3,
-        fill: true,
-        pointRadius: hrs.some(h => h !== null) ? 4 : 0,
-        pointBackgroundColor: colors[colorIndex % colors.length]
-      });
-      colorIndex++;
     });
 
     if (hrChart) hrChart.destroy();
     hrChart = new Chart(document.getElementById("hrChart"), {
       type: "line",
-      data: { datasets: hrDatasets },
+      data: {
+        labels,
+        datasets: [{
+          label: "Ritmo cardíaco (bpm)",
+          data: hrs,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59,130,246,0.15)",
+          tension: 0.3,
+          fill: true,
+          pointRadius: 5,
+          pointBackgroundColor: "#3b82f6"
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "top", labels: { font: { size: 12 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
-            }
-          }
-        },
-        scales: {
-          y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
-          x: { title: { display: true, text: "Hora" } }
-        }
+        plugins: { legend: { position: "top" } },
+        scales: { y: { suggestedMin: 40, suggestedMax: 140 } }
       }
     });
 
-    // Agregar líneas de umbrales (tu código ya está bien, solo lo llamamos aquí)
     await addThresholdLines();
 
   } catch (err) {
-    console.error("Error en updateCharts:", err);
+    console.error(err);
   }
 }
   
@@ -282,17 +217,23 @@ function initCowSelect() {
   const chartRow = document.querySelector(".chart-row");
   if (!chartRow) return;
 
+  const container = document.createElement("div");
+  container.style.textAlign = "center";
+  container.style.margin = "1.5rem 0 1rem 0";
+
+  const label = document.createElement("label");
+  label.textContent = "Mostrar: ";
+  label.style.marginRight = "8px";
+  label.style.fontWeight = "500";
+  label.style.color = "#374151";
+
   const select = document.createElement("select");
   select.id = "cowSelect";
-  // QUITA estos estilos inline grandes
-  // select.style.margin = "1rem 0 1.5rem 0";
-  // select.style.padding = "0.5rem";
-  // select.style.fontSize = "1rem";
-
   select.innerHTML = '<option value="all">Todas las vacas</option>';
 
-  // Inserta al inicio de chart-row
-  chartRow.prepend(select);
+  container.appendChild(label);
+  container.appendChild(select);
+  chartRow.prepend(container);
 
   select.addEventListener("change", e => updateCharts(e.target.value));
 }
