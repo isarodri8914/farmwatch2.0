@@ -389,6 +389,7 @@ def estado_sistema():
 # =========================================
 # API DASHBOARD PRINCIPAL (TIEMPO REAL)
 # =========================================
+
 @app.route("/api/dashboard")
 def dashboard():
     try:
