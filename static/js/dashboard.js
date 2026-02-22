@@ -1,4 +1,3 @@
-// static/js/dashboard.js
 document.addEventListener("DOMContentLoaded", () => {
 
   let map;
@@ -7,9 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let hrChart = null;
   let cowDonut = null;
   let sensorDonut = null;
-  let allData = [];  // Para guardar los datos recientes y reutilizar en filtros
+  let allData = [];
 
-  // Inicializar mapa centrado en Mérida, Yucatán
+  // ────────────────────────────────────────────────
+  // Inicializar mapa centrado en Mérida
+  // ────────────────────────────────────────────────
   function initMap() {
     map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
       .setView([20.97, -89.62], 11);
@@ -20,7 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }).addTo(map);
   }
 
-  // Gráficas de líneas (con separación por vaca y límite de datos)
+  // ────────────────────────────────────────────────
+  // Gráficas avanzadas (por vaca, últimos 10, tooltips claros)
+  // ────────────────────────────────────────────────
   async function updateCharts(selectedCow = "all") {
     try {
       const res = await fetch("/api/datos");
@@ -35,51 +38,47 @@ document.addEventListener("DOMContentLoaded", () => {
       const now = new Date();
       const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
 
-      // Filtrar recientes y agrupar por vaca
       const grouped = {};
       datos.forEach(d => {
         if (d.fecha && new Date(d.fecha) >= twelveHoursAgo) {
-          const id = d.id_vaca;
+          const id = d.id_vaca || "Desconocida";
           if (!grouped[id]) grouped[id] = [];
           grouped[id].push(d);
         }
       });
 
-      // Ordenar cada grupo por fecha y limitar a últimos 10
       Object.keys(grouped).forEach(id => {
         grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-        grouped[id] = grouped[id].slice(-10);  // últimos 10 (cambia a -5 si quieres menos)
+        grouped[id] = grouped[id].slice(-10);  // últimos 10 datos por vaca
       });
 
-      allData = grouped;  // Guardar para filtrado
+      allData = grouped;
 
-      // Filtrar si se seleccionó una vaca específica
-      let filteredGroups = grouped;
+      let filtered = grouped;
       if (selectedCow !== "all" && grouped[selectedCow]) {
-        filteredGroups = { [selectedCow]: grouped[selectedCow] };
+        filtered = { [selectedCow]: grouped[selectedCow] };
       }
 
-      if (Object.keys(filteredGroups).length === 0) {
+      if (Object.keys(filtered).length === 0) {
         document.querySelector(".chart-row").innerHTML = "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos para la vaca seleccionada</p>";
         return;
       }
 
-      // Colores por vaca (genera colores automáticos)
-      const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];  // rojo, azul, verde, naranja, púrpura
+      const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7", "#8b5cf6"];
       let colorIndex = 0;
 
-      // Preparar datasets para temperatura
+      // Datasets temperatura
       const tempDatasets = [];
-      Object.keys(filteredGroups).forEach(id => {
-        const group = filteredGroups[id];
-        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      Object.keys(filtered).forEach(id => {
+        const group = filtered[id];
+        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
         const temps = group.map(d => Number(d.temp_objeto) || null);
 
         tempDatasets.push({
           label: `Vaca ${id}`,
           data: temps,
           borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.2)`,
           tension: 0.3,
           fill: true,
           pointRadius: 4
@@ -87,7 +86,6 @@ document.addEventListener("DOMContentLoaded", () => {
         colorIndex++;
       });
 
-      // Temperatura
       if (tempChart) tempChart.destroy();
       tempChart = new Chart(document.getElementById("tempChart"), {
         type: "line",
@@ -99,12 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
             legend: { position: "top" },
             tooltip: {
               callbacks: {
-                label: (context) => {
-                  const label = context.dataset.label || "";
-                  const value = context.parsed.y;
-                  const time = context.label;
-                  return `${label}: ${value} °C a las ${time}`;
-                }
+                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
               }
             }
           },
@@ -115,18 +108,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // Repite para ritmo cardíaco (datasets similares)
+      // Datasets ritmo
       const hrDatasets = [];
-      colorIndex = 0;  // reset color
-      Object.keys(filteredGroups).forEach(id => {
-        const group = filteredGroups[id];
+      colorIndex = 0;
+      Object.keys(filtered).forEach(id => {
+        const group = filtered[id];
         const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
 
         hrDatasets.push({
           label: `Vaca ${id}`,
           data: hrs,
           borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.2)`,
           tension: 0.3,
           fill: true,
           pointRadius: 4
@@ -145,12 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
             legend: { position: "top" },
             tooltip: {
               callbacks: {
-                label: (context) => {
-                  const label = context.dataset.label || "";
-                  const value = context.parsed.y;
-                  const time = context.label;
-                  return `${label}: ${value} bpm a las ${time}`;
-                }
+                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
               }
             }
           },
@@ -159,56 +147,206 @@ document.addEventListener("DOMContentLoaded", () => {
             x: { title: { display: true, text: "Hora" } }
           }
         }
+        
       });
+async function addThresholdLines() {
+        try {
+          const res = await fetch("/api/config/umbral");
+          if (!res.ok) {
+            console.warn("No se pudieron cargar umbrales:", res.status);
+            return;
+          }
+          const umbrales = await res.json();
+
+          // Línea temp max (roja punteada)
+          if (umbrales.temp_max && tempChart) {
+            tempChart.data.datasets.push({
+              label: `Umbral Máx (${umbrales.temp_max} °C)`,
+              data: Array(tempChart.data.labels.length).fill(umbrales.temp_max),
+              borderColor: "#dc2626",
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            });
+            tempChart.update();
+          }
+
+          // Línea temp min (azul claro punteada)
+          if (umbrales.temp_min && tempChart) {
+            tempChart.data.datasets.push({
+              label: `Umbral Mín (${umbrales.temp_min} °C)`,
+              data: Array(tempChart.data.labels.length).fill(umbrales.temp_min),
+              borderColor: "#60a5fa",
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            });
+            tempChart.update();
+          }
+
+          // Línea hr max (naranja punteada)
+          if (umbrales.hr_max && hrChart) {
+            hrChart.data.datasets.push({
+              label: `Umbral Máx (${umbrales.hr_max} bpm)`,
+              data: Array(hrChart.data.labels.length).fill(umbrales.hr_max),
+              borderColor: "#f97316",
+              borderDash: [5, 5],
+              borderWidth: 2,
+              pointRadius: 0,
+              fill: false
+            });
+            hrChart.update();
+          }
+        } catch (err) {
+          console.error("Error cargando líneas de umbrales:", err);
+        }
+      }
+
+      // Llamar a la función después de crear las gráficas
+      await addThresholdLines();
 
     } catch (err) {
-      console.error("Error al cargar/gráficar datos:", err);
+      console.error("Error en updateCharts:", err);
     }
   }
+  
 
-  // ... (el resto del código sigue igual: updateDonuts, loadDashboard, initMap, setInterval)
+  // ────────────────────────────────────────────────
+  // Donuts de estado
+  // ────────────────────────────────────────────────
+  function updateDonuts(cows) {
+    const statusCount = {
+      ok: cows.filter(c => c.status === "ok").length,
+      alert: cows.filter(c => c.status === "alert").length,
+      offline: cows.filter(c => c.status === "offline").length
+    };
 
-  // En loadDashboard, llama a updateCharts
-  async function loadDashboard() {
-    // ... (código actual para tarjetas, alertas, mapa) ...
+    if (cowDonut) cowDonut.destroy();
+    cowDonut = new Chart(document.getElementById("cowDonut"), {
+      type: "doughnut",
+      data: {
+        labels: ["Normal", "Alerta", "Offline"],
+        datasets: [{
+          data: [statusCount.ok, statusCount.alert, statusCount.offline],
+          backgroundColor: ["#10b981", "#f97316", "#9ca3af"]
+        }]
+      },
+      options: { responsive: true, cutout: "65%", plugins: { legend: { position: "bottom" } } }
+    });
 
-    await updateCharts();  // ← llama sin filtro inicial (muestra todas)
-  }
-
-  // Agregar dropdown para seleccionar vaca (opcional, pero útil si hay muchas)
-  // Agrega esto después de initMap()
-  function initCowSelect() {
-    const select = document.createElement("select");
-    select.id = "cowSelect";
-    select.style.margin = "1rem 0";
-    select.style.display = "block";
-    select.innerHTML = '<option value="all">Todas las vacas</option>';  // default
-
-    // Insertar antes de las gráficas
-    document.querySelector(".chart-row").prepend(select);
-
-    select.addEventListener("change", (e) => {
-      updateCharts(e.target.value);
+    if (sensorDonut) sensorDonut.destroy();
+    sensorDonut = new Chart(document.getElementById("sensorDonut"), {
+      type: "doughnut",
+      data: {
+        labels: ["Online", "Problema/Offline"],
+        datasets: [{
+          data: [statusCount.ok, cows.length - statusCount.ok],
+          backgroundColor: ["#10b981", "#ef4444"]
+        }]
+      },
+      options: { responsive: true, cutout: "65%", plugins: { legend: { position: "bottom" } } }
     });
   }
 
-  // Llama en el inicio
-  initCowSelect();
+  // ────────────────────────────────────────────────
+  // Carga principal
+  // ────────────────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const res = await fetch("/api/dashboard");
+      if (!res.ok) throw new Error("Error en /api/dashboard");
+      const data = await res.json();
 
-  // Al cargar datos en loadDashboard, actualiza el select con vacas disponibles
-  // Dentro de loadDashboard, después de procesar cows
-  const select = document.getElementById("cowSelect");
-  select.innerHTML = '<option value="all">Todas las vacas</option>';
-  cows.forEach(c => {
-    const option = document.createElement("option");
-    option.value = c.id;
-    option.textContent = c.name || `Vaca ${c.id}`;
-    select.appendChild(option);
-  });
+      if (!data.cows) return;
 
-  // ... (fin de loadDashboard)
+      const cows = data.cows;
 
+      document.getElementById("stat-total").textContent = cows.length;
+      document.getElementById("stat-alerts").textContent = cows.filter(c => c.status === "alert").length;
+      document.getElementById("stat-offline").textContent = cows.filter(c => c.status === "offline").length;
+      document.getElementById("stat-updated").textContent = data.last_sync || data.last_update || "--:--:--";
+
+      document.getElementById("sys-sensors").textContent = 
+        cows.filter(c => c.status === "ok").length + " / " + cows.length;
+
+      // Alertas
+      const alertsList = document.getElementById("alertsList");
+      alertsList.innerHTML = "";
+      (data.alerts || []).forEach(a => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${a.cow}</strong> — ${a.text} <small>(${a.time})</small>`;
+        alertsList.appendChild(li);
+      });
+
+      // Mapa
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      cows.forEach(cow => {
+        if (!cow.lat || !cow.lng) return;
+        const color = cow.status === "ok" ? "#10b981" : cow.status === "alert" ? "#f97316" : "#9ca3af";
+        const marker = L.circleMarker([cow.lat, cow.lng], {
+          radius: 11,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.75,
+          weight: 2
+        }).addTo(map);
+
+        marker.bindPopup(`<b>${cow.name || "Vaca " + cow.id}</b><br>Temp: ${cow.temp ?? "--"} °C<br>Ritmo: ${cow.hr ?? "--"} bpm<br>Estado: <strong>${cow.status}</strong>`);
+        markers.push(marker);
+      });
+
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
+
+      // Actualizar gráficas y donuts
+      updateDonuts(cows);
+      await updateCharts();
+
+      // Actualizar dropdown con vacas
+      const select = document.getElementById("cowSelect");
+      if (select) {
+        select.innerHTML = '<option value="all">Todas las vacas</option>';
+        cows.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name || `Vaca ${c.id}`;
+          select.appendChild(opt);
+        });
+      }
+
+    } catch (err) {
+      console.error("Error en loadDashboard:", err);
+    }
+  }
+
+  // ────────────────────────────────────────────────
+  // Dropdown de vacas
+  // ────────────────────────────────────────────────
+  function initCowSelect() {
+    const chartRow = document.querySelector(".chart-row");
+    if (!chartRow) return;
+
+    const select = document.createElement("select");
+    select.id = "cowSelect";
+    select.style.margin = "1rem 0 1.5rem 0";
+    select.style.padding = "0.5rem";
+    select.style.fontSize = "1rem";
+    select.innerHTML = '<option value="all">Todas las vacas</option>';
+
+    chartRow.prepend(select);
+
+    select.addEventListener("change", e => updateCharts(e.target.value));
+  }
+
+  // Inicio
   initMap();
+  initCowSelect();
   loadDashboard();
-  setInterval(loadDashboard, 12000);
+  setInterval(loadDashboard, 15000);  // cada 15s para no saturar
 });

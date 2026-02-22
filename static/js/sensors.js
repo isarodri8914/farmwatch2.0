@@ -11,16 +11,44 @@ function openEditModal(title, fieldId) {
     document.getElementById("editModal").style.display = "flex";
 }
 
-function saveValue() {
-    let newValue = document.getElementById("newValue").value;
+async function saveValue() {
+    let newValue = document.getElementById("newValue").value.trim();
 
-    if (newValue.trim() === "") {
-        alert("Ingresa un valor válido");
+    if (newValue === "" || isNaN(newValue)) {
+        alert("Ingresa un valor numérico válido");
         return;
     }
 
-    document.getElementById(currentField).innerText = newValue;
-    closeModal();
+    const valor = parseFloat(newValue);
+
+    // Mapear el campo actual a la clave de BD
+    let clave;
+    if (currentField === "tempMaxValue") clave = "temp_max";
+    else if (currentField === "tempMinValue") clave = "temp_min";
+    else if (currentField === "hrMaxValue") clave = "hr_max";
+    else return;
+
+    try {
+        const res = await fetch(`/api/config/umbral/${clave}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ valor })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert("Error al guardar: " + (err.error || "Desconocido"));
+            return;
+        }
+
+        // Actualizar visualmente
+        document.getElementById(currentField).innerText = valor + (clave.includes("temp") ? " °C" : " bpm");
+        closeModal();
+        alert("Umbral actualizado correctamente");
+    } catch (err) {
+        console.error(err);
+        alert("Error de conexión al guardar");
+    }
 }
 
 function closeModal() {
@@ -173,6 +201,30 @@ async function loadSensors() {
         `;
     });
 }
+
+async function loadUmbrales() {
+    try {
+        const res = await fetch("/api/config/umbral");
+        if (!res.ok) return;
+
+        const umbrales = await res.json();
+
+        if (umbrales.temp_max !== undefined) {
+            document.getElementById("tempMaxValue").innerText = umbrales.temp_max + " °C";
+        }
+        if (umbrales.temp_min !== undefined) {
+            document.getElementById("tempMinValue").innerText = umbrales.temp_min + " °C";
+        }
+        if (umbrales.hr_max !== undefined) {
+            document.getElementById("hrMaxValue").innerText = umbrales.hr_max + " bpm";
+        }
+    } catch (err) {
+        console.error("Error cargando umbrales:", err);
+    }
+}
+
+// Cargar al inicio
+loadUmbrales();
 
 // ==========================
 // AUTO REFRESH

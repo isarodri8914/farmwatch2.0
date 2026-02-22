@@ -396,7 +396,16 @@ def dashboard_data():
         conn = get_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-        # Obtener última lectura de cada vaca
+        # 1. Cargar umbrales desde BD (fallback si no existen)
+        umbrales = {"temp_max": 39.5, "hr_max": 95}
+        cursor.execute("SELECT clave, valor FROM configuracion")
+        for row in cursor.fetchall():
+            if row['clave'] == 'temp_max':
+                umbrales['temp_max'] = float(row['valor'])
+            if row['clave'] == 'hr_max':
+                umbrales['hr_max'] = float(row['valor'])
+
+        # 2. Obtener última lectura de cada vaca
         cursor.execute("""
             SELECT s.*
             FROM sensores s
@@ -424,20 +433,20 @@ def dashboard_data():
             if d["fecha"] and (now - d["fecha"]).total_seconds() > OFFLINE_TIMEOUT:
                 estado = "offline"
 
-            # ALERTAS BIOMÉTRICAS
-            if d["temp_objeto"] and d["temp_objeto"] > 39.5:
+            # ALERTAS BIOMÉTRICAS (usando umbrales dinámicos)
+            if d["temp_objeto"] and d["temp_objeto"] > umbrales["temp_max"]:
                 estado = "alert"
                 alerts.append({
                     "cow": f"Vaca {d['id_vaca']}",
-                    "text": f"Temperatura alta {d['temp_objeto']}°C",
+                    "text": f"Temperatura alta {d['temp_objeto']}°C (máx: {umbrales['temp_max']}°C)",
                     "time": "Ahora"
                 })
 
-            if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 95:
+            if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > umbrales["hr_max"]:
                 estado = "alert"
                 alerts.append({
                     "cow": f"Vaca {d['id_vaca']}",
-                    "text": f"Ritmo alto {d['ritmo_cardiaco']} bpm",
+                    "text": f"Ritmo alto {d['ritmo_cardiaco']} bpm (máx: {umbrales['hr_max']} bpm)",
                     "time": "Ahora"
                 })
 
@@ -454,35 +463,30 @@ def dashboard_data():
             cows.append({
                 "id": d["id_vaca"],
                 "name": f"Vaca {d['id_vaca']}",
-                "lat": d["latitud"] or 19.4325,
-                "lng": d["longitud"] or -99.1332,
+                "lat": d["latitud"] or 20.97,  # Mérida por default
+                "lng": d["longitud"] or -89.62,
                 "temp": d["temp_objeto"],
                 "hr": d["ritmo_cardiaco"],
                 "status": estado
             })
 
-        cursor.close()
-        conn.close()
-
-        #  ────────────────────────────────────────────────
-        #  ← AQUÍ ES DONDE LO AGREGAREMOS
-        #  ────────────────────────────────────────────────
-
-        # Calculamos la hora del último dato recibido (el más reciente)
+        # Calcular última sync
         last_sync = "--:--:--"
         if datos and datos[0].get("fecha"):
-            # 'datos' ya viene ordenado por fecha DESC gracias al MAX(fecha)
-            # Tomamos el primero (el más reciente)
             last_sync = datos[0]["fecha"].strftime("%H:%M:%S")
+
+        cursor.close()
+        conn.close()
 
         return jsonify({
             "cows": cows,
             "alerts": alerts,
             "last_update": datetime.utcnow().strftime("%H:%M:%S"),
-            "last_sync": last_sync   # ← este es el campo nuevo que usará el JS
+            "last_sync": last_sync
         })
 
     except Exception as e:
+        print("Error en /api/dashboard:", str(e))  # Para depurar en terminal
         return jsonify({"error": str(e)}), 500
 
 # ---------- RUTAS ----------
@@ -523,6 +527,40 @@ def register():
 def registro():
     return render_template('registro_exitoso.html')
 
+# Obtener todos los umbrales
+@app.route("/api/config/umbral", methods=["GET"])
+def get_umbrales():
+    try:
+        with get_connection() as conn:
+            with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+                cursor.execute("SELECT clave, valor FROM configuracion")
+                umbrales = {row['clave']: float(row['valor']) for row in cursor.fetchall()}
+        return jsonify(umbrales)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Actualizar un umbral específico
+@app.route("/api/config/umbral/<clave>", methods=["PUT"])
+def update_umbral(clave):
+    data = request.get_json()
+    if not data or "valor" not in data:
+        return jsonify({"error": "Falta el campo 'valor'"}), 400
+
+    try:
+        valor = float(data["valor"])
+        with get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO configuracion (clave, valor) 
+                    VALUES (%s, %s) 
+                    ON DUPLICATE KEY UPDATE valor = %s, fecha_actualizacion = NOW()
+                """, (clave, valor, valor))
+            conn.commit()
+        return jsonify({"status": "ok", "clave": clave, "valor": valor})
+    except ValueError:
+        return jsonify({"error": "El valor debe ser numérico"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ---------- EJECUCIÓN ----------
