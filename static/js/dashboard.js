@@ -25,192 +25,142 @@ document.addEventListener("DOMContentLoaded", () => {
   // Gráficas avanzadas (por vaca, últimos 10, tooltips claros)
   // ────────────────────────────────────────────────
   async function updateCharts(selectedCow = "all") {
-    try {
-      const res = await fetch("/api/datos");
-      if (!res.ok) throw new Error("Error al cargar /api/datos");
-      const datos = await res.json();
+  try {
+    const res = await fetch("/api/datos");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const datos = await res.json();
 
-      if (!Array.isArray(datos) || datos.length === 0) {
-        document.querySelector(".chart-row").innerHTML = "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos recientes</p>";
-        return;
-      }
+    if (!Array.isArray(datos) || datos.length === 0) {
+      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:2rem; color:#666;'>Sin datos disponibles</p>";
+      return;
+    }
 
-      const now = new Date();
-      const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
+    const now = new Date();
+    const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
 
-      const grouped = {};
-      datos.forEach(d => {
-        if (d.fecha && new Date(d.fecha) >= twelveHoursAgo) {
+    // Agrupar por vaca
+    const grouped = {};
+    datos.forEach(d => {
+      if (d.fecha) {
+        const date = new Date(d.fecha);
+        if (date >= twelveHoursAgo) {
           const id = d.id_vaca || "Desconocida";
           if (!grouped[id]) grouped[id] = [];
-          grouped[id].push(d);
-        }
-      });
-
-      Object.keys(grouped).forEach(id => {
-        grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-        grouped[id] = grouped[id].slice(-10);  // últimos 10 datos por vaca
-      });
-
-      allData = grouped;
-
-      let filtered = grouped;
-      if (selectedCow !== "all" && grouped[selectedCow]) {
-        filtered = { [selectedCow]: grouped[selectedCow] };
-      }
-
-      if (Object.keys(filtered).length === 0) {
-        document.querySelector(".chart-row").innerHTML = "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos para la vaca seleccionada</p>";
-        return;
-      }
-
-      const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7", "#8b5cf6"];
-      let colorIndex = 0;
-
-      // Datasets temperatura
-      const tempDatasets = [];
-      Object.keys(filtered).forEach(id => {
-        const group = filtered[id];
-        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-        const temps = group.map(d => Number(d.temp_objeto) || null);
-
-        tempDatasets.push({
-          label: `Vaca ${id}`,
-          data: temps,
-          borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.2)`,
-          tension: 0.3,
-          fill: true,
-          pointRadius: 4
-        });
-        colorIndex++;
-      });
-
-      if (tempChart) tempChart.destroy();
-      tempChart = new Chart(document.getElementById("tempChart"), {
-        type: "line",
-        data: { datasets: tempDatasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: "top" },
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
-              }
-            }
-          },
-          scales: {
-            y: { suggestedMin: 30, suggestedMax: 42, title: { display: true, text: "°C" } },
-            x: { title: { display: true, text: "Hora" } }
-          }
-        }
-      });
-
-      // Datasets ritmo
-      const hrDatasets = [];
-      colorIndex = 0;
-      Object.keys(filtered).forEach(id => {
-        const group = filtered[id];
-        const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
-
-        hrDatasets.push({
-          label: `Vaca ${id}`,
-          data: hrs,
-          borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.2)`,
-          tension: 0.3,
-          fill: true,
-          pointRadius: 4
-        });
-        colorIndex++;
-      });
-
-      if (hrChart) hrChart.destroy();
-      hrChart = new Chart(document.getElementById("hrChart"), {
-        type: "line",
-        data: { datasets: hrDatasets },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: "top" },
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
-              }
-            }
-          },
-          scales: {
-            y: { suggestedMin: 40, suggestedMax: 120, title: { display: true, text: "bpm" } },
-            x: { title: { display: true, text: "Hora" } }
-          }
-        }
-        
-      });
-async function addThresholdLines() {
-        try {
-          const res = await fetch("/api/config/umbral");
-          if (!res.ok) {
-            console.warn("No se pudieron cargar umbrales:", res.status);
-            return;
-          }
-          const umbrales = await res.json();
-
-          // Línea temp max (roja punteada)
-          if (umbrales.temp_max && tempChart) {
-            tempChart.data.datasets.push({
-              label: `Umbral Máx (${umbrales.temp_max} °C)`,
-              data: Array(tempChart.data.labels.length).fill(umbrales.temp_max),
-              borderColor: "#dc2626",
-              borderDash: [5, 5],
-              borderWidth: 2,
-              pointRadius: 0,
-              fill: false
-            });
-            tempChart.update();
-          }
-
-          // Línea temp min (azul claro punteada)
-          if (umbrales.temp_min && tempChart) {
-            tempChart.data.datasets.push({
-              label: `Umbral Mín (${umbrales.temp_min} °C)`,
-              data: Array(tempChart.data.labels.length).fill(umbrales.temp_min),
-              borderColor: "#60a5fa",
-              borderDash: [5, 5],
-              borderWidth: 2,
-              pointRadius: 0,
-              fill: false
-            });
-            tempChart.update();
-          }
-
-          // Línea hr max (naranja punteada)
-          if (umbrales.hr_max && hrChart) {
-            hrChart.data.datasets.push({
-              label: `Umbral Máx (${umbrales.hr_max} bpm)`,
-              data: Array(hrChart.data.labels.length).fill(umbrales.hr_max),
-              borderColor: "#f97316",
-              borderDash: [5, 5],
-              borderWidth: 2,
-              pointRadius: 0,
-              fill: false
-            });
-            hrChart.update();
-          }
-        } catch (err) {
-          console.error("Error cargando líneas de umbrales:", err);
+          grouped[id].push({ ...d, fechaObj: date });
         }
       }
+    });
 
-      // Llamar a la función después de crear las gráficas
-      await addThresholdLines();
+    // Ordenar y limitar a últimos 10 por vaca
+    Object.keys(grouped).forEach(id => {
+      grouped[id].sort((a, b) => b.fechaObj - a.fechaObj); // DESC → más reciente primero
+      grouped[id] = grouped[id].slice(0, 10).reverse();   // reverse para mostrar cronológico
+    });
 
-    } catch (err) {
-      console.error("Error en updateCharts:", err);
+    let filtered = grouped;
+    if (selectedCow !== "all" && grouped[selectedCow]) {
+      filtered = { [selectedCow]: grouped[selectedCow] };
     }
+
+    if (Object.keys(filtered).length === 0) {
+      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:2rem; color:#666;'>No hay datos para la vaca seleccionada</p>";
+      return;
+    }
+
+    const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
+    let colorIndex = 0;
+
+    // Datasets para temperatura
+    const tempDatasets = [];
+    Object.keys(filtered).forEach(id => {
+      const group = filtered[id];
+      const labels = group.map(d => d.fechaObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+      const temps = group.map(d => Number(d.temp_objeto) || null);
+
+      tempDatasets.push({
+        label: `Vaca ${id}`,
+        data: temps,
+        borderColor: colors[colorIndex % colors.length],
+        backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+        tension: 0.3,
+        fill: true,
+        pointRadius: temps.some(t => t !== null) ? 4 : 0,
+        pointBackgroundColor: colors[colorIndex % colors.length]
+      });
+      colorIndex++;
+    });
+
+    if (tempChart) tempChart.destroy();
+    tempChart = new Chart(document.getElementById("tempChart"), {
+      type: "line",
+      data: { datasets: tempDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { font: { size: 12 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
+            }
+          }
+        },
+        scales: {
+          y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
+          x: { title: { display: true, text: "Hora" } }
+        }
+      }
+    });
+
+    // Datasets para ritmo cardíaco (similar)
+    const hrDatasets = [];
+    colorIndex = 0;
+    Object.keys(filtered).forEach(id => {
+      const group = filtered[id];
+      const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
+
+      hrDatasets.push({
+        label: `Vaca ${id}`,
+        data: hrs,
+        borderColor: colors[colorIndex % colors.length],
+        backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+        tension: 0.3,
+        fill: true,
+        pointRadius: hrs.some(h => h !== null) ? 4 : 0,
+        pointBackgroundColor: colors[colorIndex % colors.length]
+      });
+      colorIndex++;
+    });
+
+    if (hrChart) hrChart.destroy();
+    hrChart = new Chart(document.getElementById("hrChart"), {
+      type: "line",
+      data: { datasets: hrDatasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "top", labels: { font: { size: 12 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
+            }
+          }
+        },
+        scales: {
+          y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
+          x: { title: { display: true, text: "Hora" } }
+        }
+      }
+    });
+
+    // Agregar líneas de umbrales (tu código ya está bien, solo lo llamamos aquí)
+    await addThresholdLines();
+
+  } catch (err) {
+    console.error("Error en updateCharts:", err);
   }
+}
   
 
   // ────────────────────────────────────────────────
@@ -328,21 +278,24 @@ async function addThresholdLines() {
   // ────────────────────────────────────────────────
   // Dropdown de vacas
   // ────────────────────────────────────────────────
-  function initCowSelect() {
-    const chartRow = document.querySelector(".chart-row");
-    if (!chartRow) return;
+function initCowSelect() {
+  const chartRow = document.querySelector(".chart-row");
+  if (!chartRow) return;
 
-    const select = document.createElement("select");
-    select.id = "cowSelect";
-    select.style.margin = "1rem 0 1.5rem 0";
-    select.style.padding = "0.5rem";
-    select.style.fontSize = "1rem";
-    select.innerHTML = '<option value="all">Todas las vacas</option>';
+  const select = document.createElement("select");
+  select.id = "cowSelect";
+  // QUITA estos estilos inline grandes
+  // select.style.margin = "1rem 0 1.5rem 0";
+  // select.style.padding = "0.5rem";
+  // select.style.fontSize = "1rem";
 
-    chartRow.prepend(select);
+  select.innerHTML = '<option value="all">Todas las vacas</option>';
 
-    select.addEventListener("change", e => updateCharts(e.target.value));
-  }
+  // Inserta al inicio de chart-row
+  chartRow.prepend(select);
+
+  select.addEventListener("change", e => updateCharts(e.target.value));
+}
 
   // Inicio
   initMap();
