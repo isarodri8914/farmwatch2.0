@@ -418,18 +418,13 @@ def dashboard_data():
         OFFLINE_TIMEOUT = 30  # segundos
 
         for d in datos:
-
             estado = "ok"
 
-            # =============================
-            # DETECTAR OFFLINE (sin datos)
-            # =============================
+            # DETECTAR OFFLINE
             if d["fecha"] and (now - d["fecha"]).total_seconds() > OFFLINE_TIMEOUT:
                 estado = "offline"
 
-            # =============================
             # ALERTAS BIOMÉTRICAS
-            # =============================
             if d["temp_objeto"] and d["temp_objeto"] > 39.5:
                 estado = "alert"
                 alerts.append({
@@ -446,9 +441,7 @@ def dashboard_data():
                     "time": "Ahora"
                 })
 
-            # =============================
             # SENSOR DESCONECTADO
-            # =============================
             if d["ritmo_cardiaco"] == 0 and d["oxigeno"] == 0:
                 estado = "offline"
 
@@ -471,10 +464,22 @@ def dashboard_data():
         cursor.close()
         conn.close()
 
+        #  ────────────────────────────────────────────────
+        #  ← AQUÍ ES DONDE LO AGREGAREMOS
+        #  ────────────────────────────────────────────────
+
+        # Calculamos la hora del último dato recibido (el más reciente)
+        last_sync = "--:--:--"
+        if datos and datos[0].get("fecha"):
+            # 'datos' ya viene ordenado por fecha DESC gracias al MAX(fecha)
+            # Tomamos el primero (el más reciente)
+            last_sync = datos[0]["fecha"].strftime("%H:%M:%S")
+
         return jsonify({
             "cows": cows,
             "alerts": alerts,
-            "last_update": datetime.utcnow().strftime("%H:%M:%S")
+            "last_update": datetime.utcnow().strftime("%H:%M:%S"),
+            "last_sync": last_sync   # ← este es el campo nuevo que usará el JS
         })
 
     except Exception as e:
