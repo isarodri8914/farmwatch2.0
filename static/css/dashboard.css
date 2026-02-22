@@ -54,6 +54,32 @@
 .map-wrapper { padding: 8px; height: 100%; min-height: 680px; display:flex; flex-direction:column; gap:10px; }
 .map { flex:1; border-radius: 10px; overflow:hidden; height: calc(100vh - 280px); }
 
+.chart-card {
+  position: relative;           /* importante para posicionar el canvas */
+  height: 300px;                /* altura fija recomendada - ajusta según gustes */
+  padding: 1rem;
+  overflow: hidden;
+}
+
+/* El canvas ocupa todo el espacio disponible dentro del contenedor */
+.chart-card canvas {
+  position: absolute;
+  top: 50px;                    /* deja espacio para el título <h4> */
+  left: 0;
+  right: 0;
+  bottom: 1rem;
+  width: 100% !important;
+  height: calc(100% - 60px) !important;  /* resta el espacio del título */
+}
+
+@media (max-width: 768px) {
+  .chart-card {
+    height: 250px;
+  }
+  .chart-card canvas {
+    height: calc(100% - 50px) !important;
+  }
+}
 /* responsive */
 @media (max-width: 1200px) {
   .top-row .top-cards { grid-template-columns: repeat(3,1fr); }
