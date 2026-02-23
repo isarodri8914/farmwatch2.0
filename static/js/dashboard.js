@@ -21,117 +21,155 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ────────────────────────────────────────────────
-  // Gráficas grandes, una debajo de la otra, con puntos visibles
+  // Gráficas con filtro por vaca y tooltips con nombre de vaca
   // ────────────────────────────────────────────────
-async function updateCharts(selectedCow = "all") {
-  try {
-    const res = await fetch("/api/datos");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const datos = await res.json();
+  async function updateCharts(selectedCow = "all") {
+    try {
+      const res = await fetch("/api/datos");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const datos = await res.json();
 
-    if (!Array.isArray(datos) || datos.length === 0) {
-      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
-      return;
-    }
+      if (!Array.isArray(datos) || datos.length === 0) {
+        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
+        return;
+      }
 
-    // Ordenar por fecha (más antiguo primero)
-    const sorted = datos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+      const now = new Date();
+      const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
 
-    // Tomar últimos 20 (o todos si hay menos)
-    const recent = sorted.slice(-20);
+      // Agrupar por vaca
+      const grouped = {};
+      datos.forEach(d => {
+        if (d.fecha) {
+          const date = new Date(d.fecha);
+          if (date >= twelveHoursAgo) {
+            const id = d.id_vaca || "Desconocida";
+            if (!grouped[id]) grouped[id] = [];
+            grouped[id].push({ ...d, fechaObj: date });
+          }
+        }
+      });
 
-    const labels = recent.map(d => {
-      const date = new Date(d.fecha);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    });
+      // Ordenar y limitar a últimos 15 por vaca
+      Object.keys(grouped).forEach(id => {
+        grouped[id].sort((a, b) => b.fechaObj - a.fechaObj);
+        grouped[id] = grouped[id].slice(0, 15).reverse();
+      });
 
-    const temps = recent.map(d => Number(d.temp_objeto) || null);
-    const hrs   = recent.map(d => Number(d.ritmo_cardiaco) || null);
+      // Filtrar según selección
+      let filteredGroups = grouped;
+      if (selectedCow !== "all" && grouped[selectedCow]) {
+        filteredGroups = { [selectedCow]: grouped[selectedCow] };
+      }
 
-    // Si no hay labels válidos, mostrar mensaje
-    if (labels.length === 0) {
-      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con fecha válida</p>";
-      return;
-    }
+      if (Object.keys(filteredGroups).length === 0) {
+        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos para la vaca seleccionada</p>";
+        return;
+      }
 
-    // Temperatura
-    if (tempChart) tempChart.destroy();
-    tempChart = new Chart(document.getElementById("tempChart"), {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Temperatura (°C)",
+      const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
+      let colorIndex = 0;
+
+      // Datasets para temperatura
+      const tempDatasets = [];
+      Object.keys(filteredGroups).forEach(id => {
+        const group = filteredGroups[id];
+        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+        const temps = group.map(d => Number(d.temp_objeto) || null);
+
+        tempDatasets.push({
+          label: `Vaca ${id}`,
           data: temps,
-          borderColor: "#ef4444",
-          backgroundColor: "rgba(239, 68, 68, 0.15)",
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
           tension: 0.3,
           fill: true,
-          pointRadius: temps.length > 0 ? 6 : 0,
-          pointBackgroundColor: "#ef4444",
+          pointRadius: 6,
+          pointBackgroundColor: colors[colorIndex % colors.length],
           pointBorderColor: "#ffffff",
           pointBorderWidth: 2,
           pointHoverRadius: 9
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "top", labels: { font: { size: 14 } } },
-          tooltip: { mode: "index", intersect: false }
-        },
-        scales: {
-          y: { suggestedMin: 28, suggestedMax: 46, title: { display: true, text: "°C" } },
-          x: { title: { display: true, text: "Hora" } }
-        }
-      }
-    });
+        });
+        colorIndex++;
+      });
 
-    // Ritmo cardíaco
-    if (hrChart) hrChart.destroy();
-    hrChart = new Chart(document.getElementById("hrChart"), {
-      type: "line",
-      data: {
-        labels,
-        datasets: [{
-          label: "Ritmo cardíaco (bpm)",
+      if (tempChart) tempChart.destroy();
+      tempChart = new Chart(document.getElementById("tempChart"), {
+        type: "line",
+        data: { datasets: tempDatasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "top", labels: { font: { size: 13 } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
+              }
+            }
+          },
+          scales: {
+            y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
+            x: { title: { display: true, text: "Hora" } }
+          }
+        }
+      });
+
+      // Datasets para ritmo cardíaco
+      const hrDatasets = [];
+      colorIndex = 0;
+      Object.keys(filteredGroups).forEach(id => {
+        const group = filteredGroups[id];
+        const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
+
+        hrDatasets.push({
+          label: `Vaca ${id}`,
           data: hrs,
-          borderColor: "#3b82f6",
-          backgroundColor: "rgba(59, 130, 246, 0.15)",
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
           tension: 0.3,
           fill: true,
-          pointRadius: hrs.length > 0 ? 6 : 0,
-          pointBackgroundColor: "#3b82f6",
+          pointRadius: 6,
+          pointBackgroundColor: colors[colorIndex % colors.length],
           pointBorderColor: "#ffffff",
           pointBorderWidth: 2,
           pointHoverRadius: 9
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "top", labels: { font: { size: 14 } } },
-          tooltip: { mode: "index", intersect: false }
-        },
-        scales: {
-          y: { suggestedMin: 30, suggestedMax: 150, title: { display: true, text: "bpm" } },
-          x: { title: { display: true, text: "Hora" } }
+        });
+        colorIndex++;
+      });
+
+      if (hrChart) hrChart.destroy();
+      hrChart = new Chart(document.getElementById("hrChart"), {
+        type: "line",
+        data: { datasets: hrDatasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "top", labels: { font: { size: 13 } } },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
+              }
+            }
+          },
+          scales: {
+            y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
+            x: { title: { display: true, text: "Hora" } }
+          }
         }
-      }
-    });
+      });
 
-    // Líneas de umbrales
-    await addThresholdLines();
+      // Líneas de umbrales
+      await addThresholdLines();
 
-  } catch (err) {
-    console.error("Error cargando gráficas:", err);
+    } catch (err) {
+      console.error("Error cargando gráficas:", err);
+    }
   }
-}
 
   // ────────────────────────────────────────────────
-  // Líneas de umbrales (tu función, ya integrada)
+  // Líneas de umbrales
   // ────────────────────────────────────────────────
   async function addThresholdLines() {
     try {
@@ -183,7 +221,7 @@ async function updateCharts(selectedCow = "all") {
   }
 
   // ────────────────────────────────────────────────
-  // Donuts de estado
+  // Donuts de estado (sin cambios)
   // ────────────────────────────────────────────────
   function updateDonuts(cows) {
     const statusCount = {
@@ -220,7 +258,7 @@ async function updateCharts(selectedCow = "all") {
   }
 
   // ────────────────────────────────────────────────
-  // Carga principal del dashboard
+  // Carga principal
   // ────────────────────────────────────────────────
   async function loadDashboard() {
     try {
@@ -275,7 +313,19 @@ async function updateCharts(selectedCow = "all") {
 
       // Actualizar gráficas y donuts
       updateDonuts(cows);
-      await updateCharts();
+      await updateCharts("all");  // inicial con todas
+
+      // Actualizar selector con vacas reales
+      const select = document.getElementById("cowSelect");
+      if (select) {
+        select.innerHTML = '<option value="all">Todas las vacas</option>';
+        cows.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name || `Vaca ${c.id}`;
+          select.appendChild(opt);
+        });
+      }
 
     } catch (err) {
       console.error("Error en loadDashboard:", err);
@@ -283,14 +333,13 @@ async function updateCharts(selectedCow = "all") {
   }
 
   // ────────────────────────────────────────────────
-  // Selector pequeño y profesional arriba de las gráficas
+  // Selector
   // ────────────────────────────────────────────────
   function initCowSelect() {
     const chartRow = document.querySelector(".chart-row");
     if (!chartRow) return;
 
     const container = document.createElement("div");
-    container.className = "filter-container";
     container.style.textAlign = "center";
     container.style.margin = "1rem 0 1.5rem 0";
 
@@ -308,10 +357,9 @@ async function updateCharts(selectedCow = "all") {
     container.appendChild(select);
     chartRow.prepend(container);
 
-    // Evento de cambio (por ahora no filtra, pero lo dejamos preparado)
-    select.addEventListener("change", e => {
-      console.log("Filtro seleccionado:", e.target.value);
-      // Aquí puedes llamar a updateCharts(e.target.value) cuando implementes el filtro por vaca
+    // ¡Aquí está la clave! Llamar a updateCharts con el valor seleccionado
+    select.addEventListener("change", (e) => {
+      updateCharts(e.target.value);
     });
   }
 
@@ -319,5 +367,5 @@ async function updateCharts(selectedCow = "all") {
   initMap();
   initCowSelect();
   loadDashboard();
-  setInterval(loadDashboard, 15000);  // refresco cada 15 segundos
+  setInterval(loadDashboard, 15000);
 });
