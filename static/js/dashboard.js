@@ -17,7 +17,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }).addTo(map);
   }
 
-  // Gráficas robustas: puntos siempre visibles, filtro por vaca, tooltips con vaca
   async function updateCharts(selectedCow = "all") {
     try {
       const res = await fetch("/api/datos");
@@ -39,7 +38,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // Ordenar cada grupo por fecha (antiguo → reciente)
+      // Ordenar cada grupo por fecha
       Object.keys(grouped).forEach(id => {
         grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       });
@@ -65,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
         const temps = group.map(d => Number(d.temp_objeto) || null);
 
-        if (labels.length > 0) {  // solo agregar si hay datos
+        if (labels.length > 0) {
           tempDatasets.push({
             label: `Vaca ${id}`,
             data: temps,
@@ -105,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // Datasets ritmo
+      // Datasets ritmo cardíaco
       const hrDatasets = [];
       colorIndex = 0;
       Object.keys(filteredGroups).forEach(id => {
