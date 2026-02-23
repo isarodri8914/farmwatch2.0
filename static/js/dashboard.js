@@ -49,6 +49,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // --- CORRECCIÓN: Generar etiquetas globales para el eje X ---
+      const allLabels = [...new Set(datos.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})))].sort();
+
       const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
       let colorIndex = 0;
 
@@ -56,31 +59,32 @@ document.addEventListener("DOMContentLoaded", () => {
       const tempDatasets = [];
       Object.keys(grouped).forEach(id => {
         const group = grouped[id];
-        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-        const temps = group.map(d => Number(d.temp_objeto) || null);
+        // Alineamos los datos con las etiquetas globales
+        const temps = allLabels.map(label => {
+            const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
+            return match ? Number(match.temp_objeto) : null;
+        });
 
-        if (labels.length > 0) {
-          tempDatasets.push({
-            label: `Vaca ${id}`,
-            data: temps,
-            borderColor: colors[colorIndex % colors.length],
-            backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-            tension: 0.3,
-            fill: true,
-            pointRadius: 6,
-            pointBackgroundColor: colors[colorIndex % colors.length],
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
-            pointHoverRadius: 9
-          });
-          colorIndex++;
-        }
+        tempDatasets.push({
+          label: `Vaca ${id}`,
+          data: temps,
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+          tension: 0.3,
+          fill: true,
+          pointRadius: 6,
+          pointBackgroundColor: colors[colorIndex % colors.length],
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 9
+        });
+        colorIndex++;
       });
 
       if (tempChart) tempChart.destroy();
       tempChart = new Chart(document.getElementById("tempChart"), {
         type: "line",
-        data: { datasets: tempDatasets },
+        data: { labels: allLabels, datasets: tempDatasets }, // Se agregaron las labels aquí
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -114,31 +118,31 @@ document.addEventListener("DOMContentLoaded", () => {
       colorIndex = 0;
       Object.keys(grouped).forEach(id => {
         const group = grouped[id];
-        const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
-        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+        const hrs = allLabels.map(label => {
+            const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
+            return match ? Number(match.ritmo_cardiaco) : null;
+        });
 
-        if (labels.length > 0) {
-          hrDatasets.push({
-            label: `Vaca ${id}`,
-            data: hrs,
-            borderColor: colors[colorIndex % colors.length],
-            backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-            tension: 0.3,
-            fill: true,
-            pointRadius: 6,
-            pointBackgroundColor: colors[colorIndex % colors.length],
-            pointBorderColor: "#ffffff",
-            pointBorderWidth: 2,
-            pointHoverRadius: 9
-          });
-          colorIndex++;
-        }
+        hrDatasets.push({
+          label: `Vaca ${id}`,
+          data: hrs,
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+          tension: 0.3,
+          fill: true,
+          pointRadius: 6,
+          pointBackgroundColor: colors[colorIndex % colors.length],
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 9
+        });
+        colorIndex++;
       });
 
       if (hrChart) hrChart.destroy();
       hrChart = new Chart(document.getElementById("hrChart"), {
         type: "line",
-        data: { datasets: hrDatasets },
+        data: { labels: allLabels, datasets: hrDatasets }, // Se agregaron las labels aquí
         options: {
           responsive: true,
           maintainAspectRatio: false,
