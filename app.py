@@ -488,6 +488,24 @@ def dashboard_data():
     except Exception as e:
         print("Error en /api/dashboard:", str(e))  # Para depurar en terminal
         return jsonify({"error": str(e)}), 500
+    
+@app.route("/api/vaca/<id>")
+def get_vaca(id):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("""
+            SELECT temp_objeto as temperatura, ritmo_cardiaco as ritmo, 
+                   latitud, longitud, fecha, status
+            FROM sensores WHERE id_vaca = %s
+            ORDER BY fecha DESC LIMIT 1
+        """, (id,))
+        data = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return jsonify(data or {})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ---------- RUTAS ----------
 
