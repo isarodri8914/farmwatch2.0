@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let chartTemp = null;
   let chartHR = null;
 
-  // Cargar vacas
+  // Cargar vacas desde API
   async function loadVacas() {
     try {
       const res = await fetch("/api/dashboard");
@@ -34,7 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
     vacasFiltradas.forEach(v => {
       const li = document.createElement("li");
       li.textContent = v.name || `Vaca ${v.id}`;
-      li.onclick = () => openCowModal(v);
+      li.style.cursor = "pointer";
+      li.addEventListener("click", () => openCowModal(v));
       cowList.appendChild(li);
     });
   }
@@ -74,10 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCowList(filtradas);
   });
 
-  // Modal
+  // Abrir modal
   function openCowModal(vaca) {
+    console.log("Abriendo modal para:", vaca); // Para depurar
+
     document.getElementById("modalName").textContent = vaca.name || `Vaca ${vaca.id}`;
-    document.getElementById("cowModal").style.display = "flex";
+    document.getElementById("cowModal").style.display = "flex"; // Cambia a flex para centrar
 
     // Datos iniciales
     document.getElementById("m_temp").textContent = vaca.temp ?? "--";
@@ -86,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("m_loc").textContent = "Calle 45, Mérida";
     document.getElementById("m_state").textContent = vaca.status || "OK";
 
-    // Mini-mapa fijo en Mérida
+    // Crear mini-mapa fijo en Mérida
     if (currentModalMap) currentModalMap.remove();
     currentModalMap = L.map("modalMiniMap", {
       zoomControl: false,
@@ -108,16 +111,17 @@ document.addEventListener("DOMContentLoaded", () => {
       fillOpacity: 0.8
     }).addTo(currentModalMap);
 
-    // Crear gráficas
+    // Crear mini gráficas
     createMiniCharts();
 
     // Actualizar cada 3s
     if (currentInterval) clearInterval(currentInterval);
     currentInterval = setInterval(() => updateCowData(vaca.id), 3000);
 
-    updateCowData(vaca.id);
+    updateCowData(vaca.id); // Primera carga
   }
 
+  // Cerrar modal
   function closeCowModal() {
     document.getElementById("cowModal").style.display = "none";
     if (currentInterval) clearInterval(currentInterval);
@@ -167,7 +171,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chartHR.update();
 
     } catch (err) {
-      console.error("Error actualizando:", err);
+      console.error("Error actualizando datos:", err);
     }
   }
 
@@ -175,6 +179,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function createMiniCharts() {
     const ctxTemp = document.getElementById("chartTemp");
     const ctxHR = document.getElementById("chartHR");
+
+    if (!ctxTemp || !ctxHR) {
+      console.error("No se encuentran los canvas para gráficas");
+      return;
+    }
 
     chartTemp = new Chart(ctxTemp, {
       type: "line",
