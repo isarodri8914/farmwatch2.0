@@ -34,131 +34,89 @@ async function updateCharts(selectedCow = "all") {
       return;
     }
 
-    const now = new Date();
-    const twelveHoursAgo = new Date(now - 12 * 60 * 60 * 1000);
+    // Ordenar por fecha (más antiguo primero)
+    const sorted = datos.sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-    // Agrupar por vaca
-    const grouped = {};
-    datos.forEach(d => {
-      if (d.fecha) {
-        const date = new Date(d.fecha);
-        if (date >= twelveHoursAgo) {
-          const id = d.id_vaca || "Desconocida";
-          if (!grouped[id]) grouped[id] = [];
-          grouped[id].push({ ...d, fechaObj: date });
-        }
-      }
+    // Tomar últimos 20 (o todos si hay menos)
+    const recent = sorted.slice(-20);
+
+    const labels = recent.map(d => {
+      const date = new Date(d.fecha);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     });
 
-    // Ordenar DESC (más reciente primero) y tomar últimos 15 por vaca
-    Object.keys(grouped).forEach(id => {
-      grouped[id].sort((a, b) => b.fechaObj - a.fechaObj);
-      grouped[id] = grouped[id].slice(0, 15).reverse(); // reverse para cronológico
-    });
+    const temps = recent.map(d => Number(d.temp_objeto) || null);
+    const hrs   = recent.map(d => Number(d.ritmo_cardiaco) || null);
 
-    // Filtrar según selección
-    let filteredGroups = grouped;
-    if (selectedCow !== "all" && grouped[selectedCow]) {
-      filteredGroups = { [selectedCow]: grouped[selectedCow] };
-    }
-
-    if (Object.keys(filteredGroups).length === 0) {
-      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos para la vaca seleccionada</p>";
+    // Si no hay labels válidos, mostrar mensaje
+    if (labels.length === 0) {
+      document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con fecha válida</p>";
       return;
     }
 
-    const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7", "#8b5cf6"];
-    let colorIndex = 0;
-
-    // Datasets para temperatura
-    const tempDatasets = [];
-    Object.keys(filteredGroups).forEach(id => {
-      const group = filteredGroups[id];
-      const labels = group.map(d => d.fechaObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
-      const temps = group.map(d => Number(d.temp_objeto) || null);
-
-      tempDatasets.push({
-        label: `Vaca ${id}`,
-        data: temps,
-        borderColor: selectedCow === "all" ? colors[colorIndex % colors.length] : "#ef4444",
-        backgroundColor: selectedCow === "all" 
-          ? `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)` 
-          : "rgba(239, 68, 68, 0.2)",
-        tension: 0.3,
-        fill: true,
-        pointRadius: 6,
-        pointBackgroundColor: selectedCow === "all" ? colors[colorIndex % colors.length] : "#ef4444",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        pointHoverRadius: 9
-      });
-      if (selectedCow === "all") colorIndex++;
-    });
-
+    // Temperatura
     if (tempChart) tempChart.destroy();
     tempChart = new Chart(document.getElementById("tempChart"), {
       type: "line",
-      data: { datasets: tempDatasets },
+      data: {
+        labels,
+        datasets: [{
+          label: "Temperatura (°C)",
+          data: temps,
+          borderColor: "#ef4444",
+          backgroundColor: "rgba(239, 68, 68, 0.15)",
+          tension: 0.3,
+          fill: true,
+          pointRadius: temps.length > 0 ? 6 : 0,
+          pointBackgroundColor: "#ef4444",
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 9
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "top", labels: { font: { size: 13 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
-            }
-          }
+          legend: { position: "top", labels: { font: { size: 14 } } },
+          tooltip: { mode: "index", intersect: false }
         },
         scales: {
-          y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
+          y: { suggestedMin: 28, suggestedMax: 46, title: { display: true, text: "°C" } },
           x: { title: { display: true, text: "Hora" } }
         }
       }
     });
 
-    // Datasets para ritmo (similar lógica)
-    const hrDatasets = [];
-    colorIndex = 0;
-    Object.keys(filteredGroups).forEach(id => {
-      const group = filteredGroups[id];
-      const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
-
-      hrDatasets.push({
-        label: `Vaca ${id}`,
-        data: hrs,
-        borderColor: selectedCow === "all" ? colors[colorIndex % colors.length] : "#3b82f6",
-        backgroundColor: selectedCow === "all" 
-          ? `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)` 
-          : "rgba(59, 130, 246, 0.2)",
-        tension: 0.3,
-        fill: true,
-        pointRadius: 6,
-        pointBackgroundColor: selectedCow === "all" ? colors[colorIndex % colors.length] : "#3b82f6",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        pointHoverRadius: 9
-      });
-      if (selectedCow === "all") colorIndex++;
-    });
-
+    // Ritmo cardíaco
     if (hrChart) hrChart.destroy();
     hrChart = new Chart(document.getElementById("hrChart"), {
       type: "line",
-      data: { datasets: hrDatasets },
+      data: {
+        labels,
+        datasets: [{
+          label: "Ritmo cardíaco (bpm)",
+          data: hrs,
+          borderColor: "#3b82f6",
+          backgroundColor: "rgba(59, 130, 246, 0.15)",
+          tension: 0.3,
+          fill: true,
+          pointRadius: hrs.length > 0 ? 6 : 0,
+          pointBackgroundColor: "#3b82f6",
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 9
+        }]
+      },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "top", labels: { font: { size: 13 } } },
-          tooltip: {
-            callbacks: {
-              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
-            }
-          }
+          legend: { position: "top", labels: { font: { size: 14 } } },
+          tooltip: { mode: "index", intersect: false }
         },
         scales: {
-          y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
+          y: { suggestedMin: 30, suggestedMax: 150, title: { display: true, text: "bpm" } },
           x: { title: { display: true, text: "Hora" } }
         }
       }
