@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }).addTo(map);
   }
 
-  async function updateCharts(selectedCow = "all") {
+  // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
+  async function updateCharts() {
     try {
       const res = await fetch("/api/datos");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -43,14 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
         grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       });
 
-      // Filtrar
-      let filteredGroups = grouped;
-      if (selectedCow !== "all" && grouped[selectedCow]) {
-        filteredGroups = { [selectedCow]: grouped[selectedCow] };
-      }
-
-      if (Object.keys(filteredGroups).length === 0) {
-        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos para esta vaca</p>";
+      if (Object.keys(grouped).length === 0) {
+        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con vacas</p>";
         return;
       }
 
@@ -59,8 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Datasets temperatura
       const tempDatasets = [];
-      Object.keys(filteredGroups).forEach(id => {
-        const group = filteredGroups[id];
+      Object.keys(grouped).forEach(id => {
+        const group = grouped[id];
         const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
         const temps = group.map(d => Number(d.temp_objeto) || null);
 
@@ -90,7 +85,17 @@ document.addEventListener("DOMContentLoaded", () => {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: "top", labels: { font: { size: 13 } } },
+            legend: {
+              position: "top",
+              labels: { font: { size: 13 } },
+              onClick: (e, legendItem, legend) => {
+                const index = legendItem.datasetIndex;
+                const ci = legend.chart;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                ci.update();
+              }
+            },
             tooltip: {
               callbacks: {
                 label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
@@ -107,8 +112,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Datasets ritmo cardíaco
       const hrDatasets = [];
       colorIndex = 0;
-      Object.keys(filteredGroups).forEach(id => {
-        const group = filteredGroups[id];
+      Object.keys(grouped).forEach(id => {
+        const group = grouped[id];
         const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
         const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
 
@@ -138,7 +143,17 @@ document.addEventListener("DOMContentLoaded", () => {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: "top", labels: { font: { size: 13 } } },
+            legend: {
+              position: "top",
+              labels: { font: { size: 13 } },
+              onClick: (e, legendItem, legend) => {
+                const index = legendItem.datasetIndex;
+                const ci = legend.chart;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                ci.update();
+              }
+            },
             tooltip: {
               callbacks: {
                 label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
@@ -159,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Umbrales
+  // Umbrales (sin cambios)
   async function addThresholdLines() {
     try {
       const res = await fetch("/api/config/umbral");
@@ -209,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Donuts
+  // Donuts (sin cambios)
   function updateDonuts(cows) {
     const statusCount = {
       ok: cows.filter(c => c.status === "ok").length,
@@ -295,54 +310,15 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       updateDonuts(cows);
-      await updateCharts("all");
-
-      const select = document.getElementById("cowSelect");
-      if (select) {
-        select.innerHTML = '<option value="all">Todas las vacas</option>';
-        cows.forEach(c => {
-          const opt = document.createElement("option");
-          opt.value = c.id;
-          opt.textContent = c.name || `Vaca ${c.id}`;
-          select.appendChild(opt);
-        });
-      }
+      await updateCharts();
 
     } catch (err) {
       console.error("Error en loadDashboard:", err);
     }
   }
 
-  // Selector
-  function initCowSelect() {
-    const chartRow = document.querySelector(".chart-row");
-    if (!chartRow) return;
-
-    const container = document.createElement("div");
-    container.style.textAlign = "center";
-    container.style.margin = "1rem 0 1rem 0";
-
-    const label = document.createElement("label");
-    label.textContent = "Mostrar:";
-    label.style.marginRight = "10px";
-    label.style.fontWeight = "500";
-
-    const select = document.createElement("select");
-    select.id = "cowSelect";
-    select.innerHTML = '<option value="all">Todas las vacas</option>';
-
-    container.appendChild(label);
-    container.appendChild(select);
-    chartRow.prepend(container);
-
-    select.addEventListener("change", (e) => {
-      updateCharts(e.target.value);
-    });
-  }
-
   // Inicio
   initMap();
-  initCowSelect();
   loadDashboard();
   setInterval(loadDashboard, 15000);
 });
