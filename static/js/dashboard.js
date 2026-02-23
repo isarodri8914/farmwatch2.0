@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }).addTo(map);
   }
 
-  // Gráficas con filtro por vaca funcional
+  // Gráficas robustas: puntos siempre visibles, filtro por vaca, tooltips con vaca
   async function updateCharts(selectedCow = "all") {
     try {
       const res = await fetch("/api/datos");
@@ -32,8 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Agrupar por vaca
       const grouped = {};
       datos.forEach(d => {
-        if (d.fecha) {
-          const id = d.id_vaca || "Desconocida";
+        if (d.fecha && d.id_vaca) {
+          const id = d.id_vaca;
           if (!grouped[id]) grouped[id] = [];
           grouped[id].push(d);
         }
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
         grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       });
 
-      // Filtrar según selección
+      // Filtrar
       let filteredGroups = grouped;
       if (selectedCow !== "all" && grouped[selectedCow]) {
         filteredGroups = { [selectedCow]: grouped[selectedCow] };
@@ -65,20 +65,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
         const temps = group.map(d => Number(d.temp_objeto) || null);
 
-        tempDatasets.push({
-          label: `Vaca ${id}`,
-          data: temps,
-          borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-          tension: 0.3,
-          fill: true,
-          pointRadius: temps.some(t => t !== null) ? 6 : 0,
-          pointBackgroundColor: colors[colorIndex % colors.length],
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 2,
-          pointHoverRadius: 9
-        });
-        colorIndex++;
+        if (labels.length > 0) {  // solo agregar si hay datos
+          tempDatasets.push({
+            label: `Vaca ${id}`,
+            data: temps,
+            borderColor: colors[colorIndex % colors.length],
+            backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 6,
+            pointBackgroundColor: colors[colorIndex % colors.length],
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
+            pointHoverRadius: 9
+          });
+          colorIndex++;
+        }
       });
 
       if (tempChart) tempChart.destroy();
@@ -103,27 +105,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // Datasets ritmo cardíaco
+      // Datasets ritmo
       const hrDatasets = [];
       colorIndex = 0;
       Object.keys(filteredGroups).forEach(id => {
         const group = filteredGroups[id];
         const hrs = group.map(d => Number(d.ritmo_cardiaco) || null);
+        const labels = group.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
 
-        hrDatasets.push({
-          label: `Vaca ${id}`,
-          data: hrs,
-          borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-          tension: 0.3,
-          fill: true,
-          pointRadius: hrs.some(h => h !== null) ? 6 : 0,
-          pointBackgroundColor: colors[colorIndex % colors.length],
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 2,
-          pointHoverRadius: 9
-        });
-        colorIndex++;
+        if (labels.length > 0) {
+          hrDatasets.push({
+            label: `Vaca ${id}`,
+            data: hrs,
+            borderColor: colors[colorIndex % colors.length],
+            backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+            tension: 0.3,
+            fill: true,
+            pointRadius: 6,
+            pointBackgroundColor: colors[colorIndex % colors.length],
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
+            pointHoverRadius: 9
+          });
+          colorIndex++;
+        }
       });
 
       if (hrChart) hrChart.destroy();
@@ -155,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Líneas de umbrales (sin cambios)
+  // Umbrales
   async function addThresholdLines() {
     try {
       const res = await fetch("/api/config/umbral");
@@ -205,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Donuts (sin cambios)
+  // Donuts
   function updateDonuts(cows) {
     const statusCount = {
       ok: cows.filter(c => c.status === "ok").length,
@@ -293,7 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updateDonuts(cows);
       await updateCharts("all");
 
-      // Llenar selector con vacas reales
       const select = document.getElementById("cowSelect");
       if (select) {
         select.innerHTML = '<option value="all">Todas las vacas</option>';
@@ -310,7 +314,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Selector funcional
+  // Selector
   function initCowSelect() {
     const chartRow = document.querySelector(".chart-row");
     if (!chartRow) return;
@@ -332,7 +336,6 @@ document.addEventListener("DOMContentLoaded", () => {
     container.appendChild(select);
     chartRow.prepend(container);
 
-    // Evento que filtra al cambiar
     select.addEventListener("change", (e) => {
       updateCharts(e.target.value);
     });
