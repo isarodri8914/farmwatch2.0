@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Mapa principal fijo en Mérida
+  // 1. Inicializar Mapa Principal
+  // Se añade zoomControl: true y un nivel de zoom inicial
   const map = L.map("map", { zoomControl: true }).setView([20.9754, -89.6169], 13);
+  
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map);
@@ -35,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const li = document.createElement("li");
       li.textContent = v.name || `Vaca ${v.id}`;
       li.style.cursor = "pointer";
+      // Al hacer clic, abre modal y mueve el mapa
       li.addEventListener("click", () => openCowModal(v));
       cowList.appendChild(li);
     });
@@ -75,35 +78,37 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCowList(filtradas);
   });
 
-  // Abrir modal
+  // --- FUNCIÓN PARA ABRIR MODAL Y UBICAR VACA ---
   function openCowModal(vaca) {
-    console.log("Abriendo modal para:", vaca); // Para depurar
+    // ESTO MUEVE EL MAPA PRINCIPAL A LA POSICIÓN DE LA VACA
+    if (vaca.lat && vaca.lng) {
+        map.setView([vaca.lat, vaca.lng], 16); 
+    }
 
     document.getElementById("modalName").textContent = vaca.name || `Vaca ${vaca.id}`;
-    document.getElementById("cowModal").style.display = "flex"; // Cambia a flex para centrar
+    
+    // Mostramos el modal (Asegúrate de tener el CSS que te pasé antes)
+    const modal = document.getElementById("cowModal");
+    modal.style.display = "flex"; 
 
     // Datos iniciales
     document.getElementById("m_temp").textContent = vaca.temp ?? "--";
     document.getElementById("m_hr").textContent = vaca.hr ?? "--";
     document.getElementById("m_act").textContent = "Normal";
-    document.getElementById("m_loc").textContent = "Calle 45, Mérida";
+    document.getElementById("m_loc").textContent = "Mérida, Yucatán";
     document.getElementById("m_state").textContent = vaca.status || "OK";
 
-    // Crear mini-mapa fijo en Mérida
+    // Reiniciar mini-mapa del modal
     if (currentModalMap) currentModalMap.remove();
     currentModalMap = L.map("modalMiniMap", {
       zoomControl: false,
       attributionControl: false,
       dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      boxZoom: false,
-      tap: false
-    }).setView([20.9754, -89.6169], 12);
+      scrollWheelZoom: false
+    }).setView([vaca.lat || 20.9754, vaca.lng || -89.6169], 15);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(currentModalMap);
 
-    // Pin de la vaca
     L.circleMarker([vaca.lat || 20.9754, vaca.lng || -89.6169], {
       radius: 8,
       color: "#3b82f6",
@@ -111,14 +116,13 @@ document.addEventListener("DOMContentLoaded", () => {
       fillOpacity: 0.8
     }).addTo(currentModalMap);
 
-    // Crear mini gráficas
+    // Crear gráficas
     createMiniCharts();
 
-    // Actualizar cada 3s
+    // Actualización en tiempo real (simulada)
     if (currentInterval) clearInterval(currentInterval);
     currentInterval = setInterval(() => updateCowData(vaca.id), 3000);
-
-    updateCowData(vaca.id); // Primera carga
+    updateCowData(vaca.id); 
   }
 
   // Cerrar modal
@@ -131,25 +135,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById("closeModal").onclick = closeCowModal;
+  
+  // Cerrar al hacer clic fuera del contenido blanco
+  window.onclick = (event) => {
+    const modal = document.getElementById("cowModal");
+    if (event.target == modal) {
+        closeCowModal();
+    }
+  };
 
-  // Actualizar datos (simulado – cambia por tu endpoint real)
   async function updateCowData(id) {
     try {
+      // Simulación de datos nuevos
       const data = {
-        temperatura: (Math.random() * 8 + 36).toFixed(1),
-        ritmo: Math.floor(Math.random() * 40 + 60),
-        actividad: "Normal",
-        ubicacion: "Calle 45, Mérida",
-        estado: Math.random() > 0.8 ? "Alerta" : "OK"
+        temperatura: (Math.random() * 2 + 37).toFixed(1),
+        ritmo: Math.floor(Math.random() * 20 + 70),
+        actividad: "Pastando",
+        ubicacion: "Sector Norte",
+        estado: "OK"
       };
 
       document.getElementById("m_temp").textContent = data.temperatura;
       document.getElementById("m_hr").textContent = data.ritmo;
       document.getElementById("m_act").textContent = data.actividad;
-      document.getElementById("m_loc").textContent = data.ubicacion;
       document.getElementById("m_state").textContent = data.estado;
 
-      const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 
       chartTemp.data.labels.push(now);
       chartTemp.data.datasets[0].data.push(data.temperatura);
@@ -157,12 +168,9 @@ document.addEventListener("DOMContentLoaded", () => {
       chartHR.data.labels.push(now);
       chartHR.data.datasets[0].data.push(data.ritmo);
 
-      // Limitar a últimos 15 puntos
-      if (chartTemp.data.labels.length > 15) {
+      if (chartTemp.data.labels.length > 10) {
         chartTemp.data.labels.shift();
         chartTemp.data.datasets[0].data.shift();
-      }
-      if (chartHR.data.labels.length > 15) {
         chartHR.data.labels.shift();
         chartHR.data.datasets[0].data.shift();
       }
@@ -171,43 +179,28 @@ document.addEventListener("DOMContentLoaded", () => {
       chartHR.update();
 
     } catch (err) {
-      console.error("Error actualizando datos:", err);
+      console.error("Error en update:", err);
     }
   }
 
-  // Crear mini gráficas
   function createMiniCharts() {
     const ctxTemp = document.getElementById("chartTemp");
     const ctxHR = document.getElementById("chartHR");
-
-    if (!ctxTemp || !ctxHR) {
-      console.error("No se encuentran los canvas para gráficas");
-      return;
-    }
 
     chartTemp = new Chart(ctxTemp, {
       type: "line",
       data: {
         labels: [],
         datasets: [{
-          label: "Temperatura (°C)",
+          label: "Temp",
           data: [],
           borderColor: "#ef4444",
-          backgroundColor: "rgba(239,68,68,0.2)",
-          tension: 0.3,
+          tension: 0.4,
           fill: true,
-          pointRadius: 4
+          backgroundColor: "rgba(239,68,68,0.1)"
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { suggestedMin: 30, suggestedMax: 45, ticks: { font: { size: 10 } } },
-          x: { ticks: { font: { size: 10 } } }
-        }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
 
     chartHR = new Chart(ctxHR, {
@@ -215,27 +208,17 @@ document.addEventListener("DOMContentLoaded", () => {
       data: {
         labels: [],
         datasets: [{
-          label: "Ritmo (bpm)",
+          label: "HR",
           data: [],
           borderColor: "#3b82f6",
-          backgroundColor: "rgba(59,130,246,0.2)",
-          tension: 0.3,
+          tension: 0.4,
           fill: true,
-          pointRadius: 4
+          backgroundColor: "rgba(59,130,246,0.1)"
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { suggestedMin: 40, suggestedMax: 120, ticks: { font: { size: 10 } } },
-          x: { ticks: { font: { size: 10 } } }
-        }
-      }
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
   }
 
-  // Carga inicial
   loadVacas();
 });
