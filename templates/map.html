@@ -7,9 +7,24 @@
 {% block content %}
 <h1>Mapa de Ubicación</h1>
 
+<div class="map-container">
+
+    <!-- SIDEBAR LISTA DE VACAS -->
+    <div class="cow-sidebar">
+        <h3>Vacas</h3>
+        <input type="text" id="cowSearch" placeholder="Buscar vaca...">
+
+        <ul id="cowList"></ul>
+    </div>
+
+    <!-- MAPA -->
+    <div id="map"></div>
+</div>
+
+<!-- MODAL -->
 <div id="cowModal" class="modal">
   <div class="modal-content">
-    <span id="closeModal" class="close">&times;</span>
+    <span id="closeModal" class="close">×</span>
 
     <h2 id="modalName">Vaca</h2>
 
@@ -24,7 +39,7 @@
 
       <div class="modal-map">
         <h4>Mérida</h4>
-        <div id="modalMiniMap" style="height: 180px; width: 100%; border-radius: 8px;"></div>
+        <div id="modalMiniMap" style="height: 180px; border-radius: 8px; overflow: hidden;"></div>
       </div>
     </div>
 

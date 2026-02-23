@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Mapa principal fijo en Mérida
-  const map = L.map("map").setView([20.9754, -89.6169], 13); // Mérida centro
+  const map = L.map("map", { zoomControl: true }).setView([20.9754, -89.6169], 13);
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map);
@@ -14,10 +14,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let chartTemp = null;
   let chartHR = null;
 
-  // Cargar vacas desde API
+  // Cargar vacas
   async function loadVacas() {
     try {
-      const res = await fetch("/api/dashboard"); // o tu endpoint real de vacas
+      const res = await fetch("/api/dashboard");
       const data = await res.json();
       vacas = data.cows || [];
 
@@ -29,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Render lista
   function renderCowList(vacasFiltradas) {
     cowList.innerHTML = "";
     vacasFiltradas.forEach(v => {
@@ -40,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Render pines con color según estado
   function renderMarkers(vacas) {
     vacas.forEach(v => {
       if (!v.lat || !v.lng) return;
@@ -67,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Búsqueda en tiempo real
+  // Búsqueda
   cowSearch.addEventListener("input", function () {
     const text = this.value.toLowerCase();
     const filtradas = vacas.filter(v => 
@@ -76,21 +74,30 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCowList(filtradas);
   });
 
-  // Abrir modal
+  // Modal
   function openCowModal(vaca) {
     document.getElementById("modalName").textContent = vaca.name || `Vaca ${vaca.id}`;
     document.getElementById("cowModal").style.display = "flex";
 
-    // Datos iniciales (usa vaca real o simula)
+    // Datos iniciales
     document.getElementById("m_temp").textContent = vaca.temp ?? "--";
     document.getElementById("m_hr").textContent = vaca.hr ?? "--";
     document.getElementById("m_act").textContent = "Normal";
-    document.getElementById("m_loc").textContent = vaca.ubicacion || "Calle 45, Mérida";
+    document.getElementById("m_loc").textContent = "Calle 45, Mérida";
     document.getElementById("m_state").textContent = vaca.status || "OK";
 
-    // Crear mini-mapa fijo en Mérida
+    // Mini-mapa fijo en Mérida
     if (currentModalMap) currentModalMap.remove();
-    currentModalMap = L.map("modalMiniMap", { zoomControl: false, attributionControl: false }).setView([20.9754, -89.6169], 12);
+    currentModalMap = L.map("modalMiniMap", {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      tap: false
+    }).setView([20.9754, -89.6169], 12);
+
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(currentModalMap);
 
     // Pin de la vaca
@@ -101,17 +108,16 @@ document.addEventListener("DOMContentLoaded", () => {
       fillOpacity: 0.8
     }).addTo(currentModalMap);
 
-    // Crear mini gráficas
+    // Crear gráficas
     createMiniCharts();
 
-    // Actualizar cada 3 segundos
+    // Actualizar cada 3s
     if (currentInterval) clearInterval(currentInterval);
     currentInterval = setInterval(() => updateCowData(vaca.id), 3000);
 
-    updateCowData(vaca.id); // Primera carga
+    updateCowData(vaca.id);
   }
 
-  // Cerrar modal
   function closeCowModal() {
     document.getElementById("cowModal").style.display = "none";
     if (currentInterval) clearInterval(currentInterval);
@@ -122,10 +128,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("closeModal").onclick = closeCowModal;
 
-  // Actualizar datos + gráficas (ajusta tu endpoint real)
+  // Actualizar datos (simulado – cambia por tu endpoint real)
   async function updateCowData(id) {
     try {
-      // Simulado (cambia por fetch real)
       const data = {
         temperatura: (Math.random() * 8 + 36).toFixed(1),
         ritmo: Math.floor(Math.random() * 40 + 60),
@@ -162,7 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chartHR.update();
 
     } catch (err) {
-      console.error("Error actualizando datos:", err);
+      console.error("Error actualizando:", err);
     }
   }
 
