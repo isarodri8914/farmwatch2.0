@@ -516,34 +516,41 @@ def get_vaca(id):
 def api_registrar():
     try:
         data = request.get_json()
-        print(f"DEBUG: Datos recibidos -> {data}") # Esto aparecerá en tu terminal de Flask
-        
-        nombre = data.get('nombre')
-        correo = data.get('correo')
-        password = data.get('password')
+        if not data:
+            return jsonify({"error": "No se recibió JSON"}), 400
 
-        if not nombre or not correo or not password:
-            return jsonify({"error": "Faltan datos en el JSON"}), 400
+        print("DEBUG: Datos recibidos →", data)  # ← muy importante
+
+        nombre   = data.get('nombre', '').strip()
+        correo   = data.get('correo', '').strip().lower()
+        password = data.get('password', '')
+
+        if not all([nombre, correo, password]):
+            return jsonify({"error": "Faltan campos obligatorios"}), 400
+
+        if len(password) < 6:
+            return jsonify({"error": "La contraseña debe tener al menos 6 caracteres"}), 400
 
         hashed_pw = generate_password_hash(password)
-        
-        conn = get_connection()
-        cursor = conn.cursor()
-        
-        # Usamos nombres de columnas explícitos
-        sql = "INSERT INTO usuarios (nombre, correo, password) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (nombre, correo, hashed_pw))
-        
-        conn.commit() # <--- ¡ESTO ES VITAL! Sin esto, la BD no guarda nada.
-        print("DEBUG: Registro exitoso en la base de datos")
-        
-        cursor.close()
-        conn.close()
-        return jsonify({"status": "ok"}), 201
 
+        with get_connection() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO usuarios (nombre, correo, password) VALUES (%s, %s, %s)",
+                    (nombre, correo, hashed_pw)
+                )
+            conn.commit()
+
+        print("DEBUG: Usuario creado correctamente →", correo)
+        return jsonify({"status": "ok", "message": "Registro exitoso"}), 201
+
+    except pymysql.err.IntegrityError as e:
+        if e.args[0] == 1062:  # Duplicate entry
+            return jsonify({"error": "Este correo ya está registrado"}), 409
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
-        print(f"ERROR CRÍTICO EN REGISTRO: {str(e)}") # Mira esto en tu terminal
-        return jsonify({"error": f"Error interno: {str(e)}"}), 500
+        print("ERROR EN REGISTRO:", type(e).__name__, str(e))
+        return jsonify({"error": "Error interno del servidor"}), 500
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
