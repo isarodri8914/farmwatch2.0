@@ -568,12 +568,11 @@ def api_login():
             session['user_id'] = user['id']
             session['user_name'] = user['nombre']
             return jsonify({"status": "ok", "redirect": "/dashboard"})
-        
+
         return jsonify({"error": "Correo o contraseña incorrectos"}), 401
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    finally:
-        if 'conn' in locals(): conn.close()
 
 @app.route('/logout')
 def logout():
