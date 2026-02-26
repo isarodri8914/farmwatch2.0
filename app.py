@@ -514,29 +514,36 @@ def get_vaca(id):
 
 @app.route('/api/registrar', methods=['POST'])
 def api_registrar():
-    data = request.get_json()
-    nombre = data.get('nombre')
-    correo = data.get('correo')
-    password = data.get('password')
-
-    if not all([nombre, correo, password]):
-        return jsonify({"error": "Todos los campos son obligatorios"}), 400
-
-    hashed_pw = generate_password_hash(password)
-
     try:
+        data = request.get_json()
+        print(f"DEBUG: Datos recibidos -> {data}") # Esto aparecerá en tu terminal de Flask
+        
+        nombre = data.get('nombre')
+        correo = data.get('correo')
+        password = data.get('password')
+
+        if not nombre or not correo or not password:
+            return jsonify({"error": "Faltan datos en el JSON"}), 400
+
+        hashed_pw = generate_password_hash(password)
+        
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO usuarios (nombre, correo, password) VALUES (%s, %s, %s)", 
-                       (nombre, correo, hashed_pw))
-        conn.commit()
-        return jsonify({"status": "ok", "message": "Usuario creado"}), 201
-    except pymysql.err.IntegrityError:
-        return jsonify({"error": "El correo ya está registrado"}), 400
+        
+        # Usamos nombres de columnas explícitos
+        sql = "INSERT INTO usuarios (nombre, correo, password) VALUES (%s, %s, %s)"
+        cursor.execute(sql, (nombre, correo, hashed_pw))
+        
+        conn.commit() # <--- ¡ESTO ES VITAL! Sin esto, la BD no guarda nada.
+        print("DEBUG: Registro exitoso en la base de datos")
+        
+        cursor.close()
+        conn.close()
+        return jsonify({"status": "ok"}), 201
+
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'conn' in locals(): conn.close()
+        print(f"ERROR CRÍTICO EN REGISTRO: {str(e)}") # Mira esto en tu terminal
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
