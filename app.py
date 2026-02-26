@@ -306,7 +306,6 @@ def estado_sistema():
 
         estado["sql_conectado"] = True
 
-        # Obtener última lectura real
         cursor.execute("""
             SELECT *
             FROM sensores
@@ -320,69 +319,53 @@ def estado_sistema():
             conn.close()
             return jsonify(estado)
 
-        # ===============================
-        # 🔎 EVALUAR SENSORES
-        # ===============================
+        from datetime import datetime
+
+        OFFLINE_TIMEOUT = 60  # segundos sin datos para considerar offline
+        ahora = datetime.now()
+
+        # 🔴 1️⃣ VERIFICAR SI EL ESP32 ESTÁ OFFLINE
+        if dato["fecha"] and (ahora - dato["fecha"]).total_seconds() > OFFLINE_TIMEOUT:
+            estado["sensores"].append({
+                "id": "ESP32",
+                "estado": "offline"
+            })
+
+            conn.close()
+            return jsonify(estado)
+
+        # 🟢 2️⃣ SI EL ESP32 ESTÁ ONLINE, EVALUAR SENSORES
 
         # MAX30100
         if dato["ritmo_cardiaco"] == 0:
-            estado["sensores"].append({
-                "id": "MAX30100",
-                "estado": "sin señal"
-            })
+            estado["sensores"].append({"id": "MAX30100", "estado": "sin señal"})
         else:
-            estado["sensores"].append({
-                "id": "MAX30100",
-                "estado": "activo"
-            })
+            estado["sensores"].append({"id": "MAX30100", "estado": "activo"})
 
         # MLX90614
         if dato["temp_objeto"] == 0 and dato["temp_ambiente"] == 0:
-            estado["sensores"].append({
-                "id": "MLX90614",
-                "estado": "sin señal"
-            })
+            estado["sensores"].append({"id": "MLX90614", "estado": "sin señal"})
         else:
-            estado["sensores"].append({
-                "id": "MLX90614",
-                "estado": "activo"
-            })
+            estado["sensores"].append({"id": "MLX90614", "estado": "activo"})
 
         # MPU6050
         if dato["gyro_x"] == 0 and dato["gyro_y"] == 0 and dato["gyro_z"] == 0:
-            estado["sensores"].append({
-                "id": "MPU6050",
-                "estado": "sin señal"
-            })
+            estado["sensores"].append({"id": "MPU6050", "estado": "sin señal"})
         else:
-            estado["sensores"].append({
-                "id": "MPU6050",
-                "estado": "activo"
-            })
+            estado["sensores"].append({"id": "MPU6050", "estado": "activo"})
 
         # GPS
         if dato["latitud"] == 0 and dato["longitud"] == 0:
-            estado["sensores"].append({
-                "id": "GPS",
-                "estado": "sin señal"
-            })
+            estado["sensores"].append({"id": "GPS", "estado": "sin señal"})
         else:
-            estado["sensores"].append({
-                "id": "GPS",
-                "estado": "activo"
-            })
+            estado["sensores"].append({"id": "GPS", "estado": "activo"})
 
-        # ===============================
-        # 🐄 EVALUAR VACA
-        # ===============================
-
-        vaca_estado = {
+        # 🐄 Estado vaca
+        estado["vacas"].append({
             "id": dato["id_vaca"],
             "temperatura": dato["temp_objeto"],
             "ritmo": dato["ritmo_cardiaco"]
-        }
-
-        estado["vacas"].append(vaca_estado)
+        })
 
         conn.close()
 
