@@ -574,6 +574,9 @@ def login():
 
 @app.route('/dashboard')
 def dashboard():
+    # Esta es la pared de seguridad
+    if 'user_id' not in session:
+        return redirect(url_for('login')) # Si no hay sesión, lo saca de aquí
     return render_template('dashboard.html')
 
 @app.route('/cows')
