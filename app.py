@@ -1,9 +1,12 @@
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from flask import Flask, render_template, request, jsonify
 import os
 import pymysql
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
 
 def get_connection():
     return pymysql.connect(
@@ -12,6 +15,8 @@ def get_connection():
         password=os.environ["DB_PASSWORD"],
         database=os.environ["DB_NAME"]
     )
+    
+
     
     #API PARA DATOS 
 
@@ -506,6 +511,60 @@ def get_vaca(id):
         return jsonify(data or {})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/registrar', methods=['POST'])
+def api_registrar():
+    data = request.get_json()
+    nombre = data.get('nombre')
+    correo = data.get('correo')
+    password = data.get('password')
+
+    if not all([nombre, correo, password]):
+        return jsonify({"error": "Todos los campos son obligatorios"}), 400
+
+    hashed_pw = generate_password_hash(password)
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO usuarios (nombre, correo, password) VALUES (%s, %s, %s)", 
+                       (nombre, correo, hashed_pw))
+        conn.commit()
+        return jsonify({"status": "ok", "message": "Usuario creado"}), 201
+    except pymysql.err.IntegrityError:
+        return jsonify({"error": "El correo ya está registrado"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'conn' in locals(): conn.close()
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    correo = data.get('correo')
+    password = data.get('password')
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor.execute("SELECT * FROM usuarios WHERE correo = %s", (correo,))
+        user = cursor.fetchone()
+
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['user_name'] = user['nombre']
+            return jsonify({"status": "ok", "redirect": "/dashboard"})
+        
+        return jsonify({"error": "Correo o contraseña incorrectos"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'conn' in locals(): conn.close()
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 # ---------- RUTAS ----------
 

@@ -1,18 +1,49 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("login-form");
+    // Manejo de Login
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const correo = document.getElementById("username").value; // Input de usuario/correo
+            const pass = document.getElementById("password").value;
 
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ correo, password: pass })
+            });
 
-        let user = document.getElementById("admin").value.trim();
-        let pass = document.getElementById("admin").value.trim();
+            const result = await response.json();
+            if (response.ok) {
+                window.location.href = result.redirect;
+            } else {
+                alert("Error: " + result.error);
+            }
+        });
+    }
 
-        if (user === "" || pass === "") {
-            alert("Ingrese usuario y contraseña.");
-            return;
-        }
+    // Manejo de Registro
+    const registerForm = document.getElementById("register-form");
+    if (registerForm) {
+        registerForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const nombre = document.getElementById("reg-nombre").value;
+            const correo = document.getElementById("reg-correo").value;
+            const pass = document.getElementById("reg-pass").value;
 
-        // Simulación login
-        window.location.href = "dashboard.html";
-    });
+            const response = await fetch('/api/registrar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, correo, password: pass })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert("¡Cuenta creada! Ahora inicia sesión.");
+                window.location.href = "/";
+            } else {
+                alert("Error: " + result.error);
+            }
+        });
+    }
 });
