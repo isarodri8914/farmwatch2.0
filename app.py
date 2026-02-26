@@ -428,7 +428,7 @@ def dashboard_data():
         cows = []
         alerts = []
 
-        now = datetime.utcnow()
+        now = datetime.now()
         OFFLINE_TIMEOUT = 30  # segundos
 
         for d in datos:
@@ -486,7 +486,7 @@ def dashboard_data():
         return jsonify({
             "cows": cows,
             "alerts": alerts,
-            "last_update": datetime.utcnow().strftime("%H:%M:%S"),
+            "last_update": datetime.now().strftime("%H:%M:%S"),
             "last_sync": last_sync
         })
 
