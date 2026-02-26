@@ -5,6 +5,7 @@ import pymysql
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 
+
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
 
@@ -475,10 +476,15 @@ def dashboard_data():
                 "status": estado
             })
 
-        # Calcular última sync
+        # =========================================
+        # OBTENER ÚLTIMA FECHA GLOBAL DESDE MYSQL
+        # =========================================
+        cursor.execute("SELECT MAX(fecha) as ultima FROM sensores")
+        row = cursor.fetchone()
+
         last_sync = "--:--:--"
-        if datos and datos[0].get("fecha"):
-            last_sync = datos[0]["fecha"].strftime("%H:%M:%S")
+        if row and row["ultima"]:
+            last_sync = row["ultima"].strftime("%H:%M:%S")
 
         cursor.close()
         conn.close()
