@@ -4,6 +4,8 @@ import os
 import pymysql
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+
 
 
 app = Flask(__name__)
@@ -16,7 +18,14 @@ def get_connection():
         password=os.environ["DB_PASSWORD"],
         database=os.environ["DB_NAME"]
     )
-    
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
     
     #API PARA DATOS 
@@ -575,6 +584,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
     # Esta es la pared de seguridad
     if 'user_id' not in session:
@@ -582,26 +592,32 @@ def dashboard():
     return render_template('dashboard.html')
 
 @app.route('/cows')
+@login_required
 def cows():
     return render_template('cows.html')
 
 @app.route('/alerts')
+@login_required
 def alerts():
     return render_template('alerts.html')
 
 @app.route('/map')
+@login_required
 def map_view():
     return render_template('map.html')
 
 @app.route('/data')
+@login_required
 def data():
     return render_template('data.html')
 
 @app.route('/sensors')
+@login_required
 def sensors():
     return render_template('sensors.html')
 
 @app.route('/register')
+@login_required
 def register():
     return render_template('register.html')
 
