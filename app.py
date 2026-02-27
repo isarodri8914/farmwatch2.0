@@ -34,6 +34,7 @@ def login_required(f):
     #API PARA DATOS 
 
 @app.route("/api/datos")
+@login_required
 def api_datos():
     try:
         conn = get_connection()
@@ -69,6 +70,7 @@ def api_datos():
     
     #API PARA COWS.HTML
 @app.route("/api/vacas")
+@login_required
 def obtener_vacas():
     try:
         conn = get_connection()
@@ -88,6 +90,7 @@ def obtener_vacas():
     #DETECTAR VACAS
     
 @app.route("/api/vacas/detectadas")
+@login_required
 def vacas_detectadas():
     try:
         conn = get_connection()
@@ -109,6 +112,7 @@ def vacas_detectadas():
     #CREAR O EDITAR VACAS EN COWS.HTML
 
 @app.route("/api/vacas", methods=["POST"])
+@login_required
 def guardar_vaca():
     data = request.get_json()
 
@@ -164,6 +168,7 @@ def guardar_vaca():
 #ELIMINAR VACA EN COWS.HTML
 
 @app.route("/api/vacas/<int:id>", methods=["DELETE"])
+@login_required
 def eliminar_vaca(id):
     try:
         conn = get_connection()
@@ -182,6 +187,7 @@ def eliminar_vaca(id):
 
 #VERIFICAR HISTORIAL EN COWS.HTML
 @app.route("/api/vacas/<id_esp32>/historial")
+@login_required
 def historial_vaca(id_esp32):
     try:
         conn = get_connection()
@@ -305,6 +311,7 @@ def ultimos_datos():
 #ESTADO DEL SISTEMA ALERTAS
 
 @app.route("/api/estado-sistema")
+@login_required
 def estado_sistema():
 
     estado = {
@@ -631,6 +638,7 @@ def registro():
 
 # Obtener todos los umbrales
 @app.route("/api/config/umbral", methods=["GET"])
+@login_required
 def get_umbrales():
     try:
         with get_connection() as conn:
