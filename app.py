@@ -14,6 +14,15 @@ app.config.update(
     SESSION_COOKIE_SAMESITE="Lax"
 )
 
+#PROTECCION CONTRA XXS
+@app.after_request
+def secure_headers(response):
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self';"
+    return response
+
 def get_connection():
     return pymysql.connect(
         unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}",
@@ -535,6 +544,15 @@ def api_registrar():
         nombre   = data.get('nombre', '').strip()
         correo   = data.get('correo', '').strip().lower()
         password = data.get('password', '')
+        
+        import re
+
+# Bloquear etiquetas HTML (previene XSS)
+        if re.search(r"<.*?>", nombre):
+         return jsonify({"error": "Nombre inválido"}), 400
+
+        if re.search(r"<.*?>", correo):
+         return jsonify({"error": "Correo inválido"}), 400
 
         if not all([nombre, correo, password]):
             return jsonify({"error": "Faltan campos obligatorios"}), 400
