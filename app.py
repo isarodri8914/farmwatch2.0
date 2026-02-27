@@ -22,6 +22,7 @@ def get_connection():
         database=os.environ["DB_NAME"]
     )
 
+#PROTECCION PARA REQUERIR LOGIN EN TOD MOMENTO TANTO PARA URLS COMO PARA APIS
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -521,6 +522,7 @@ def get_vaca(id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+#REGISTRO APRUEBA DE XXS
 @app.route('/api/registrar', methods=['POST'])
 def api_registrar():
     try:
@@ -561,6 +563,7 @@ def api_registrar():
         print("ERROR EN REGISTRO:", type(e).__name__, str(e))
         return jsonify({"error": "Error interno del servidor"}), 500
 
+#LOGIN APRUEBA DE INYECCIONES SQL
 @app.route('/api/login', methods=['POST'])
 def api_login():
     data = request.get_json()
