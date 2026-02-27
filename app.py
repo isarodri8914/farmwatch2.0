@@ -6,10 +6,13 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
-
-
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,  # Cloud Run usa HTTPS
+    SESSION_COOKIE_SAMESITE="Lax"
+)
 
 def get_connection():
     return pymysql.connect(
@@ -217,6 +220,7 @@ def historial_vaca(id_esp32):
 # ---------- API ESP32 ----------
 @app.route("/api/sensores", methods=["POST"])
 def recibir_datos():
+    
     data = request.get_json()
 
     if not data:
