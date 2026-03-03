@@ -616,7 +616,7 @@ def login():
     return render_template('login.html')
 
 @app.route('/dashboard')
-@login_required
+
 def dashboard():
     # Esta es la pared de seguridad
     if 'user_id' not in session:
