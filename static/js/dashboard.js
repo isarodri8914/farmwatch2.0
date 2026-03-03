@@ -20,7 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
   async function updateCharts() {
     try {
-      const res = await fetch("/api/datos");
+      const res = await fetch("/api/datos", {
+  credentials: "same-origin"
+});
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const datos = await res.json();
 
@@ -181,7 +183,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Umbrales (sin cambios)
   async function addThresholdLines() {
     try {
-      const res = await fetch("/api/config/umbral");
+      const res = await fetch("/api/config/umbral", {
+  credentials: "same-origin"
+});
       if (!res.ok) return;
       const umbrales = await res.json();
 
@@ -266,7 +270,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Carga principal
   async function loadDashboard() {
     try {
-      const res = await fetch("/api/dashboard");
+      const res = await fetch("/api/dashboard", {
+  credentials: "same-origin"
+});
       if (!res.ok) throw new Error("Error en /api/dashboard");
       const data = await res.json();
 
