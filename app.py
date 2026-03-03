@@ -7,7 +7,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
 app = Flask(__name__)
-
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SECURE=True,  # Cloud Run usa HTTPS
+    SESSION_COOKIE_SAMESITE="Lax"
+)
 
 
 
