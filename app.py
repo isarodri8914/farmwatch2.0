@@ -442,7 +442,12 @@ def dashboard_data():
         cows = []
         alerts = []
 
-        now = datetime.now()
+# Antes del for
+        cursor.execute("SELECT NOW() as ahora")
+        row_now = cursor.fetchone()
+        now = row_now["ahora"]
+
+
         OFFLINE_TIMEOUT = 30  # segundos
 
         for d in datos:
