@@ -410,6 +410,7 @@ def estado_sistema():
 # =========================================
 
 @app.route("/api/dashboard")
+@login_required
 def dashboard_data():
     try:
         conn = get_connection()
