@@ -23,6 +23,16 @@ def secure_headers(response):
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self';"
     return response
 
+@app.after_request
+def set_security_headers(response):
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://kit.fontawesome.com; "
+        "style-src 'self' https://unpkg.com 'unsafe-inline'; "
+        "font-src 'self' https://kit.fontawesome.com;"
+    )
+    return response
+
 def get_connection():
     return pymysql.connect(
         unix_socket=f"/cloudsql/{os.environ['INSTANCE_CONNECTION_NAME']}",
