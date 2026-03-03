@@ -7,31 +7,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
-app.config.update(
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=True,  # Cloud Run usa HTTPS
-    SESSION_COOKIE_SAMESITE="Lax"
-)
 
-#PROTECCION CONTRA XXS
-@app.after_request
-def secure_headers(response):
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self';"
-    return response
 
-@app.after_request
-def set_security_headers(response):
-    response.headers['Content-Security-Policy'] = (
-        "default-src 'self'; "
-        "script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://kit.fontawesome.com; "
-        "style-src 'self' https://unpkg.com 'unsafe-inline'; "
-        "font-src 'self' https://kit.fontawesome.com;"
-    )
-    return response
+
 
 def get_connection():
     return pymysql.connect(
