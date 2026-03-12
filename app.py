@@ -685,6 +685,10 @@ def generar_reporte():
     inicio = request.args.get("inicio")
     fin = request.args.get("fin")
 
+    if not inicio or not fin:
+     fin = datetime.now()
+    inicio = fin - timedelta(days=1)
+
     conn = get_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 

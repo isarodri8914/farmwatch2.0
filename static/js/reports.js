@@ -2,7 +2,13 @@ let map;
 let tempChart;
 let hrChart;
 
+document.addEventListener("DOMContentLoaded", function () {
+
 document.getElementById("generar").onclick = generarInforme;
+
+document.getElementById("exportPDF").onclick = exportPDF;
+
+});
 
 async function generarInforme() {
 
@@ -145,6 +151,20 @@ tbody.appendChild(tr);
 
 }
 document.getElementById("exportPDF").onclick = function(){
+
+const { jsPDF } = window.jspdf;
+
+const doc = new jsPDF();
+
+doc.text("FarmWatch - Informe de Monitoreo",20,20);
+
+doc.text(document.getElementById("analisis").innerText,20,40);
+
+doc.save("informe_farmwatch.pdf");
+
+}
+
+function exportPDF(){
 
 const { jsPDF } = window.jspdf;
 
