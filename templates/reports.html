@@ -7,7 +7,7 @@
 
 <h1>📑 Generar Informe</h1>
 
-<div class="filters">
+<div class="report-filters">
 
 <label>Vaca:</label> <select id="vaca">
 
@@ -20,43 +20,73 @@
 
 <button id="generar">Generar informe</button>
 
+<button class="export-btn" id="exportPDF">📄 Exportar PDF</button>
+
 </div>
 
 <div id="analisis" class="analysis-box"></div>
 
 <div class="stats">
 
-<div>Temp promedio: <span id="temp_avg"></span></div>
-<div>Temp máxima: <span id="temp_max"></span></div>
-<div>Ritmo promedio: <span id="hr_avg"></span></div>
-<div>Ritmo máximo: <span id="hr_max"></span></div>
-<div>Estado: <span id="estado"></span></div>
+<div class="stat-card">
+<h3 id="temp_avg"></h3>
+<p>Temperatura promedio</p>
+</div>
+
+<div class="stat-card">
+<h3 id="temp_max"></h3>
+<p>Temperatura máxima</p>
+</div>
+
+<div class="stat-card">
+<h3 id="hr_avg"></h3>
+<p>Ritmo cardíaco promedio</p>
+</div>
+
+<div class="stat-card">
+<h3 id="hr_max"></h3>
+<p>Ritmo cardíaco máximo</p>
+</div>
+
+<div class="stat-card">
+<h3 id="estado"></h3>
+<p>Estado del animal</p>
+</div>
 
 </div>
 
 <div class="charts">
 
-<canvas id="tempChart" height="120"></canvas>
-<canvas id="hrChart" height="120"></canvas>
+<div class="chart-card">
+<h3>Temperatura</h3>
+<canvas id="tempChart"></canvas>
+</div>
+
+<div class="chart-card">
+<h3>Ritmo cardíaco</h3>
+<canvas id="hrChart"></canvas>
+</div>
 
 </div>
 
-<div class="map-box">
+<div class="map-card">
 
-<div id="map" style="height:400px;"></div>
+<h3>Ruta de movimiento</h3>
+
+<div id="map"></div>
 
 </div>
 
-<table id="tabla">
+<table class="data-table" id="tabla">
 
 <thead>
 
 <tr>
 <th>Fecha</th>
-<th>Temp</th>
-<th>Ritmo</th>
-<th>Lat</th>
-<th>Lng</th>
+<th>Temperatura</th>
+<th>Ritmo cardíaco</th>
+<th>Latitud</th>
+<th>Longitud</th>
 </tr>
 
 </thead>
@@ -65,12 +95,13 @@
 
 </table>
 
-<button id="exportPDF">Exportar PDF</button>
-
 </div>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+
 <script src="https://cdn.jsdelivr.net/npm/jspdf"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
