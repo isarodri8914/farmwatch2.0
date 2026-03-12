@@ -722,9 +722,9 @@ def generar_reporte():
     if not datos:
         return jsonify({"error": "Sin datos"})
 
-    # ==============================
-    # CALCULAR DISTANCIA RECORRIDA
-    # ==============================
+    # =========================================
+    # DISTANCIA RECORRIDA
+    # =========================================
 
     distancia_total = 0
     puntos_validos = []
@@ -742,9 +742,9 @@ def generar_reporte():
 
         distancia_total += distancia(lat1, lon1, lat2, lon2)
 
-    # ==============================
+    # =========================================
     # ZONAS MÁS FRECUENTES
-    # ==============================
+    # =========================================
 
     zonas = {}
 
@@ -759,9 +759,9 @@ def generar_reporte():
 
     zonas_frecuentes = sorted(zonas.items(), key=lambda x: x[1], reverse=True)[:3]
 
-    # ==============================
+    # =========================================
     # ESTADÍSTICAS BIOMÉTRICAS
-    # ==============================
+    # =========================================
 
     temps = [d["temp_objeto"] for d in datos if d["temp_objeto"]]
     hr = [d["ritmo_cardiaco"] for d in datos if d["ritmo_cardiaco"]]
@@ -772,7 +772,9 @@ def generar_reporte():
     temp_max = max(temps)
     hr_max = max(hr)
 
-    # -------- HEALTH SCORE --------
+    # =========================================
+    # HEALTH SCORE
+    # =========================================
 
     score = 100
 
@@ -787,9 +789,56 @@ def generar_reporte():
     if score < 70:
         estado = "Posible problema"
 
-    # ==============================
-    # TEXTO AUTOMÁTICO
-    # ==============================
+    # =========================================
+    # DIAGNOSTICO DEL SISTEMA
+    # =========================================
+
+    total_registros = len(datos)
+
+    sensor_max30100_ok = 0
+    sensor_mlx_ok = 0
+    sensor_mpu_ok = 0
+    sensor_gps_ok = 0
+
+    for d in datos:
+
+        # MAX30100
+        if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 0:
+            sensor_max30100_ok += 1
+
+        # MLX90614
+        if d["temp_objeto"] and d["temp_objeto"] > 0:
+            sensor_mlx_ok += 1
+
+        # MPU6050
+        if d["gyro_x"] != 0 or d["gyro_y"] != 0 or d["gyro_z"] != 0:
+            sensor_mpu_ok += 1
+
+        # GPS
+        if d["latitud"] != 0 and d["longitud"] != 0:
+            sensor_gps_ok += 1
+
+    def porcentaje(x):
+        if total_registros == 0:
+            return 0
+        return (x / total_registros) * 100
+
+    max30100_status = porcentaje(sensor_max30100_ok)
+    mlx_status = porcentaje(sensor_mlx_ok)
+    mpu_status = porcentaje(sensor_mpu_ok)
+    gps_status = porcentaje(sensor_gps_ok)
+
+    sistema_estado = "Estable"
+
+    if max30100_status < 70 or mlx_status < 70 or mpu_status < 70:
+        sistema_estado = "Sensores inestables"
+
+    if gps_status < 50:
+        sistema_estado = "GPS con baja señal"
+
+    # =========================================
+    # ANALISIS GENERAL
+    # =========================================
 
     analisis = f"""
 Durante el periodo analizado se registró una temperatura promedio de {temp_avg:.2f} °C
@@ -802,6 +851,21 @@ El índice de salud calculado es {score}/100, lo cual clasifica el estado del an
 como: {estado}.
 
 Distancia total recorrida durante el periodo: {distancia_total:.2f} km.
+"""
+
+    analisis_sistema = f"""
+--- Diagnóstico del sistema ---
+
+Total de conexiones registradas: {total_registros}
+
+Funcionamiento de sensores:
+
+MAX30100 (ritmo cardiaco): {max30100_status:.1f}% operativo
+MLX90614 (temperatura): {mlx_status:.1f}% operativo
+MPU6050 (movimiento): {mpu_status:.1f}% operativo
+GPS (ubicación): {gps_status:.1f}% operativo
+
+Estado general del sistema: {sistema_estado}
 """
 
     return jsonify({
@@ -818,7 +882,16 @@ Distancia total recorrida durante el periodo: {distancia_total:.2f} km.
             "distancia_km": distancia_total,
             "zonas_frecuentes": zonas_frecuentes
         },
-        "analisis": analisis
+        "sistema":{
+            "total_registros": total_registros,
+            "max30100": max30100_status,
+            "mlx90614": mlx_status,
+            "mpu6050": mpu_status,
+            "gps": gps_status,
+            "estado": sistema_estado
+        },
+        "analisis": analisis,
+        "analisis_sistema": analisis_sistema
     })
 
 # Obtener todos los umbrales

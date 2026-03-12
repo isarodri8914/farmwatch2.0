@@ -3,6 +3,7 @@ let ruta;
 let marcadores=[];
 let tempChart;
 let hrChart;
+let reporteActual = null;
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -24,6 +25,7 @@ try{
 
 const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
 const data = await res.json();
+reporteActual = data;
 
 if(data.error){
 alert(data.error);
@@ -60,6 +62,13 @@ if(data.movimiento){
 
 document.getElementById("analisis").innerText +=
 "\n\nDistancia recorrida: " + data.movimiento.distancia_km.toFixed(2) + " km";
+
+}
+
+if(data.analisis_sistema){
+
+document.getElementById("analisis").innerText +=
+"\n\n" + data.analisis_sistema;
 
 }
 
@@ -212,13 +221,11 @@ doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,114);
 
 doc.text("Estado: "+document.getElementById("estado").innerText,20,122);
 doc.text(
-"Distancia recorrida: " +
-data.movimiento.distancia_km.toFixed(2) +
-" km",
+"Distancia recorrida: " + 
+(document.getElementById("analisis").innerText.match(/Distancia recorrida: .* km/) || [""])[0],
 20,
 130
 );
-
 let y = 135;
 
 /* -------- GRAFICA TEMPERATURA -------- */
