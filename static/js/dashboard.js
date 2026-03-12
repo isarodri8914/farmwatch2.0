@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let hrChart = null;
   let cowDonut = null;
   let sensorDonut = null;
+  let lastSync = null; // evita refrescar si no hay datos nuevos
 
   function initMap() {
     map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
@@ -274,11 +275,18 @@ document.addEventListener("DOMContentLoaded", () => {
   credentials: "same-origin"
 });
       if (!res.ok) throw new Error("Error en /api/dashboard");
-      const data = await res.json();
+const data = await res.json();
 
-      if (!data.cows) return;
+if (!data.cows) return;
 
-      const cows = data.cows;
+// 🔹 EVITA ACTUALIZAR SI NO HAY DATOS NUEVOS
+if (lastSync && data.last_sync === lastSync) {
+  return;
+}
+
+lastSync = data.last_sync;
+
+const cows = data.cows;
 
       document.getElementById("stat-total").textContent = cows.length;
       document.getElementById("stat-alerts").textContent = cows.filter(c => c.status === "alert").length;
