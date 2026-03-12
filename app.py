@@ -678,7 +678,7 @@ def reports():
     return render_template('reports.html')
 
 @app.route("/api/vacasnew")
-def obtener_vacas():
+def obtener_vacas_reporte():
 
     conn = get_connection()
     cursor = conn.cursor()
