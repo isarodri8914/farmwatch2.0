@@ -698,8 +698,8 @@ def generar_reporte():
     fin = request.args.get("fin")
 
     if not inicio or not fin:
-     fin = datetime.now()
-    inicio = fin - timedelta(days=1)
+        fin = datetime.now()
+        inicio = fin - timedelta(days=1)
 
     conn = get_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
@@ -722,6 +722,47 @@ def generar_reporte():
     if not datos:
         return jsonify({"error": "Sin datos"})
 
+    # ==============================
+    # CALCULAR DISTANCIA RECORRIDA
+    # ==============================
+
+    distancia_total = 0
+    puntos_validos = []
+
+    for d in datos:
+        lat = d["latitud"]
+        lon = d["longitud"]
+
+        if lat and lon and lat != 0 and lon != 0:
+            puntos_validos.append((lat, lon))
+
+    for i in range(1, len(puntos_validos)):
+        lat1, lon1 = puntos_validos[i-1]
+        lat2, lon2 = puntos_validos[i]
+
+        distancia_total += distancia(lat1, lon1, lat2, lon2)
+
+    # ==============================
+    # ZONAS MÁS FRECUENTES
+    # ==============================
+
+    zonas = {}
+
+    for lat, lon in puntos_validos:
+
+        key = f"{round(lat,3)},{round(lon,3)}"
+
+        if key not in zonas:
+            zonas[key] = 0
+
+        zonas[key] += 1
+
+    zonas_frecuentes = sorted(zonas.items(), key=lambda x: x[1], reverse=True)[:3]
+
+    # ==============================
+    # ESTADÍSTICAS BIOMÉTRICAS
+    # ==============================
+
     temps = [d["temp_objeto"] for d in datos if d["temp_objeto"]]
     hr = [d["ritmo_cardiaco"] for d in datos if d["ritmo_cardiaco"]]
 
@@ -732,6 +773,7 @@ def generar_reporte():
     hr_max = max(hr)
 
     # -------- HEALTH SCORE --------
+
     score = 100
 
     if temp_max > 39.5:
@@ -745,7 +787,10 @@ def generar_reporte():
     if score < 70:
         estado = "Posible problema"
 
-    # -------- TEXTO AUTOMÁTICO --------
+    # ==============================
+    # TEXTO AUTOMÁTICO
+    # ==============================
+
     analisis = f"""
 Durante el periodo analizado se registró una temperatura promedio de {temp_avg:.2f} °C
 y un ritmo cardíaco promedio de {hr_avg:.2f} bpm.
@@ -755,6 +800,8 @@ La temperatura máxima registrada fue {temp_max:.2f} °C y el ritmo cardíaco m�
 
 El índice de salud calculado es {score}/100, lo cual clasifica el estado del animal
 como: {estado}.
+
+Distancia total recorrida durante el periodo: {distancia_total:.2f} km.
 """
 
     return jsonify({
@@ -766,6 +813,10 @@ como: {estado}.
             "hr_max": hr_max,
             "score": score,
             "estado": estado
+        },
+        "movimiento":{
+            "distancia_km": distancia_total,
+            "zonas_frecuentes": zonas_frecuentes
         },
         "analisis": analisis
     })

@@ -56,6 +56,13 @@ document.getElementById("hr_max").innerText = data.estadisticas.hr_max.toFixed(2
 
 document.getElementById("estado").innerText = data.estadisticas.estado;
 
+if(data.movimiento){
+
+document.getElementById("analisis").innerText +=
+"\n\nDistancia recorrida: " + data.movimiento.distancia_km.toFixed(2) + " km";
+
+}
+
 }
 
 function crearGraficas(datos){
@@ -204,6 +211,13 @@ doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,106);
 doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,114);
 
 doc.text("Estado: "+document.getElementById("estado").innerText,20,122);
+doc.text(
+"Distancia recorrida: " +
+data.movimiento.distancia_km.toFixed(2) +
+" km",
+20,
+130
+);
 
 let y = 135;
 
