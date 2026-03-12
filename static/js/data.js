@@ -100,7 +100,7 @@ document.getElementById("export-excel").addEventListener("click", () => {
 // EXPORTAR A PDF
 // ========================================
 
-document.getElementById("export-pdf").addEventListener("click", () => {
+document.getElementById("export-pdf").addEventListener("click", function () {
 
     if (!cowData.length) {
         alert("No hay datos para exportar");
@@ -113,7 +113,7 @@ document.getElementById("export-pdf").addEventListener("click", () => {
     doc.setFontSize(18);
     doc.text("Historial de Datos de Vacas", 14, 15);
 
-    const tableColumn = [
+    const columns = [
         "Vaca",
         "Temp Amb",
         "Temp Obj",
@@ -126,38 +126,29 @@ document.getElementById("export-pdf").addEventListener("click", () => {
         "Fecha"
     ];
 
-    const tableRows = [];
-
-    cowData.forEach(d => {
-
-        const ubicacion = `${d.latitud}, ${d.longitud}`;
-
-        const row = [
-            d.id_vaca,
-            d.temp_ambiente,
-            d.temp_objeto,
-            d.ritmo_cardiaco,
-            d.oxigeno,
-            d.gyro_x,
-            d.gyro_y,
-            d.gyro_z,
-            ubicacion,
-            d.fecha
-        ];
-
-        tableRows.push(row);
-    });
+    const rows = cowData.map(d => [
+        d.id_vaca,
+        d.temp_ambiente,
+        d.temp_objeto,
+        d.ritmo_cardiaco,
+        d.oxigeno,
+        d.gyro_x,
+        d.gyro_y,
+        d.gyro_z,
+        `${d.latitud}, ${d.longitud}`,
+        d.fecha
+    ]);
 
     doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
+        head: [columns],
+        body: rows,
         startY: 25,
         theme: "grid",
         styles: {
             fontSize: 8
         },
         headStyles: {
-            fillColor: [44, 62, 80]
+            fillColor: [0, 102, 153]
         }
     });
 
