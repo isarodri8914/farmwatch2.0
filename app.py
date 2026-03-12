@@ -677,6 +677,18 @@ def registro():
 def reports():
     return render_template('reports.html')
 
+@app.route("/api/vacasnew")
+def obtener_vacas():
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT id_vaca FROM sensores")
+
+    vacas = [row[0] for row in cursor.fetchall()]
+
+    return jsonify(vacas)
+
 @app.route("/api/reporte")
 @login_required
 def generar_reporte():

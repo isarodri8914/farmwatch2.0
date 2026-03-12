@@ -1,4 +1,6 @@
 let map;
+let ruta;
+let marcadores=[];
 let tempChart;
 let hrChart;
 
@@ -8,6 +10,8 @@ document.getElementById("generar").onclick = generarInforme;
 
 document.getElementById("exportPDF").onclick = exportPDF;
 
+cargarVacas();
+
 });
 
 async function generarInforme() {
@@ -15,6 +19,8 @@ async function generarInforme() {
 const vaca = document.getElementById("vaca").value;
 const inicio = document.getElementById("inicio").value;
 const fin = document.getElementById("fin").value;
+
+try{
 
 const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
 const data = await res.json();
@@ -28,6 +34,13 @@ mostrarAnalisis(data);
 crearGraficas(data.datos);
 crearMapa(data.datos);
 crearTabla(data.datos);
+
+}catch(e){
+
+console.error("Error generando informe",e);
+alert("Error al generar informe");
+
+}
 
 }
 
@@ -48,7 +61,6 @@ document.getElementById("estado").innerText = data.estadisticas.estado;
 function crearGraficas(datos){
 
 const labels = datos.map(d => d.fecha);
-
 const temps = datos.map(d => d.temp_objeto);
 const hr = datos.map(d => d.ritmo_cardiaco);
 
@@ -63,7 +75,8 @@ labels:labels,
 datasets:[{
 label:"Temperatura",
 data:temps,
-borderColor:"red"
+borderColor:"red",
+fill:false
 }]
 }
 
@@ -80,7 +93,8 @@ labels:labels,
 datasets:[{
 label:"Ritmo cardiaco",
 data:hr,
-borderColor:"blue"
+borderColor:"blue",
+fill:false
 }]
 }
 
@@ -94,22 +108,32 @@ if(!map){
 
 map = L.map("map").setView([20.97,-89.62],12);
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+attribution:"© OpenStreetMap"
+}).addTo(map);
 
+}
+
+marcadores.forEach(m=>map.removeLayer(m));
+marcadores=[];
+
+if(ruta){
+map.removeLayer(ruta);
 }
 
 const puntos=[];
 
 datos.forEach(d=>{
 
-if(d.latitud && d.longitud){
+if(d.latitud && d.longitud && d.latitud!=0 && d.longitud!=0){
 
-puntos.push([d.latitud,d.longitud]);
+const punto=[d.latitud,d.longitud];
 
-L.circleMarker([d.latitud,d.longitud],{
-radius:5,
-color:"blue"
-}).addTo(map);
+puntos.push(punto);
+
+const marker=L.marker(punto).addTo(map);
+
+marcadores.push(marker);
 
 }
 
@@ -117,10 +141,12 @@ color:"blue"
 
 if(puntos.length>1){
 
-L.polyline(puntos,{
+ruta=L.polyline(puntos,{
 color:"red",
 weight:3
 }).addTo(map);
+
+map.fitBounds(puntos);
 
 }
 
@@ -150,19 +176,6 @@ tbody.appendChild(tr);
 });
 
 }
-document.getElementById("exportPDF").onclick = function(){
-
-const { jsPDF } = window.jspdf;
-
-const doc = new jsPDF();
-
-doc.text("FarmWatch - Informe de Monitoreo",20,20);
-
-doc.text(document.getElementById("analisis").innerText,20,40);
-
-doc.save("informe_farmwatch.pdf");
-
-}
 
 function exportPDF(){
 
@@ -170,10 +183,74 @@ const { jsPDF } = window.jspdf;
 
 const doc = new jsPDF();
 
+doc.setFontSize(18);
 doc.text("FarmWatch - Informe de Monitoreo",20,20);
 
-doc.text(document.getElementById("analisis").innerText,20,40);
+doc.setFontSize(12);
+
+doc.text("Analisis:",20,40);
+
+doc.text(
+document.getElementById("analisis").innerText,
+20,
+50,
+{maxWidth:170}
+);
+
+doc.text("Estadisticas:",20,90);
+
+doc.text("Temp promedio: "+document.getElementById("temp_avg").innerText,20,100);
+doc.text("Temp maxima: "+document.getElementById("temp_max").innerText,20,110);
+
+doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,120);
+doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,130);
+
+doc.text("Estado: "+document.getElementById("estado").innerText,20,140);
+
+const rows=[];
+
+document.querySelectorAll("#tabla tbody tr").forEach(tr=>{
+
+const cols=[...tr.children].map(td=>td.innerText);
+
+rows.push(cols);
+
+});
+
+doc.autoTable({
+startY:160,
+head:[["Fecha","Temp","Ritmo","Lat","Lng"]],
+body:rows
+});
 
 doc.save("informe_farmwatch.pdf");
+
+}
+
+async function cargarVacas(){
+
+try{
+
+const res = await fetch("/api/vacasnew");
+const vacas = await res.json();
+
+const select = document.getElementById("vaca");
+
+vacas.forEach(v=>{
+
+const option = document.createElement("option");
+
+option.value=v;
+option.textContent=v;
+
+select.appendChild(option);
+
+});
+
+}catch(e){
+
+console.error("Error cargando vacas",e);
+
+}
 
 }
