@@ -5,6 +5,22 @@ import pymysql
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+import math
+
+import math
+
+def distancia(lat1, lon1, lat2, lon2):
+
+    R = 6371
+
+    dlat = math.radians(lat2-lat1)
+    dlon = math.radians(lon2-lon1)
+
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1))*math.cos(math.radians(lat2))*math.sin(dlon/2)**2
+
+    c = 2*math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+    return R*c
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
@@ -655,6 +671,88 @@ def register():
 @app.route('/registro', methods=['POST'])
 def registro():
     return render_template('registro_exitoso.html')
+
+@app.route('/reports')
+@login_required
+def reports():
+    return render_template('reports.html')
+
+@app.route("/api/reporte")
+@login_required
+def generar_reporte():
+
+    vaca = request.args.get("vaca", "all")
+    inicio = request.args.get("inicio")
+    fin = request.args.get("fin")
+
+    conn = get_connection()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    sql = """
+    SELECT *
+    FROM sensores
+    WHERE fecha BETWEEN %s AND %s
+    """
+
+    params = [inicio, fin]
+
+    if vaca != "all":
+        sql += " AND id_vaca=%s"
+        params.append(vaca)
+
+    cursor.execute(sql, params)
+    datos = cursor.fetchall()
+
+    if not datos:
+        return jsonify({"error": "Sin datos"})
+
+    temps = [d["temp_objeto"] for d in datos if d["temp_objeto"]]
+    hr = [d["ritmo_cardiaco"] for d in datos if d["ritmo_cardiaco"]]
+
+    temp_avg = sum(temps)/len(temps)
+    hr_avg = sum(hr)/len(hr)
+
+    temp_max = max(temps)
+    hr_max = max(hr)
+
+    # -------- HEALTH SCORE --------
+    score = 100
+
+    if temp_max > 39.5:
+        score -= 30
+
+    if hr_max > 100:
+        score -= 30
+
+    estado = "Saludable"
+
+    if score < 70:
+        estado = "Posible problema"
+
+    # -------- TEXTO AUTOMÁTICO --------
+    analisis = f"""
+Durante el periodo analizado se registró una temperatura promedio de {temp_avg:.2f} °C
+y un ritmo cardíaco promedio de {hr_avg:.2f} bpm.
+
+La temperatura máxima registrada fue {temp_max:.2f} °C y el ritmo cardíaco máximo fue
+{hr_max:.2f} bpm.
+
+El índice de salud calculado es {score}/100, lo cual clasifica el estado del animal
+como: {estado}.
+"""
+
+    return jsonify({
+        "datos": datos,
+        "estadisticas":{
+            "temp_avg": temp_avg,
+            "hr_avg": hr_avg,
+            "temp_max": temp_max,
+            "hr_max": hr_max,
+            "score": score,
+            "estado": estado
+        },
+        "analisis": analisis
+    })
 
 # Obtener todos los umbrales
 @app.route("/api/config/umbral", methods=["GET"])
