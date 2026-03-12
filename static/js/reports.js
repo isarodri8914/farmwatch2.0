@@ -177,7 +177,7 @@ tbody.appendChild(tr);
 
 }
 
-function exportPDF(){
+async function exportPDF(){
 
 const doc = new window.jspdf.jsPDF();
 
@@ -186,24 +186,66 @@ doc.text("FarmWatch - Informe de Monitoreo",20,20);
 
 doc.setFontSize(12);
 
-doc.text("Analisis:",20,40);
+doc.text("Analisis:",20,35);
 
 doc.text(
 document.getElementById("analisis").innerText || "Sin datos",
 20,
-50,
+45,
 {maxWidth:170}
 );
 
-doc.text("Estadisticas:",20,90);
+doc.text("Estadisticas:",20,80);
 
-doc.text("Temp promedio: "+(document.getElementById("temp_avg").innerText || "-"),20,100);
-doc.text("Temp maxima: "+(document.getElementById("temp_max").innerText || "-"),20,110);
+doc.text("Temp promedio: "+document.getElementById("temp_avg").innerText,20,90);
+doc.text("Temp maxima: "+document.getElementById("temp_max").innerText,20,98);
 
-doc.text("Ritmo promedio: "+(document.getElementById("hr_avg").innerText || "-"),20,120);
-doc.text("Ritmo maximo: "+(document.getElementById("hr_max").innerText || "-"),20,130);
+doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,106);
+doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,114);
 
-doc.text("Estado: "+(document.getElementById("estado").innerText || "-"),20,140);
+doc.text("Estado: "+document.getElementById("estado").innerText,20,122);
+
+let y = 135;
+
+/* -------- GRAFICA TEMPERATURA -------- */
+
+const tempCanvas = document.getElementById("tempChart");
+
+const tempImg = tempCanvas.toDataURL("image/png");
+
+doc.text("Grafica de temperatura",20,y);
+y += 5;
+
+doc.addImage(tempImg,"PNG",20,y,170,60);
+
+y += 70;
+
+/* -------- GRAFICA RITMO -------- */
+
+const hrCanvas = document.getElementById("hrChart");
+
+const hrImg = hrCanvas.toDataURL("image/png");
+
+doc.text("Grafica de ritmo cardiaco",20,y);
+y += 5;
+
+doc.addImage(hrImg,"PNG",20,y,170,60);
+
+doc.addPage();
+
+/* -------- MAPA -------- */
+
+const mapElement = document.getElementById("map");
+
+const canvasMapa = await html2canvas(mapElement);
+
+const mapaImg = canvasMapa.toDataURL("image/png");
+
+doc.text("Ruta recorrida del animal",20,20);
+
+doc.addImage(mapaImg,"PNG",20,30,170,100);
+
+/* -------- TABLA -------- */
 
 const rows=[];
 
@@ -215,19 +257,16 @@ rows.push(cols);
 
 });
 
-if(rows.length>0){
-
 doc.autoTable({
-startY:160,
+startY:140,
 head:[["Fecha","Temp","Ritmo","Lat","Lng"]],
 body:rows
 });
 
-}
-
 doc.save("informe_farmwatch.pdf");
 
 }
+
 
 
 async function cargarVacas(){
