@@ -84,16 +84,17 @@ document.getElementById("analisis").innerText +=
 
 function crearGraficas(datos){
 
-const labels = datos.map(d => d.fecha);
-const temps = datos.map(d => d.temp_objeto);
-const hr = datos.map(d => d.ritmo_cardiaco);
+// 🔥 SOLO TOMAR LOS ÚLTIMOS 30 REGISTROS
+const datosLimitados = datos.slice(-30);
+
+const labels = datosLimitados.map(d => d.fecha);
+const temps = datosLimitados.map(d => d.temp_objeto);
+const hr = datosLimitados.map(d => d.ritmo_cardiaco);
 
 if(tempChart) tempChart.destroy();
 
 tempChart = new Chart(document.getElementById("tempChart"),{
-
 type:"line",
-
 data:{
 labels:labels,
 datasets:[{
@@ -101,20 +102,15 @@ label:"Temperatura",
 data:temps,
 borderColor:"red",
 fill:false,
-tension: 0.4,
-pointRadius: 2,
-borderWidth: 2
+tension:0.3 // 🔥 suaviza línea
 }]
 }
-
 });
 
 if(hrChart) hrChart.destroy();
 
 hrChart = new Chart(document.getElementById("hrChart"),{
-
 type:"line",
-
 data:{
 labels:labels,
 datasets:[{
@@ -122,14 +118,10 @@ label:"Ritmo cardiaco",
 data:hr,
 borderColor:"blue",
 fill:false,
-tension: 0.4,
-pointRadius: 2,
-borderWidth: 2
+tension:0.3
 }]
 }
-
 });
-
 }
 
 function crearMapa(datos){
@@ -209,42 +201,50 @@ tbody.appendChild(tr);
 
 async function exportPDF(){
 
+if(!reporteActual){
+alert("Primero genera un reporte");
+return;
+}
+
 const doc = new window.jspdf.jsPDF();
 
+let y = 20;
+
 doc.setFontSize(18);
-doc.text("FarmWatch - Informe de Monitoreo",20,20);
+doc.text("FarmWatch - Informe de Monitoreo",20,y);
+
+y += 10;
 
 doc.setFontSize(12);
 
-doc.text("Analisis:",20,35);
-
-const texto = document.getElementById("analisis").innerText || "Sin datos";
-
-const lineas = doc.splitTextToSize(texto, 170);
-
-doc.text(lineas, 20, 45);
-
-doc.text("Estadisticas:",20,80);
-
-doc.text("Temp promedio: "+document.getElementById("temp_avg").innerText,20,90);
-doc.text("Temp maxima: "+document.getElementById("temp_max").innerText,20,98);
-
-doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,106);
-doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,114);
-
-doc.text("Estado: "+document.getElementById("estado").innerText,20,122);
-doc.text(
-"Distancia recorrida: " + 
-(reporteActual?.movimiento?.distancia_km?.toFixed(2) || "0") + " km",
-20,
-130
+// 🔥 ANALISIS CON SALTO AUTOMATICO
+const analisis = doc.splitTextToSize(
+document.getElementById("analisis").innerText,
+170
 );
-let y = 135;
+
+doc.text("Analisis:",20,y);
+y += 8;
+
+doc.text(analisis,20,y);
+
+y += analisis.length * 6 + 5;
+
+// 🔥 ESTADISTICAS
+doc.text("Estadisticas:",20,y);
+y += 8;
+
+doc.text("Temp promedio: "+document.getElementById("temp_avg").innerText,20,y); y+=6;
+doc.text("Temp maxima: "+document.getElementById("temp_max").innerText,20,y); y+=6;
+doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,y); y+=6;
+doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,y); y+=6;
+doc.text("Estado: "+document.getElementById("estado").innerText,20,y);
+
+y += 10;
 
 /* -------- GRAFICA TEMPERATURA -------- */
 
 const tempCanvas = document.getElementById("tempChart");
-
 const tempImg = tempCanvas.toDataURL("image/png");
 
 doc.text("Grafica de temperatura",20,y);
@@ -257,7 +257,6 @@ y += 70;
 /* -------- GRAFICA RITMO -------- */
 
 const hrCanvas = document.getElementById("hrChart");
-
 const hrImg = hrCanvas.toDataURL("image/png");
 
 doc.text("Grafica de ritmo cardiaco",20,y);
@@ -267,15 +266,16 @@ doc.addImage(hrImg,"PNG",20,y,170,60);
 
 doc.addPage();
 
-/* -------- MAPA -------- */
+/* -------- MAPA (ARREGLADO) -------- */
 
 const mapElement = document.getElementById("map");
 
+// 🔥 IMPORTANTE: esperar render
 await new Promise(r => setTimeout(r, 1000));
+
 const canvasMapa = await html2canvas(mapElement, {
-    useCORS: true,
-    allowTaint: true,
-    scale: 2
+useCORS: true,
+scale: 2
 });
 
 const mapaImg = canvasMapa.toDataURL("image/png");
@@ -289,11 +289,8 @@ doc.addImage(mapaImg,"PNG",20,30,170,100);
 const rows=[];
 
 document.querySelectorAll("#tabla tbody tr").forEach(tr=>{
-
 const cols=[...tr.children].map(td=>td.innerText);
-
 rows.push(cols);
-
 });
 
 doc.autoTable({
@@ -303,7 +300,6 @@ body:rows
 });
 
 doc.save("informe_farmwatch.pdf");
-
 }
 
 
