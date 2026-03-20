@@ -692,225 +692,205 @@ def obtener_vacas_reporte():
 @app.route("/api/reporte")
 @login_required
 def generar_reporte():
+    try:
+        vaca = request.args.get("vaca", "all")
+        inicio = request.args.get("inicio")
+        fin = request.args.get("fin")
 
-    vaca = request.args.get("vaca", "all")
-    inicio = request.args.get("inicio")
-    fin = request.args.get("fin")
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
 
-# ==============================
-# MANEJO CORRECTO DE FECHAS
-# ==============================
+        # ==============================
+        # MANEJO CORRECTO DE FECHAS
+        # ==============================
 
-    if inicio and fin:
-        try:
-         inicio = datetime.strptime(inicio, "%Y-%m-%d")
-         fin = datetime.strptime(fin, "%Y-%m-%d") + timedelta(days=1)
-        except:
-            return jsonify({"error": "Formato de fecha inválido"})
-    else:
-    # 🔥 SI NO HAY FECHAS → USA TODO EL HISTORIAL
-        cursor.execute("SELECT MIN(fecha) as min_fecha, MAX(fecha) as max_fecha FROM sensores")
-    rango = cursor.fetchone()
+        if inicio and fin:
+            try:
+                inicio = datetime.strptime(inicio, "%Y-%m-%d")
+                fin = datetime.strptime(fin, "%Y-%m-%d") + timedelta(days=1)
+            except:
+                return jsonify({"error": "Formato de fecha inválido"})
+        else:
+            # 🔥 USAR TODO EL HISTORIAL
+            cursor.execute("SELECT MIN(fecha) as min_fecha, MAX(fecha) as max_fecha FROM sensores")
+            rango = cursor.fetchone()
 
-    if not rango["min_fecha"]:
-        return jsonify({"error": "No hay datos en la base"})
+            if not rango or not rango["min_fecha"]:
+                return jsonify({"error": "No hay datos en la base"})
 
-    inicio = rango["min_fecha"]
-    fin = rango["max_fecha"]
+            inicio = rango["min_fecha"]
+            fin = rango["max_fecha"]
 
-    
-    conn = get_connection()
-    cursor = conn.cursor(pymysql.cursors.DictCursor)
+        # ==============================
+        # CONSULTA PRINCIPAL
+        # ==============================
 
-    sql = """
-    SELECT *
-    FROM sensores
-    WHERE fecha BETWEEN %s AND %s
-    """
+        sql = """
+        SELECT *
+        FROM sensores
+        WHERE fecha BETWEEN %s AND %s
+        """
 
-    params = [inicio, fin]
+        params = [inicio, fin]
 
-    if vaca != "all":
-        sql += " AND id_vaca=%s"
-        params.append(vaca)
+        if vaca != "all":
+            sql += " AND id_vaca=%s"
+            params.append(vaca)
 
-    cursor.execute(sql, params)
-    datos = cursor.fetchall()
+        cursor.execute(sql, params)
+        datos = cursor.fetchall()
 
-    if not datos:
-        return jsonify({"error": "Sin datos"})
+        if not datos:
+            return jsonify({"error": "Sin datos"})
 
-    # =========================================
-    # DISTANCIA RECORRIDA
-    # =========================================
+        # ==============================
+        # DISTANCIA
+        # ==============================
 
-    distancia_total = 0
-    puntos_validos = []
+        distancia_total = 0
+        puntos_validos = []
 
-    for d in datos:
-        lat = d["latitud"]
-        lon = d["longitud"]
+        for d in datos:
+            lat = d["latitud"]
+            lon = d["longitud"]
 
-        if lat and lon and lat != 0 and lon != 0:
-            puntos_validos.append((lat, lon))
+            if lat and lon and lat != 0 and lon != 0:
+                puntos_validos.append((lat, lon))
 
-    for i in range(1, len(puntos_validos)):
-        lat1, lon1 = puntos_validos[i-1]
-        lat2, lon2 = puntos_validos[i]
+        for i in range(1, len(puntos_validos)):
+            lat1, lon1 = puntos_validos[i-1]
+            lat2, lon2 = puntos_validos[i]
+            distancia_total += distancia(lat1, lon1, lat2, lon2)
 
-        distancia_total += distancia(lat1, lon1, lat2, lon2)
+        # ==============================
+        # ZONAS
+        # ==============================
 
-    # =========================================
-    # ZONAS MÁS FRECUENTES
-    # =========================================
+        zonas = {}
 
-    zonas = {}
+        for lat, lon in puntos_validos:
+            key = f"{round(lat,3)},{round(lon,3)}"
+            zonas[key] = zonas.get(key, 0) + 1
 
-    for lat, lon in puntos_validos:
+        zonas_frecuentes = sorted(zonas.items(), key=lambda x: x[1], reverse=True)[:3]
 
-        key = f"{round(lat,3)},{round(lon,3)}"
+        # ==============================
+        # BIOMÉTRICOS
+        # ==============================
 
-        if key not in zonas:
-            zonas[key] = 0
+        temps = [d["temp_objeto"] for d in datos if d["temp_objeto"]]
+        hr = [d["ritmo_cardiaco"] for d in datos if d["ritmo_cardiaco"]]
 
-        zonas[key] += 1
+        if not temps or not hr:
+            return jsonify({"error": "Datos insuficientes"})
 
-    zonas_frecuentes = sorted(zonas.items(), key=lambda x: x[1], reverse=True)[:3]
+        temp_avg = sum(temps)/len(temps)
+        hr_avg = sum(hr)/len(hr)
 
-    # =========================================
-    # ESTADÍSTICAS BIOMÉTRICAS
-    # =========================================
+        temp_max = max(temps)
+        hr_max = max(hr)
 
-    temps = [d["temp_objeto"] for d in datos if d["temp_objeto"]]
-    hr = [d["ritmo_cardiaco"] for d in datos if d["ritmo_cardiaco"]]
+        # ==============================
+        # HEALTH SCORE
+        # ==============================
 
-    temp_avg = sum(temps)/len(temps)
-    hr_avg = sum(hr)/len(hr)
+        score = 100
 
-    temp_max = max(temps)
-    hr_max = max(hr)
+        if temp_max > 39.5:
+            score -= 30
 
-    # =========================================
-    # HEALTH SCORE
-    # =========================================
+        if hr_max > 100:
+            score -= 30
 
-    score = 100
+        estado = "Saludable" if score >= 70 else "Posible problema"
 
-    if temp_max > 39.5:
-        score -= 30
+        # ==============================
+        # SISTEMA
+        # ==============================
 
-    if hr_max > 100:
-        score -= 30
+        total_registros = len(datos)
 
-    estado = "Saludable"
+        sensor_max30100_ok = sum(1 for d in datos if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 0)
+        sensor_mlx_ok = sum(1 for d in datos if d["temp_objeto"] and d["temp_objeto"] > 0)
+        sensor_mpu_ok = sum(1 for d in datos if d["gyro_x"] != 0 or d["gyro_y"] != 0 or d["gyro_z"] != 0)
+        sensor_gps_ok = sum(1 for d in datos if d["latitud"] != 0 and d["longitud"] != 0)
 
-    if score < 70:
-        estado = "Posible problema"
+        def porcentaje(x):
+            return (x / total_registros * 100) if total_registros else 0
 
-    # =========================================
-    # DIAGNOSTICO DEL SISTEMA
-    # =========================================
+        max30100_status = porcentaje(sensor_max30100_ok)
+        mlx_status = porcentaje(sensor_mlx_ok)
+        mpu_status = porcentaje(sensor_mpu_ok)
+        gps_status = porcentaje(sensor_gps_ok)
 
-    total_registros = len(datos)
+        sistema_estado = "Estable"
 
-    sensor_max30100_ok = 0
-    sensor_mlx_ok = 0
-    sensor_mpu_ok = 0
-    sensor_gps_ok = 0
+        if max30100_status < 70 or mlx_status < 70 or mpu_status < 70:
+            sistema_estado = "Sensores inestables"
 
-    for d in datos:
+        if gps_status < 50:
+            sistema_estado = "GPS con baja señal"
 
-        # MAX30100
-        if d["ritmo_cardiaco"] and d["ritmo_cardiaco"] > 0:
-            sensor_max30100_ok += 1
+        # ==============================
+        # TEXTOS
+        # ==============================
 
-        # MLX90614
-        if d["temp_objeto"] and d["temp_objeto"] > 0:
-            sensor_mlx_ok += 1
-
-        # MPU6050
-        if d["gyro_x"] != 0 or d["gyro_y"] != 0 or d["gyro_z"] != 0:
-            sensor_mpu_ok += 1
-
-        # GPS
-        if d["latitud"] != 0 and d["longitud"] != 0:
-            sensor_gps_ok += 1
-
-    def porcentaje(x):
-        if total_registros == 0:
-            return 0
-        return (x / total_registros) * 100
-
-    max30100_status = porcentaje(sensor_max30100_ok)
-    mlx_status = porcentaje(sensor_mlx_ok)
-    mpu_status = porcentaje(sensor_mpu_ok)
-    gps_status = porcentaje(sensor_gps_ok)
-
-    sistema_estado = "Estable"
-
-    if max30100_status < 70 or mlx_status < 70 or mpu_status < 70:
-        sistema_estado = "Sensores inestables"
-
-    if gps_status < 50:
-        sistema_estado = "GPS con baja señal"
-
-    # =========================================
-    # ANALISIS GENERAL
-    # =========================================
-
-    analisis = f"""
+        analisis = f"""
 Durante el periodo analizado se registró una temperatura promedio de {temp_avg:.2f} °C
 y un ritmo cardíaco promedio de {hr_avg:.2f} bpm.
 
-La temperatura máxima registrada fue {temp_max:.2f} °C y el ritmo cardíaco máximo fue
-{hr_max:.2f} bpm.
+La temperatura máxima registrada fue {temp_max:.2f} °C y el ritmo cardíaco máximo fue {hr_max:.2f} bpm.
 
-El índice de salud calculado es {score}/100, lo cual clasifica el estado del animal
-como: {estado}.
+El índice de salud es {score}/100 → Estado: {estado}.
 
-Distancia total recorrida durante el periodo: {distancia_total:.2f} km.
+Distancia total recorrida: {distancia_total:.2f} km.
 """
 
-    analisis_sistema = f"""
+        analisis_sistema = f"""
 --- Diagnóstico del sistema ---
 
-Total de conexiones registradas: {total_registros}
+Total de conexiones: {total_registros}
 
-Funcionamiento de sensores:
+MAX30100: {max30100_status:.1f}%
+MLX90614: {mlx_status:.1f}%
+MPU6050: {mpu_status:.1f}%
+GPS: {gps_status:.1f}%
 
-MAX30100 (ritmo cardiaco): {max30100_status:.1f}% operativo
-MLX90614 (temperatura): {mlx_status:.1f}% operativo
-MPU6050 (movimiento): {mpu_status:.1f}% operativo
-GPS (ubicación): {gps_status:.1f}% operativo
-
-Estado general del sistema: {sistema_estado}
+Estado general: {sistema_estado}
 """
 
-    return jsonify({
-        "datos": datos,
-        "estadisticas":{
-            "temp_avg": temp_avg,
-            "hr_avg": hr_avg,
-            "temp_max": temp_max,
-            "hr_max": hr_max,
-            "score": score,
-            "estado": estado
-        },
-        "movimiento":{
-            "distancia_km": distancia_total,
-            "zonas_frecuentes": zonas_frecuentes
-        },
-        "sistema":{
-            "total_registros": total_registros,
-            "max30100": max30100_status,
-            "mlx90614": mlx_status,
-            "mpu6050": mpu_status,
-            "gps": gps_status,
-            "estado": sistema_estado
-        },
-        "analisis": analisis,
-        "analisis_sistema": analisis_sistema
-    })
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "datos": datos,
+            "estadisticas": {
+                "temp_avg": temp_avg,
+                "hr_avg": hr_avg,
+                "temp_max": temp_max,
+                "hr_max": hr_max,
+                "score": score,
+                "estado": estado
+            },
+            "movimiento": {
+                "distancia_km": distancia_total,
+                "zonas_frecuentes": zonas_frecuentes
+            },
+            "sistema": {
+                "total_registros": total_registros,
+                "max30100": max30100_status,
+                "mlx90614": mlx_status,
+                "mpu6050": mpu_status,
+                "gps": gps_status,
+                "estado": sistema_estado
+            },
+            "analisis": analisis,
+            "analisis_sistema": analisis_sistema
+        })
+
+    except Exception as e:
+        print("ERROR EN /api/reporte:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 # Obtener todos los umbrales
 @app.route("/api/config/umbral", methods=["GET"])

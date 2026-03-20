@@ -24,7 +24,15 @@ const fin = document.getElementById("fin").value;
 try{
 
 const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
-const data = await res.json();
+let data;
+
+try {
+    data = await res.json();
+} catch (err) {
+    const text = await res.text();
+    console.error("Respuesta NO JSON:", text);
+    throw new Error("El servidor no devolvió JSON");
+}
 reporteActual = data;
 
 if(data.error){
