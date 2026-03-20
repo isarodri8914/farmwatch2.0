@@ -92,7 +92,10 @@ datasets:[{
 label:"Temperatura",
 data:temps,
 borderColor:"red",
-fill:false
+fill:false,
+tension: 0.4,
+pointRadius: 2,
+borderWidth: 2
 }]
 }
 
@@ -110,7 +113,10 @@ datasets:[{
 label:"Ritmo cardiaco",
 data:hr,
 borderColor:"blue",
-fill:false
+fill:false,
+tension: 0.4,
+pointRadius: 2,
+borderWidth: 2
 }]
 }
 
@@ -221,7 +227,7 @@ doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,114);
 doc.text("Estado: "+document.getElementById("estado").innerText,20,122);
 doc.text(
 "Distancia recorrida: " + 
-(document.getElementById("analisis").innerText.match(/Distancia recorrida: .* km/) || [""])[0],
+(reporteActual?.movimiento?.distancia_km?.toFixed(2) || "0") + " km",
 20,
 130
 );
