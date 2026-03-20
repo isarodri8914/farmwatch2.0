@@ -697,10 +697,28 @@ def generar_reporte():
     inicio = request.args.get("inicio")
     fin = request.args.get("fin")
 
-    if not inicio or not fin:
-        fin = datetime.now()
-        inicio = fin - timedelta(days=1)
+# ==============================
+# MANEJO CORRECTO DE FECHAS
+# ==============================
 
+    if inicio and fin:
+        try:
+         inicio = datetime.strptime(inicio, "%Y-%m-%d")
+         fin = datetime.strptime(fin, "%Y-%m-%d") + timedelta(days=1)
+        except:
+            return jsonify({"error": "Formato de fecha inválido"})
+    else:
+    # 🔥 SI NO HAY FECHAS → USA TODO EL HISTORIAL
+        cursor.execute("SELECT MIN(fecha) as min_fecha, MAX(fecha) as max_fecha FROM sensores")
+    rango = cursor.fetchone()
+
+    if not rango["min_fecha"]:
+        return jsonify({"error": "No hay datos en la base"})
+
+    inicio = rango["min_fecha"]
+    fin = rango["max_fecha"]
+
+    
     conn = get_connection()
     cursor = conn.cursor(pymysql.cursors.DictCursor)
 

@@ -204,12 +204,11 @@ doc.setFontSize(12);
 
 doc.text("Analisis:",20,35);
 
-doc.text(
-document.getElementById("analisis").innerText || "Sin datos",
-20,
-45,
-{maxWidth:170}
-);
+const texto = document.getElementById("analisis").innerText || "Sin datos";
+
+const lineas = doc.splitTextToSize(texto, 170);
+
+doc.text(lineas, 20, 45);
 
 doc.text("Estadisticas:",20,80);
 
@@ -258,7 +257,12 @@ doc.addPage();
 
 const mapElement = document.getElementById("map");
 
-const canvasMapa = await html2canvas(mapElement);
+await new Promise(r => setTimeout(r, 1000));
+const canvasMapa = await html2canvas(mapElement, {
+    useCORS: true,
+    allowTaint: true,
+    scale: 2
+});
 
 const mapaImg = canvasMapa.toDataURL("image/png");
 
