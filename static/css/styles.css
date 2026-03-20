@@ -125,3 +125,23 @@ padding:15px;
 border-radius:8px;
 margin-top:20px;
 }
+
+@media (max-width: 850px) {
+
+    .container {
+        width: 95%;
+    }
+
+    .stats {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .charts {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-logo {
+        font-size: 18px;
+    }
+}
