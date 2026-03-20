@@ -125,6 +125,8 @@
         display: none;
     }
     .hamburger {
-        display: block;
+        display: block !important;
+        background: red;
     }
 }
+
