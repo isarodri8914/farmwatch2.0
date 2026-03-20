@@ -252,7 +252,10 @@ y += 5;
 
 doc.addImage(tempImg,"PNG",20,y,170,60);
 
-y += 70;
+/* 🔥 SALTO DE PAGINA */
+doc.addPage();
+
+y = 20;
 
 /* -------- GRAFICA RITMO -------- */
 
@@ -264,7 +267,10 @@ y += 5;
 
 doc.addImage(hrImg,"PNG",20,y,170,60);
 
+/* 🔥 NUEVA PAGINA PARA MAPA */
 doc.addPage();
+
+y = 20;
 
 /* -------- MAPA (ARREGLADO) -------- */
 
