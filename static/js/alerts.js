@@ -10,6 +10,24 @@ document.addEventListener("DOMContentLoaded", () => {
         listaSensores.innerHTML = "";
     }
 
+    function crearAlerta(texto, nivel) {
+        const li = document.createElement("li");
+        li.className = `alert-item ${nivel}`;
+
+        const hora = new Date().toLocaleString('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+
+        li.innerHTML = `
+            <p class="alert-text">${texto}</p>
+            <p class="alert-time">${hora}</p>
+        `;
+
+        return li;
+    }
+
     function cargarEstado() {
 
         fetch("/api/estado-sistema")
@@ -109,24 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
     }
 
-    // 🔥 Ejecuta inmediatamente
+    // 🔥 Ejecuta inmediatamente y cada 5 segundos
     cargarEstado();
-
-    // 🔥 Y luego cada 5 segundos
     setInterval(cargarEstado, 5000);
 });
-
-
-function crearAlerta(texto, nivel) {
-    const li = document.createElement("li");
-    li.className = `alert-item ${nivel}`;
-
-    const hora = new Date().toLocaleString();
-
-    li.innerHTML = `
-        <p class="alert-text">${texto}</p>
-        <p class="alert-time">${hora}</p>
-    `;
-
-    return li;
-}
