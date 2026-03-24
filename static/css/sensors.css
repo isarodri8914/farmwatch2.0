@@ -246,3 +246,19 @@ h1 {
   .card { padding: 24px; }
   .modal-content { max-width: 92%; padding: 26px; }
 }
+
+/* RESPONSIVE EXTRA */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.4rem;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .btn {
+    font-size: 13px;
+    padding: 6px 10px;
+  }
+}
