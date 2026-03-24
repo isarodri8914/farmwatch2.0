@@ -1,4 +1,4 @@
-/* RESET FUERTE (evita estilos viejos) */
+/* RESET FUERTE */
 ul {
     margin: 0;
     padding: 0;
@@ -6,7 +6,7 @@ ul {
 }
 
 /* ==================================
-   SIDEBAR (ESCRITORIO)
+   SIDEBAR (ESCRITORIO - PC)
 ================================== */
 .navbar {
     width: 260px;
@@ -29,6 +29,9 @@ ul {
     font-size: 22px;
     font-weight: 700;
     color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 /* LINKS VERTICALES */
@@ -39,7 +42,6 @@ ul {
     flex: 1;
 }
 
-/* 🔥 ESTO ELIMINA LOS LINKS FEOS DE ARRIBA */
 .nav-links li {
     width: 100%;
 }
@@ -59,40 +61,45 @@ ul {
     background: rgba(255,255,255,0.05);
     color: white;
     border-left: 4px solid #4e73df;
+    padding-left: 30px;
 }
 
-/* FOOTER */
+/* FOOTER DEL SIDEBAR */
 .nav-right {
     margin-top: auto;
     padding: 20px 25px;
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .nav-right a {
     color: #cfcfcf;
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .nav-right a:hover {
     color: white;
 }
 
-/* BOTÓN HAMBURGUESA */
-.hamburger {
-    display: none;
+/* OCULTAR MENÚ MÓVIL EN PC */
+.hamburger, .mobile-menu {
+    display: none !important;
 }
 
 /* CONTENIDO */
 .page-content {
     margin-left: 260px;
     width: calc(100% - 260px);
-    padding: 20px;
+    padding: 30px;
+    min-height: 100vh;
 }
 
 /* ==================================
-   MÓVIL
+   MÓVIL (PANTALLAS PEQUEÑAS)
 ================================== */
 @media (max-width: 850px) {
-
     .navbar {
         width: 100%;
         height: 70px;
@@ -100,10 +107,12 @@ ul {
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
+        border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
-    /* 🔥 CLAVE: OCULTA LOS LINKS SUPERIORES */
-    .nav-links {
+    /* Escondemos los links del sidebar en móvil */
+    .nav-links, .nav-right {
         display: none !important;
     }
 
@@ -114,15 +123,15 @@ ul {
     }
 
     .hamburger {
-        display: block;
+        display: block !important;
         color: white;
         font-size: 26px;
         cursor: pointer;
     }
 
-    /* MENÚ DESLIZABLE */
+    /* MENÚ DESLIZABLE MÓVIL */
     .mobile-menu {
-        display: flex;
+        display: flex !important;
         flex-direction: column;
         position: fixed;
         top: 70px;
@@ -133,6 +142,7 @@ ul {
         transform: translateX(100%);
         transition: transform 0.3s ease;
         z-index: 9999;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.3);
     }
 
     .mobile-menu.active {
@@ -142,9 +152,11 @@ ul {
     .mobile-menu a {
         color: white;
         text-decoration: none;
-        padding: 20px;
+        padding: 18px 25px;
         border-bottom: 1px solid rgba(255,255,255,0.05);
         display: flex;
-        gap: 10px;
+        align-items: center;
+        gap: 12px;
+        font-size: 16px;
     }
 }
