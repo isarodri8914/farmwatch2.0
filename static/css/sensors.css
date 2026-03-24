@@ -51,6 +51,13 @@ h1 {
   border-collapse: collapse;
 }
 
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0 -32px;   /* 🔥 rompe el padding del card */
+  padding: 0 32px;   /* lo vuelve a alinear */
+}
+
 .table th {
   background: #f8fafc;
   color: #475569;
@@ -245,15 +252,20 @@ h1 {
   .container { padding: 0 15px; }
   .card { padding: 24px; }
   .modal-content { max-width: 92%; padding: 26px; }
+
+    .table-wrapper {
+    margin: 0 -24px;
+    padding: 0 24px;
+  }
 }
 
 /* RESPONSIVE EXTRA */
 @media (max-width: 480px) {
   
-  .table {
-    min-width: 500px;
+  .table-wrapper {
+    margin: 0 -16px;
+    padding: 0 16px;
   }
-
   .sensor-grid {
     grid-template-columns: 1fr;
   }
