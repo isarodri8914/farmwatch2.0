@@ -8,7 +8,14 @@ function openEditModal(title, fieldId) {
 
     document.getElementById("modalTitle").innerText = "Editar " + title;
     document.getElementById("newValue").value = "";
-    document.getElementById("editModal").style.display = "flex";
+    
+    const modal = document.getElementById("editModal");
+    modal.classList.add("show");
+}
+
+function closeModal() {
+    const modal = document.getElementById("editModal");
+    modal.classList.remove("show");
 }
 
 async function saveValue() {
@@ -42,18 +49,24 @@ async function saveValue() {
         }
 
         // Actualizar visualmente
-        document.getElementById(currentField).innerText = valor + (clave.includes("temp") ? " °C" : " bpm");
+        const unidad = clave.includes("temp") ? " °C" : " bpm";
+        document.getElementById(currentField).innerText = valor + unidad;
+        
         closeModal();
         alert("Umbral actualizado correctamente");
+        
     } catch (err) {
         console.error(err);
         alert("Error de conexión al guardar");
     }
 }
 
-function closeModal() {
-    document.getElementById("editModal").style.display = "none";
-}
+// Cerrar modal al hacer clic fuera del contenido
+document.getElementById("editModal").addEventListener("click", function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
 
 // ==========================
 // MAPEAR ESTADO VISUAL
@@ -73,11 +86,8 @@ function mapStatus(status) {
 async function getLastSensorData() {
     try {
         const res = await fetch("/api/sensores/ultimos");
-
         if (!res.ok) return null;
-
         return await res.json();
-
     } catch (error) {
         console.error("Error obteniendo datos:", error);
         return null;
@@ -86,12 +96,10 @@ async function getLastSensorData() {
 
 function sensorEstaCongelado(valores) {
     if (valores.length < 3) return false;
-
     return valores.every(v => v === valores[0]);
 }
 
 function evaluateSensors(datos) {
-
     if (!datos || datos.length === 0) {
         return [
             { name: "ESP32", icon: "⚡", status: "Offline" }
@@ -99,7 +107,6 @@ function evaluateSensors(datos) {
     }
 
     const ultima = datos[0];
-
     const now = new Date();
     const last = new Date(ultima.fecha);
     const diffSeconds = (now - last) / 1000;
@@ -115,53 +122,42 @@ function evaluateSensors(datos) {
     const gyroY = datos.map(d => d.gyro_y);
     const gyroZ = datos.map(d => d.gyro_z);
 
-    const mpuCongelado =
-        sensorEstaCongelado(gyroX) &&
-        sensorEstaCongelado(gyroY) &&
-        sensorEstaCongelado(gyroZ);
+    const mpuCongelado = sensorEstaCongelado(gyroX) && 
+                         sensorEstaCongelado(gyroY) && 
+                         sensorEstaCongelado(gyroZ);
 
     // ===== MAX30100 =====
     const ritmos = datos.map(d => d.ritmo_cardiaco);
     const oxigenos = datos.map(d => d.oxigeno);
 
-    const maxCongelado =
-        sensorEstaCongelado(ritmos) &&
-        sensorEstaCongelado(oxigenos);
+    const maxCongelado = sensorEstaCongelado(ritmos) && 
+                         sensorEstaCongelado(oxigenos);
 
     return [
-
         {
             name: "MAX30100",
             type: "Ritmo cardíaco y oxígeno",
             icon: "❤️",
             status: maxCongelado ? "Sin señal" : "Activo"
         },
-
         {
             name: "MLX90614",
             type: "Temperatura corporal",
             icon: "🌡️",
-            status: (ultima.temp_objeto > 0 || ultima.temp_ambiente > 0)
-                ? "Activo"
-                : "Sin señal"
+            status: (ultima.temp_objeto > 0 || ultima.temp_ambiente > 0) ? "Activo" : "Sin señal"
         },
-
         {
             name: "MPU6050",
             type: "Acelerómetro / Giroscopio",
             icon: "📐",
             status: mpuCongelado ? "Sin señal" : "Activo"
         },
-
         {
             name: "GPS NEO6MV2",
             type: "Geolocalización",
             icon: "📍",
-            status: (ultima.latitud == 0 && ultima.longitud == 0)
-                ? "Sin señal"
-                : "Activo"
+            status: (ultima.latitud == 0 && ultima.longitud == 0) ? "Sin señal" : "Activo"
         },
-
         {
             name: "ESP32",
             type: "Microcontrolador",
@@ -171,13 +167,10 @@ function evaluateSensors(datos) {
     ];
 }
 
-
-
 // ==========================
 // CARGAR SENSORES DINÁMICAMENTE
 // ==========================
 async function loadSensors() {
-
     const data = await getLastSensorData();
     const grid = document.getElementById("sensor-grid");
     grid.innerHTML = "";
@@ -191,9 +184,7 @@ async function loadSensors() {
                     <div class="sensor-name">${s.name}</div>
                     <div class="sensor-icon">${s.icon}</div>
                 </div>
-
                 <p>${s.type}</p>
-
                 <span class="sensor-status ${mapStatus(s.status)}">
                     ${s.status}
                 </span>
@@ -202,6 +193,9 @@ async function loadSensors() {
     });
 }
 
+// ==========================
+// CARGAR UMBRALES
+// ==========================
 async function loadUmbrales() {
     try {
         const res = await fetch("/api/config/umbral");
@@ -223,11 +217,9 @@ async function loadUmbrales() {
     }
 }
 
-// Cargar al inicio
+// ==========================
+// INICIO
+// ==========================
 loadUmbrales();
-
-// ==========================
-// AUTO REFRESH
-// ==========================
 loadSensors();
 setInterval(loadSensors, 5000);
