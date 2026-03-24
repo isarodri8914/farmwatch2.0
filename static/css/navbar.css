@@ -1,98 +1,76 @@
 /* ==================================
-   1. SIDEBAR PARA PC (ESTILO MODERNO)
+   1. SIDEBAR PARA ESCRITORIO (PC)
    ================================== */
 .navbar {
     width: 260px;
     height: 100vh;
-    /* Fondo con ligera transparencia y desenfoque */
-    background: rgba(27, 38, 59, 0.95);
-    backdrop-filter: blur(10px); 
-    
+    background: #1b263b;
     display: flex;
     flex-direction: column;
     position: fixed;
     left: 0;
     top: 0;
     z-index: 1000;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 4px 0 15px rgba(0,0,0,0.2);
     padding: 20px 0;
 }
 
-/* ELIMINAR LOS LINKS FANTASMAS DE ARRIBA (PC Y MÓVIL) */
-/* Tu HTML tiene un div .nav-left que contiene el logo y la lista .nav-links */
-.nav-left {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-
-/* Esto asegura que la lista de links sea vertical y no horizontal */
+/* Ocultamos los links horizontales que se ven en tu imagen arriba */
 .nav-links {
     display: flex;
-    flex-direction: column; 
+    flex-direction: column; /* Los obligamos a ser lista vertical */
     list-style: none;
     padding: 0;
-    margin: 30px 0 0 0; /* Espacio bajo el logo */
+    margin: 20px 0;
     width: 100%;
 }
 
-/* Estilo de los items del menú */
 .nav-links li a {
     display: flex;
     align-items: center;
-    gap: 15px;
-    color: rgba(255, 255, 255, 0.7);
+    gap: 12px;
+    color: #cfcfcf;
     text-decoration: none;
-    padding: 16px 25px;
+    padding: 15px 25px;
+    transition: 0.3s;
     font-size: 15px;
-    font-weight: 400;
-    transition: all 0.3s ease;
-    border-left: 4px solid transparent;
 }
 
-/* Hover elegante */
 .nav-links li a:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
-    border-left: 4px solid #3b82f6; /* Azul brillante */
-    padding-left: 30px; /* Efecto de desplazamiento */
+    background: rgba(255,255,255,0.05);
+    color: white;
+    border-left: 4px solid #4e73df;
 }
 
-/* Logo */
+/* El logo en el sidebar */
 .nav-logo {
     padding: 10px 25px;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 700;
     color: white;
-    letter-spacing: 1px;
 }
 
-/* Sección de usuario al fondo */
+/* El icono de usuario al fondo */
 .nav-right {
     margin-top: auto;
     padding: 20px 25px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.user-menu i {
-    font-size: 28px;
-    color: white;
-    opacity: 0.8;
+.hamburger {
+    display: none; /* Escondido en PC */
 }
 
 /* ==================================
-   2. AJUSTE DEL CONTENIDO PRINCIPAL
+   2. AJUSTE DEL CONTENIDO (DERECHA)
    ================================== */
 .page-content {
-    margin-left: 260px; 
-    padding: 40px;
-    background: #f8fafc; /* Color de fondo más limpio */
-    min-height: 100vh;
+    margin-left: 260px; /* Empuja el contenido para que no lo tape el sidebar */
+    width: calc(100% - 260px);
+    padding: 20px;
 }
 
 /* ==================================
-   3. RESPONSIVE (MÓVIL)
+   3. RESPONSIVE (MÓVIL Y TABLET)
    ================================== */
 @media (max-width: 850px) {
     .navbar {
@@ -102,29 +80,53 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
+        position: fixed;
     }
 
-    /* MATAMOS definitivamente los links horizontales en móvil */
     .nav-links {
-        display: none !important; 
+        display: none !important; /* MATAMOS los links que se ven arriba en tu imagen */
     }
 
     .page-content {
         margin-left: 0;
         width: 100%;
-        padding-top: 100px;
+        padding-top: 90px;
     }
 
     .hamburger {
-        display: block !important;
+        display: block; /* Aparecen las 3 rayitas */
         color: white;
         font-size: 26px;
+        cursor: pointer;
     }
 
-    /* Estilo para el menú desplegable móvil */
+    /* EL MENÚ MÓVIL (El que sale al dar clic) */
     .mobile-menu {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 70px; /* Justo debajo de la barrita */
+        right: 0;
+        width: 250px;
+        height: calc(100vh - 70px);
         background: #1b263b;
-        width: 280px;
-        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        z-index: 9999;
+        transform: translateX(100%); /* Escondido a la derecha */
+        transition: transform 0.3s ease;
+        box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+    }
+
+    .mobile-menu.active {
+        transform: translateX(0); /* Se desliza hacia adentro */
+    }
+
+    .mobile-menu a {
+        color: white;
+        text-decoration: none;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 }
