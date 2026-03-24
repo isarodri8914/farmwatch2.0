@@ -249,16 +249,20 @@ h1 {
 
 /* RESPONSIVE EXTRA */
 @media (max-width: 480px) {
-  h1 {
-    font-size: 1.4rem;
+  
+  .table {
+    min-width: 500px;
   }
 
-  .card {
-    padding: 16px;
+  .sensor-grid {
+    grid-template-columns: 1fr;
   }
 
-  .btn {
-    font-size: 13px;
-    padding: 6px 10px;
+  .sensor-card {
+    padding: 18px;
+  }
+
+  .sensor-icon {
+    font-size: 34px;
   }
 }
