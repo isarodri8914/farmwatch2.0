@@ -93,47 +93,58 @@ async function updateCharts() {
         });
 
         if (tempChart) tempChart.destroy();
-        tempChart = new Chart(document.getElementById("tempChart"), {
-            type: "line",
-            data: { labels: allLabels, datasets: tempDatasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                clip: false,                    // ← Permite que los puntos salgan un poco
-                layout: {
-                    padding: { right: 25 }      // ← Espacio extra a la derecha
-                },
-                plugins: {
-                    legend: {
-                        position: "top",
-                        labels: { font: { size: 13 } },
-                        onClick: (e, legendItem, legend) => {
-                            const index = legendItem.datasetIndex;
-                            const ci = legend.chart;
-                            const meta = ci.getDatasetMeta(index);
-                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
-                            ci.update();
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
-                        }
-                    }
-                },
-                scales: {
-                    y: { 
-                        suggestedMin: 30, 
-                        suggestedMax: 45, 
-                        title: { display: true, text: "°C" } 
-                    },
-                    x: { 
-                        title: { display: true, text: "Hora" },
-                        offset: true                    // ← CLAVE: evita que se corte el último punto
-                    }
+       tempChart = new Chart(document.getElementById("tempChart"), {
+    type: "line",
+    data: { labels: allLabels, datasets: tempDatasets },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        clip: false,
+        layout: {
+            padding: {
+                left: 10,
+                right: 30,     // ← más espacio a la derecha
+                top: 10,
+                bottom: 10
+            }
+        },
+        plugins: {
+            legend: {
+                position: "top",
+                labels: { font: { size: 13 } },
+                onClick: (e, legendItem, legend) => {
+                    const index = legendItem.datasetIndex;
+                    const ci = legend.chart;
+                    const meta = ci.getDatasetMeta(index);
+                    meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                    ci.update();
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
                 }
             }
-        });
+        },
+        scales: {
+            x: {
+                title: { display: true, text: "Hora" },
+                offset: true,               // importante
+                grid: { display: true },
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 0,
+                    padding: 8
+                }
+            },
+            y: {
+                suggestedMin: 30,
+                suggestedMax: 45,
+                title: { display: true, text: "°C" }
+            }
+        }
+    }
+});
 
         // ==================== RITMO CARDÍACO ====================
         const hrDatasets = [];
@@ -166,47 +177,58 @@ async function updateCharts() {
         });
 
         if (hrChart) hrChart.destroy();
-        hrChart = new Chart(document.getElementById("hrChart"), {
-            type: "line",
-            data: { labels: allLabels, datasets: hrDatasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                clip: false,
-                layout: {
-                    padding: { right: 25 }
-                },
-                plugins: {
-                    legend: {
-                        position: "top",
-                        labels: { font: { size: 13 } },
-                        onClick: (e, legendItem, legend) => {
-                            const index = legendItem.datasetIndex;
-                            const ci = legend.chart;
-                            const meta = ci.getDatasetMeta(index);
-                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
-                            ci.update();
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
-                        }
-                    }
-                },
-                scales: {
-                    y: { 
-                        suggestedMin: 40, 
-                        suggestedMax: 140, 
-                        title: { display: true, text: "bpm" } 
-                    },
-                    x: { 
-                        title: { display: true, text: "Hora" },
-                        offset: true
-                    }
+       hrChart = new Chart(document.getElementById("hrChart"), {
+    type: "line",
+    data: { labels: allLabels, datasets: hrDatasets },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        clip: false,
+        layout: {
+            padding: {
+                left: 10,
+                right: 30,
+                top: 10,
+                bottom: 10
+            }
+        },
+        plugins: {
+            legend: {
+                position: "top",
+                labels: { font: { size: 13 } },
+                onClick: (e, legendItem, legend) => {
+                    const index = legendItem.datasetIndex;
+                    const ci = legend.chart;
+                    const meta = ci.getDatasetMeta(index);
+                    meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                    ci.update();
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
                 }
             }
-        });
+        },
+        scales: {
+            x: {
+                title: { display: true, text: "Hora" },
+                offset: true,
+                grid: { display: true },
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 0,
+                    padding: 8
+                }
+            },
+            y: {
+                suggestedMin: 40,
+                suggestedMax: 140,
+                title: { display: true, text: "bpm" }
+            }
+        }
+    }
+});
 
         await addThresholdLines();
 

@@ -23,10 +23,10 @@ def distancia(lat1, lon1, lat2, lon2):
     return R*c
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") # Cambia esto en producción
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "una_clave_muy_segura_123") 
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SECURE=True,  # Cloud Run usa HTTPS
+    SESSION_COOKIE_SECURE=True,  # SESION DE COOKIES PARA HTTPS
     SESSION_COOKIE_SAMESITE="Lax"
 )
 

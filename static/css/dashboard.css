@@ -133,14 +133,13 @@
 }
 
 .chart-card {
-  height: 460px;                    /* Altura óptima para gráficas anchas */
-  padding: 28px 32px 36px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.90);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
-  position: relative;
-  transition: transform 0.3s ease;
+    height: 460px;
+    padding: 28px 32px 50px 32px;   /* más padding abajo para las etiquetas */
+    position: relative;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.90);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
 }
 
 .chart-card:hover {
@@ -148,20 +147,20 @@
 }
 
 .chart-card h4 {
-  margin: 0 0 26px 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #0f172a;
+    margin: 0 0 20px 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0f172a;
 }
 
 .chart-card canvas {
-    position: absolute;
-    top: 82px;
-    left: 32px;
-    right: 50px;          /* ← más espacio a la derecha */
-    bottom: 40px;
-    width: auto !important;
-    height: auto !important;
+    position: absolute !important;
+    top: 70px !important;
+    left: 20px !important;
+    right: 20px !important;     /* márgenes simétricos */
+    bottom: 30px !important;
+    width: calc(100% - 40px) !important;
+    height: calc(100% - 100px) !important;
 }
 
 /* Selector de vaca */
