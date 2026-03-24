@@ -1,5 +1,5 @@
 /* =============================================
-   REPORTS.CSS - Estilo Glassmorphism Profesional
+   REPORTS.CSS - Versión Optimizada para Móviles
    ============================================= */
 
 :root {
@@ -12,79 +12,62 @@
 
 .report-container {
   max-width: 1400px;
-  margin: 30px auto;
-  padding: 0 20px;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  margin: 20px auto;
+  padding: 0 15px;
 }
 
+/* Título */
 h1 {
   text-align: center;
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 35px;
+  margin-bottom: 25px;
 }
 
 /* FILTROS */
 .report-filters {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
   flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
   background: var(--bg-card);
   backdrop-filter: blur(16px);
-  padding: 24px;
+  padding: 20px;
   border-radius: 20px;
   border: 1px solid var(--border-glass);
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1);
+  margin-bottom: 30px;
 }
 
 .report-filters label {
   font-weight: 600;
   color: var(--text-light);
-  margin-right: 6px;
-  white-space: nowrap;
+  min-width: 60px;
 }
 
 .report-filters select,
 .report-filters input {
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   font-size: 15px;
-  background: white;
-}
-
-.report-filters select:focus,
-.report-filters input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-  outline: none;
+  flex: 1;
+  min-width: 140px;
 }
 
 .report-filters button {
   background: linear-gradient(45deg, var(--primary), #2563eb);
   color: white;
   border: none;
-  padding: 11px 22px;
+  padding: 12px 20px;
   border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  white-space: nowrap;
 }
 
 .report-filters button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
-}
-
-.export-btn {
-  background: #10b981 !important;
-}
-
-.export-btn:hover {
-  background: #059669 !important;
 }
 
 /* Análisis */
@@ -92,36 +75,32 @@ h1 {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
   border-left: 6px solid var(--primary);
-  padding: 24px;
+  padding: 20px;
   border-radius: 18px;
-  margin-bottom: 32px;
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1);
-  line-height: 1.7;
-  font-size: 15.5px;
-  color: var(--text);
+  margin-bottom: 30px;
+  line-height: 1.6;
 }
 
 /* Estadísticas */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 20px;
-  margin-bottom: 35px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
 .stat-card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
-  padding: 24px 20px;
+  padding: 20px;
   border-radius: 18px;
   text-align: center;
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1);
-  border: 1px solid var(--border-glass);
+  box-shadow: 0 10px 25px -8px rgba(15, 23, 42, 0.1);
 }
 
 .stat-card h3 {
-  margin: 0 0 8px 0;
-  font-size: 2.1rem;
+  margin: 0 0 6px 0;
+  font-size: 1.85rem;
   font-weight: 700;
   color: var(--primary);
 }
@@ -129,96 +108,111 @@ h1 {
 .stat-card p {
   margin: 0;
   color: var(--text-light);
-  font-size: 14.5px;
+  font-size: 14px;
 }
 
-/* Gráficas */
+/* Gráficas - Optimizadas para móviles */
 .charts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 24px;
-  margin-bottom: 35px;
+  margin-bottom: 32px;
 }
 
 .chart-card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
-  padding: 24px;
+  padding: 20px;
   border-radius: 20px;
-  box-shadow: 0 15px 35px -12px rgba(15, 23, 42, 0.12);
-  border: 1px solid var(--border-glass);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1);
 }
 
 .chart-card h3 {
-  margin: 0 0 18px 0;
-  font-size: 1.35rem;
+  margin: 0 0 16px 0;
+  font-size: 1.3rem;
   color: var(--text);
+}
+
+/* Forzar tamaño fijo en gráficas */
+.chart-card canvas {
+  width: 100% !important;
+  height: 280px !important;     /* Altura fija en móviles */
+  max-height: 280px !important;
 }
 
 /* Mapa */
 .map-card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
-  padding: 24px;
+  padding: 20px;
   border-radius: 20px;
-  box-shadow: 0 15px 35px -12px rgba(15, 23, 42, 0.12);
-  margin-bottom: 35px;
-  border: 1px solid var(--border-glass);
+  margin-bottom: 32px;
 }
 
 #map {
-  height: 420px;
+  height: 380px;
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
 }
 
-/* Tabla */
+/* Tabla - Muy importante para móviles */
 .data-table {
   width: 100%;
   border-collapse: collapse;
   background: var(--bg-card);
-  backdrop-filter: blur(16px);
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 15px 35px -12px rgba(15, 23, 42, 0.1);
-  border: 1px solid var(--border-glass);
+  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1);
+  font-size: 14.5px;
 }
 
 .data-table th {
   background: #0f172a;
   color: white;
-  padding: 16px 14px;
+  padding: 14px 10px;
   text-align: left;
-  font-weight: 600;
+  font-size: 13.5px;
 }
 
 .data-table td {
-  padding: 14px;
+  padding: 12px 10px;
   border-bottom: 1px solid #f1f5f9;
 }
 
-.data-table tr:hover {
-  background: rgba(59, 130, 246, 0.08);
-}
-
-/* Responsive */
-@media (max-width: 1100px) {
-  .charts {
-    grid-template-columns: 1fr;
+/* Scroll horizontal en tabla para móviles */
+@media (max-width: 768px) {
+  .data-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
   }
 }
 
-@media (max-width: 768px) {
+/* Responsive general */
+@media (max-width: 900px) {
+  .charts {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+  
   .report-filters {
     flex-direction: column;
     align-items: stretch;
   }
   
-  .stats {
-    grid-template-columns: 1fr 1fr;
+  .report-filters label {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-card canvas {
+    height: 240px !important;
   }
   
-  .report-container {
-    padding: 0 15px;
+  #map {
+    height: 320px;
   }
 }

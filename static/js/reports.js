@@ -1,339 +1,259 @@
 let map;
 let ruta;
-let marcadores=[];
+let marcadores = [];
 let tempChart;
 let hrChart;
 let reporteActual = null;
 
 document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("generar").onclick = generarInforme;
+    document.getElementById("exportPDF").onclick = exportPDF;
 
-document.getElementById("generar").onclick = generarInforme;
-
-document.getElementById("exportPDF").onclick = exportPDF;
-
-cargarVacas();
-
+    cargarVacas();
 });
 
 async function generarInforme() {
+    const vaca = document.getElementById("vaca").value;
+    const inicio = document.getElementById("inicio").value;
+    const fin = document.getElementById("fin").value;
 
-const vaca = document.getElementById("vaca").value;
-const inicio = document.getElementById("inicio").value;
-const fin = document.getElementById("fin").value;
+    if (!inicio || !fin) {
+        alert("Por favor selecciona una fecha de inicio y fin");
+        return;
+    }
 
-try{
+    try {
+        const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
+        
+        if (!res.ok) throw new Error("Error del servidor");
 
-const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
-let data;
+        const data = await res.json();
+        reporteActual = data;
 
-try {
-    data = await res.json();
-} catch (err) {
-    const text = await res.text();
-    console.error("Respuesta NO JSON:", text);
-    throw new Error("El servidor no devolvió JSON");
-}
-reporteActual = data;
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
 
-if(data.error){
-alert(data.error);
-return;
-}
+        mostrarAnalisis(data);
+        crearGraficas(data.datos);
+        crearMapa(data.datos);
+        crearTabla(data.datos);
 
-mostrarAnalisis(data);
-crearGraficas(data.datos);
-crearMapa(data.datos);
-crearTabla(data.datos);
-
-}catch(e){
-
-console.error("Error generando informe",e);
-alert("Error al generar informe");
-
+    } catch (e) {
+        console.error("Error generando informe:", e);
+        alert("Error al generar el informe. Inténtalo de nuevo.");
+    }
 }
 
+function mostrarAnalisis(data) {
+    const analisisEl = document.getElementById("analisis");
+    analisisEl.innerHTML = data.analisis || "Sin análisis disponible.";
+
+    document.getElementById("temp_avg").innerText = data.estadisticas?.temp_avg?.toFixed(2) || "--";
+    document.getElementById("temp_max").innerText = data.estadisticas?.temp_max?.toFixed(2) || "--";
+    document.getElementById("hr_avg").innerText = data.estadisticas?.hr_avg?.toFixed(2) || "--";
+    document.getElementById("hr_max").innerText = data.estadisticas?.hr_max?.toFixed(2) || "--";
+    document.getElementById("estado").innerText = data.estadisticas?.estado || "Sin datos";
+
+    // Distancia recorrida
+    if (data.movimiento?.distancia_km) {
+        analisisEl.innerHTML += `<br><br><strong>Distancia recorrida:</strong> ${data.movimiento.distancia_km.toFixed(2)} km`;
+    }
 }
 
-function mostrarAnalisis(data){
+function crearGraficas(datos) {
+    if (!datos || datos.length === 0) return;
 
-document.getElementById("analisis").innerText = data.analisis;
+    // Tomar solo los últimos 30 registros para mejor visualización
+    const datosLimitados = datos.slice(-30);
 
-document.getElementById("temp_avg").innerText = data.estadisticas.temp_avg.toFixed(2);
-document.getElementById("temp_max").innerText = data.estadisticas.temp_max.toFixed(2);
+    const labels = datosLimitados.map(d => {
+        const fecha = new Date(d.fecha);
+        return fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    });
 
-document.getElementById("hr_avg").innerText = data.estadisticas.hr_avg.toFixed(2);
-document.getElementById("hr_max").innerText = data.estadisticas.hr_max.toFixed(2);
+    const temps = datosLimitados.map(d => d.temp_objeto || 0);
+    const hrs = datosLimitados.map(d => d.ritmo_cardiaco || 0);
 
-document.getElementById("estado").innerText = data.estadisticas.estado;
+    // Destruir gráficos anteriores
+    if (tempChart) tempChart.destroy();
+    if (hrChart) hrChart.destroy();
 
-if(data.movimiento){
+    // Gráfica de Temperatura
+    tempChart = new Chart(document.getElementById("tempChart"), {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Temperatura (°C)",
+                data: temps,
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: "top" }
+            },
+            scales: {
+                y: { beginAtZero: false, suggestedMin: 28, suggestedMax: 40 }
+            }
+        }
+    });
 
-document.getElementById("analisis").innerText +=
-"\n\nDistancia recorrida: " + data.movimiento.distancia_km.toFixed(2) + " km";
-
+    // Gráfica de Ritmo Cardíaco
+    hrChart = new Chart(document.getElementById("hrChart"), {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Ritmo Cardíaco (BPM)",
+                data: hrs,
+                borderColor: "#3b82f6",
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: "top" }
+            },
+            scales: {
+                y: { beginAtZero: false, suggestedMin: 40, suggestedMax: 140 }
+            }
+        }
+    });
 }
 
-if(data.analisis_sistema){
+function crearMapa(datos) {
+    if (!map) {
+        map = L.map("map").setView([20.97, -89.62], 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "© OpenStreetMap"
+        }).addTo(map);
+    }
 
-document.getElementById("analisis").innerText +=
-"\n\n" + data.analisis_sistema;
+    // Limpiar marcadores y ruta anterior
+    marcadores.forEach(m => map.removeLayer(m));
+    marcadores = [];
+    if (ruta) map.removeLayer(ruta);
 
+    const puntos = [];
+
+    datos.forEach(d => {
+        if (d.latitud && d.longitud && d.latitud !== 0 && d.longitud !== 0) {
+            const punto = [d.latitud, d.longitud];
+            puntos.push(punto);
+
+            const marker = L.marker(punto).addTo(map);
+            marcadores.push(marker);
+        }
+    });
+
+    if (puntos.length > 1) {
+        ruta = L.polyline(puntos, { color: "#ef4444", weight: 4, opacity: 0.85 }).addTo(map);
+        map.fitBounds(puntos, { padding: [20, 20] });
+    } else if (puntos.length === 1) {
+        map.setView(puntos[0], 15);
+    }
 }
 
+function crearTabla(datos) {
+    const tbody = document.querySelector("#tabla tbody");
+    tbody.innerHTML = "";
+
+    datos.forEach(d => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${d.fecha || '-'}</td>
+            <td>${d.temp_objeto || '-'} °C</td>
+            <td>${d.ritmo_cardiaco || '-'} BPM</td>
+            <td>${d.latitud || '-'}</td>
+            <td>${d.longitud || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
-function crearGraficas(datos){
+/* ==================== EXPORTAR PDF ==================== */
+async function exportPDF() {
+    if (!reporteActual) {
+        alert("Primero genera un informe");
+        return;
+    }
 
-// 🔥 SOLO TOMAR LOS ÚLTIMOS 30 REGISTROS
-const datosLimitados = datos.slice(-30);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF("portrait");
 
-const labels = datosLimitados.map(d => d.fecha);
-const temps = datosLimitados.map(d => d.temp_objeto);
-const hr = datosLimitados.map(d => d.ritmo_cardiaco);
+    let y = 20;
 
-if(tempChart) tempChart.destroy();
+    doc.setFontSize(18);
+    doc.text("FarmWatch - Informe de Monitoreo", 20, y);
+    y += 15;
 
-tempChart = new Chart(document.getElementById("tempChart"),{
-type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Temperatura",
-data:temps,
-borderColor:"red",
-fill:false,
-tension:0.3 // 🔥 suaviza línea
-}]
-}
-});
+    // Análisis
+    doc.setFontSize(12);
+    const analisisText = document.getElementById("analisis").innerText;
+    const analisisLines = doc.splitTextToSize(analisisText, 170);
+    doc.text("Análisis:", 20, y);
+    y += 8;
+    doc.text(analisisLines, 20, y);
+    y += analisisLines.length * 6 + 10;
 
-if(hrChart) hrChart.destroy();
+    // Estadísticas
+    doc.text("Estadísticas:", 20, y);
+    y += 8;
+    doc.text(`Temperatura promedio: ${document.getElementById("temp_avg").innerText} °C`, 20, y); y += 7;
+    doc.text(`Temperatura máxima: ${document.getElementById("temp_max").innerText} °C`, 20, y); y += 7;
+    doc.text(`Ritmo promedio: ${document.getElementById("hr_avg").innerText} BPM`, 20, y); y += 7;
+    doc.text(`Ritmo máximo: ${document.getElementById("hr_max").innerText} BPM`, 20, y); y += 7;
+    doc.text(`Estado: ${document.getElementById("estado").innerText}`, 20, y);
+    y += 15;
 
-hrChart = new Chart(document.getElementById("hrChart"),{
-type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Ritmo cardiaco",
-data:hr,
-borderColor:"blue",
-fill:false,
-tension:0.3
-}]
-}
-});
-}
+    // Gráfica Temperatura
+    doc.text("Gráfica de Temperatura", 20, y);
+    y += 8;
+    const tempImg = document.getElementById("tempChart").toDataURL("image/png");
+    doc.addImage(tempImg, "PNG", 20, y, 170, 70);
+    y += 80;
 
-function crearMapa(datos){
+    // Gráfica Ritmo (nueva página si es necesario)
+    if (y > 200) {
+        doc.addPage();
+        y = 20;
+    }
 
-if(!map){
+    doc.text("Gráfica de Ritmo Cardíaco", 20, y);
+    y += 8;
+    const hrImg = document.getElementById("hrChart").toDataURL("image/png");
+    doc.addImage(hrImg, "PNG", 20, y, 170, 70);
 
-map = L.map("map").setView([20.97,-89.62],12);
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-attribution:"© OpenStreetMap"
-}).addTo(map);
-
-}
-
-marcadores.forEach(m=>map.removeLayer(m));
-marcadores=[];
-
-if(ruta){
-map.removeLayer(ruta);
+    doc.save(`informe_farmwatch_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-const puntos=[];
-
-datos.forEach(d=>{
-
-if(d.latitud && d.longitud && d.latitud!=0 && d.longitud!=0){
-
-const punto=[d.latitud,d.longitud];
-
-puntos.push(punto);
-
-const marker=L.marker(punto).addTo(map);
-
-marcadores.push(marker);
-
-}
-
-});
-
-if(puntos.length>1){
-
-ruta=L.polyline(puntos,{
-color:"red",
-weight:3
-}).addTo(map);
-
-map.fitBounds(puntos);
-
-}
-
-}
-
-function crearTabla(datos){
-
-const tbody = document.querySelector("#tabla tbody");
-tbody.innerHTML="";
-
-datos.forEach(d=>{
-
-const tr=document.createElement("tr");
-
-tr.innerHTML=`
-
-<td>${d.fecha}</td>
-<td>${d.temp_objeto}</td>
-<td>${d.ritmo_cardiaco}</td>
-<td>${d.latitud}</td>
-<td>${d.longitud}</td>
-
-`;
-
-tbody.appendChild(tr);
-
-});
-
-}
-
-async function exportPDF(){
-
-if(!reporteActual){
-alert("Primero genera un reporte");
-return;
-}
-
-const doc = new window.jspdf.jsPDF();
-
-let y = 20;
-
-doc.setFontSize(18);
-doc.text("FarmWatch - Informe de Monitoreo",20,y);
-
-y += 10;
-
-doc.setFontSize(12);
-
-// 🔥 ANALISIS CON SALTO AUTOMATICO
-const analisis = doc.splitTextToSize(
-document.getElementById("analisis").innerText,
-170
-);
-
-doc.text("Analisis:",20,y);
-y += 8;
-
-doc.text(analisis,20,y);
-
-y += analisis.length * 6 + 5;
-
-// 🔥 ESTADISTICAS
-doc.text("Estadisticas:",20,y);
-y += 8;
-
-doc.text("Temp promedio: "+document.getElementById("temp_avg").innerText,20,y); y+=6;
-doc.text("Temp maxima: "+document.getElementById("temp_max").innerText,20,y); y+=6;
-doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,y); y+=6;
-doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,y); y+=6;
-doc.text("Estado: "+document.getElementById("estado").innerText,20,y);
-
-y += 10;
-
-/* -------- GRAFICA TEMPERATURA -------- */
-
-const tempCanvas = document.getElementById("tempChart");
-const tempImg = tempCanvas.toDataURL("image/png");
-
-doc.text("Grafica de temperatura",20,y);
-y += 5;
-
-doc.addImage(tempImg,"PNG",20,y,170,60);
-
-/* 🔥 SALTO DE PAGINA */
-doc.addPage();
-
-y = 20;
-
-/* -------- GRAFICA RITMO -------- */
-
-const hrCanvas = document.getElementById("hrChart");
-const hrImg = hrCanvas.toDataURL("image/png");
-
-doc.text("Grafica de ritmo cardiaco",20,y);
-y += 5;
-
-doc.addImage(hrImg,"PNG",20,y,170,60);
-
-/* 🔥 NUEVA PAGINA PARA MAPA */
-doc.addPage();
-
-y = 20;
-
-/* -------- MAPA (ARREGLADO) -------- */
-
-const mapElement = document.getElementById("map");
-
-// 🔥 IMPORTANTE: esperar render
-await new Promise(r => setTimeout(r, 1000));
-
-const canvasMapa = await html2canvas(mapElement, {
-useCORS: true,
-scale: 2
-});
-
-const mapaImg = canvasMapa.toDataURL("image/png");
-
-doc.text("Ruta recorrida del animal",20,20);
-
-doc.addImage(mapaImg,"PNG",20,30,170,100);
-
-/* -------- TABLA -------- */
-
-const rows=[];
-
-document.querySelectorAll("#tabla tbody tr").forEach(tr=>{
-const cols=[...tr.children].map(td=>td.innerText);
-rows.push(cols);
-});
-
-doc.autoTable({
-startY:140,
-head:[["Fecha","Temp","Ritmo","Lat","Lng"]],
-body:rows
-});
-
-doc.save("informe_farmwatch.pdf");
-}
-
-
-
-async function cargarVacas(){
-
-try{
-
-const res = await fetch("/api/vacasnew");
-const vacas = await res.json();
-
-const select = document.getElementById("vaca");
-
-vacas.forEach(v=>{
-
-const option = document.createElement("option");
-
-option.value=v;
-option.textContent=v;
-
-select.appendChild(option);
-
-});
-
-}catch(e){
-
-console.error("Error cargando vacas",e);
-
-}
-
+async function cargarVacas() {
+    try {
+        const res = await fetch("/api/vacasnew");
+        const vacas = await res.json();
+
+        const select = document.getElementById("vaca");
+        vacas.forEach(v => {
+            const option = document.createElement("option");
+            option.value = v;
+            option.textContent = v;
+            select.appendChild(option);
+        });
+    } catch (e) {
+        console.error("Error cargando vacas:", e);
+    }
 }
