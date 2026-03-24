@@ -10,17 +10,33 @@
   --danger: #ef4444;
   --text: #0f172a;
   --text-light: #64748b;
-  --bg-card: rgba(255, 255, 255, 0.85);
-  --border-glass: rgba(255, 255, 255, 0.6);
+  --bg-card: rgba(255, 255, 255, 0.95);     /* más opaco y blanco */
+  --border-glass: rgba(226, 232, 240, 0.8);
 }
 
-/* Base */
+/* ==================== FONDO GENERAL ==================== */
 .dash-shell {
   padding: 24px 0;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   color: var(--text);
   min-height: 100vh;
-  background: radial-gradient(circle at top right, #e0f2fe, #f0f9ff, #f8fafc);
+  
+  /* Fondo nuevo: mucho más discreto y limpio */
+  background: #f8fafc;                    /* gris muy claro (casi blanco) */
+  /* Si quieres un toque muy suave de azul: */
+  /* background: linear-gradient(to bottom right, #f8fafc, #f1f5f9); */
+}
+
+.dash-shell::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(241, 245, 249, 0.6), rgba(248, 250, 252, 0.9));
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* ==================== TARJETAS ==================== */
