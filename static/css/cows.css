@@ -1,153 +1,272 @@
-/* ======== ESTILO APPLE PARA ADMINISTRAR VACAS ======== */
+/* =============================================
+   COWS.CSS - Estilo Glassmorphism Profesional
+   Totalmente Responsivo
+   ============================================= */
 
-.cows-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
+:root {
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --success: #10b981;
+  --warning: #f97316;
+  --danger: #ef4444;
+  --text: #0f172a;
+  --text-light: #64748b;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --border-glass: rgba(255, 255, 255, 0.7);
 }
 
+/* Base general */
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Header */
+.cows-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.cows-header h1 {
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Botones */
 .btn-primary {
-    background: #007aff;
-    border: none;
-    padding: 10px 18px;
-    color: white;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
+  background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+  border: none;
+  padding: 12px 24px;
+  color: white;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .btn-primary:hover {
-    background: #0066d6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
 }
 
 .btn-secondary {
-    background: #e5e5ea;
-    color: #333;
-    border: none;
-    padding: 10px 18px;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: 0.2s;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 12px 24px;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-    background: #d1d1d6;
+  background: #e2e8f0;
+  color: #334155;
 }
 
+/* Tarjeta principal */
 .apple-card {
-    background: #ffffffcc;
-    backdrop-filter: blur(10px);
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  background: var(--bg-card);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 22px;
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
+  padding: 28px;
+  overflow: hidden;
 }
 
 /* TABLA */
 .table-wrapper {
-    overflow-x: auto;
+  overflow-x: auto;
+  border-radius: 16px;
 }
 
 .apple-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15.5px;
+  min-width: 800px; /* Para que no se rompa en pantallas pequeñas */
 }
 
 .apple-table thead {
-    background: #f5f5f7;
+  background: rgba(248, 250, 252, 0.95);
+  backdrop-filter: blur(10px);
 }
 
 .apple-table th {
-    padding: 14px;
-    text-align: left;
-    font-weight: 600;
-    color: #666;
+  padding: 16px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: #64748b;
+  font-size: 13.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 2px solid #e2e8f0;
 }
 
 .apple-table td {
-    padding: 14px;
-    border-top: 1px solid #eee;
+  padding: 16px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e2937;
 }
 
 .apple-table tr:hover {
-    background: #f2f2f7;
-    cursor: pointer;
+  background: rgba(241, 245, 249, 0.8);
+  transition: background 0.2s;
 }
 
+/* Badges de estado */
 .badge {
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
 }
 
-.badge-ok {
-    background: #d4f8d4;
-    color: #2d8a2d;
-}
+.badge-ok     { background: #d1fae5; color: #10b981; }
+.badge-warn   { background: #fef3c7; color: #d97706; }
+.badge-danger { background: #fee2e2; color: #ef4444; }
 
-.badge-warn {
-    background: #ffe9b3;
-    color: #946200;
-}
-
-.badge-danger {
-    background: #ffd6d6;
-    color: #c62828;
-}
-
-/* MODAL */
+/* MODALES */
 .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.45);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(3px);
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
 }
 
-.modal.hidden {
-    display: none;
+.modal.show {
+  opacity: 1;
+  visibility: visible;
 }
 
 .modal-content {
-    background: #ffffff;
-    padding: 25px;
-    width: 420px;
-    border-radius: 18px;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+  background: white;
+  width: 100%;
+  max-width: 460px;
+  border-radius: 22px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 32px;
+  transform: scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal.show .modal-content {
+  transform: scale(1);
 }
 
 .modal-content h2 {
-    margin-bottom: 15px;
+  margin: 0 0 24px 0;
+  font-size: 1.45rem;
+  color: var(--text);
+}
+
+.modal-content label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #475569;
+  font-size: 14.5px;
 }
 
 .modal-content input,
 .modal-content select,
 .modal-content textarea {
-    width: 100%;
-    padding: 10px;
-    margin-top: 4px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    font-size: 15px;
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15.5px;
+  transition: all 0.25s;
+  background: #fff;
+}
+
+.modal-content input:focus,
+.modal-content select:focus,
+.modal-content textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  outline: none;
 }
 
 .modal-content textarea {
-    height: 80px;
+  height: 92px;
+  resize: vertical;
 }
 
 .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 1024px) {
+  .apple-card {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .cows-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .cows-header h1 {
+    font-size: 1.65rem;
+  }
+
+  .modal-content {
+    max-width: 92%;
+    padding: 24px;
+  }
+
+  .apple-table {
+    font-size: 14.5px;
+  }
+
+  .apple-table th,
+  .apple-table td {
+    padding: 14px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .apple-card {
+    padding: 16px;
+  }
+
+  .modal-content {
+    padding: 20px;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 11px 20px;
+    font-size: 14.5px;
+  }
 }
