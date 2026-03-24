@@ -1,76 +1,98 @@
 /* ==================================
-   1. SIDEBAR PARA ESCRITORIO (PC)
+   1. SIDEBAR PARA PC (ESTILO MODERNO)
    ================================== */
 .navbar {
     width: 260px;
     height: 100vh;
-    background: #1b263b;
+    /* Fondo con ligera transparencia y desenfoque */
+    background: rgba(27, 38, 59, 0.95);
+    backdrop-filter: blur(10px); 
+    
     display: flex;
     flex-direction: column;
     position: fixed;
     left: 0;
     top: 0;
     z-index: 1000;
-    box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
     padding: 20px 0;
 }
 
-/* Ocultamos los links horizontales que se ven en tu imagen arriba */
-.nav-links {
+/* ELIMINAR LOS LINKS FANTASMAS DE ARRIBA (PC Y MÓVIL) */
+/* Tu HTML tiene un div .nav-left que contiene el logo y la lista .nav-links */
+.nav-left {
     display: flex;
-    flex-direction: column; /* Los obligamos a ser lista vertical */
-    list-style: none;
-    padding: 0;
-    margin: 20px 0;
+    flex-direction: column;
     width: 100%;
 }
 
+/* Esto asegura que la lista de links sea vertical y no horizontal */
+.nav-links {
+    display: flex;
+    flex-direction: column; 
+    list-style: none;
+    padding: 0;
+    margin: 30px 0 0 0; /* Espacio bajo el logo */
+    width: 100%;
+}
+
+/* Estilo de los items del menú */
 .nav-links li a {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: #cfcfcf;
+    gap: 15px;
+    color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
-    padding: 15px 25px;
-    transition: 0.3s;
+    padding: 16px 25px;
     font-size: 15px;
+    font-weight: 400;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
 }
 
+/* Hover elegante */
 .nav-links li a:hover {
-    background: rgba(255,255,255,0.05);
-    color: white;
-    border-left: 4px solid #4e73df;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border-left: 4px solid #3b82f6; /* Azul brillante */
+    padding-left: 30px; /* Efecto de desplazamiento */
 }
 
-/* El logo en el sidebar */
+/* Logo */
 .nav-logo {
     padding: 10px 25px;
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: white;
+    letter-spacing: 1px;
 }
 
-/* El icono de usuario al fondo */
+/* Sección de usuario al fondo */
 .nav-right {
     margin-top: auto;
     padding: 20px 25px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.hamburger {
-    display: none; /* Escondido en PC */
+.user-menu i {
+    font-size: 28px;
+    color: white;
+    opacity: 0.8;
 }
 
 /* ==================================
-   2. AJUSTE DEL CONTENIDO (DERECHA)
+   2. AJUSTE DEL CONTENIDO PRINCIPAL
    ================================== */
 .page-content {
-    margin-left: 260px; /* Empuja el contenido para que no lo tape el sidebar */
-    width: calc(100% - 260px);
-    padding: 20px;
+    margin-left: 260px; 
+    padding: 40px;
+    background: #f8fafc; /* Color de fondo más limpio */
+    min-height: 100vh;
 }
 
 /* ==================================
-   3. RESPONSIVE (MÓVIL Y TABLET)
+   3. RESPONSIVE (MÓVIL)
    ================================== */
 @media (max-width: 850px) {
     .navbar {
@@ -80,53 +102,29 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
-        position: fixed;
     }
 
+    /* MATAMOS definitivamente los links horizontales en móvil */
     .nav-links {
-        display: none !important; /* MATAMOS los links que se ven arriba en tu imagen */
+        display: none !important; 
     }
 
     .page-content {
         margin-left: 0;
         width: 100%;
-        padding-top: 90px;
+        padding-top: 100px;
     }
 
     .hamburger {
-        display: block; /* Aparecen las 3 rayitas */
+        display: block !important;
         color: white;
         font-size: 26px;
-        cursor: pointer;
     }
 
-    /* EL MENÚ MÓVIL (El que sale al dar clic) */
+    /* Estilo para el menú desplegable móvil */
     .mobile-menu {
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        top: 70px; /* Justo debajo de la barrita */
-        right: 0;
-        width: 250px;
-        height: calc(100vh - 70px);
         background: #1b263b;
-        z-index: 9999;
-        transform: translateX(100%); /* Escondido a la derecha */
-        transition: transform 0.3s ease;
-        box-shadow: -5px 0 15px rgba(0,0,0,0.3);
-    }
-
-    .mobile-menu.active {
-        transform: translateX(0); /* Se desliza hacia adentro */
-    }
-
-    .mobile-menu a {
-        color: white;
-        text-decoration: none;
-        padding: 20px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        display: flex;
-        align-items: center;
-        gap: 10px;
+        width: 280px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
     }
 }
