@@ -1,6 +1,13 @@
+/* RESET FUERTE (evita estilos viejos) */
+ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
 /* ==================================
-   1. SIDEBAR PARA ESCRITORIO (PC)
-   ================================== */
+   SIDEBAR (ESCRITORIO)
+================================== */
 .navbar {
     width: 260px;
     height: 100vh;
@@ -15,20 +22,25 @@
     padding: 20px 0;
 }
 
-/* Ocultamos los links horizontales que se ven en tu imagen arriba */
-.nav-links {
-    display: flex;
-    flex-direction: column; /* Los obligamos a ser lista vertical */
-    list-style: none;
-    padding: 0;
-    margin: 10px 0; /* antes 20px */
-    margin: 20px 0;
-    width: 100%;
+/* LOGO */
+.nav-logo {
+    padding: 10px 25px;
+    margin-bottom: 20px;
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
 }
 
-.nav-left {
+/* LINKS VERTICALES */
+.nav-links {
     display: flex;
-    flex-direction: column; /* 🔥 CLAVE */
+    flex-direction: column;
+    width: 100%;
+    flex: 1;
+}
+
+/* 🔥 ESTO ELIMINA LOS LINKS FEOS DE ARRIBA */
+.nav-links li {
     width: 100%;
 }
 
@@ -49,38 +61,38 @@
     border-left: 4px solid #4e73df;
 }
 
-/* El logo en el sidebar */
-.nav-logo {
-    padding: 10px 25px;
-    margin-bottom: 20px;
-    font-size: 22px;
-    font-weight: 700;
-    color: white;
-}
-
-/* El icono de usuario al fondo */
+/* FOOTER */
 .nav-right {
     margin-top: auto;
     padding: 20px 25px;
 }
 
-.hamburger {
-    display: none; /* Escondido en PC */
+.nav-right a {
+    color: #cfcfcf;
+    text-decoration: none;
 }
 
-/* ==================================
-   2. AJUSTE DEL CONTENIDO (DERECHA)
-   ================================== */
+.nav-right a:hover {
+    color: white;
+}
+
+/* BOTÓN HAMBURGUESA */
+.hamburger {
+    display: none;
+}
+
+/* CONTENIDO */
 .page-content {
-    margin-left: 260px; /* Empuja el contenido para que no lo tape el sidebar */
+    margin-left: 260px;
     width: calc(100% - 260px);
     padding: 20px;
 }
 
 /* ==================================
-   3. RESPONSIVE (MÓVIL Y TABLET)
-   ================================== */
+   MÓVIL
+================================== */
 @media (max-width: 850px) {
+
     .navbar {
         width: 100%;
         height: 70px;
@@ -88,13 +100,12 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
-        position: fixed;
     }
 
+    /* 🔥 CLAVE: OCULTA LOS LINKS SUPERIORES */
     .nav-links {
-        display: none !important; /* MATAMOS los links que se ven arriba en tu imagen */
+        display: none !important;
     }
-    
 
     .page-content {
         margin-left: 0;
@@ -103,30 +114,29 @@
     }
 
     .hamburger {
-        display: block; /* Aparecen las 3 rayitas */
+        display: block;
         color: white;
         font-size: 26px;
         cursor: pointer;
     }
 
-    /* EL MENÚ MÓVIL (El que sale al dar clic) */
+    /* MENÚ DESLIZABLE */
     .mobile-menu {
         display: flex;
         flex-direction: column;
         position: fixed;
-        top: 70px; /* Justo debajo de la barrita */
+        top: 70px;
         right: 0;
         width: 250px;
         height: calc(100vh - 70px);
         background: #1b263b;
-        z-index: 9999;
-        transform: translateX(100%); /* Escondido a la derecha */
+        transform: translateX(100%);
         transition: transform 0.3s ease;
-        box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        z-index: 9999;
     }
 
     .mobile-menu.active {
-        transform: translateX(0); /* Se desliza hacia adentro */
+        transform: translateX(0);
     }
 
     .mobile-menu a {
@@ -135,7 +145,6 @@
         padding: 20px;
         border-bottom: 1px solid rgba(255,255,255,0.05);
         display: flex;
-        align-items: center;
         gap: 10px;
     }
 }
