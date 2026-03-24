@@ -43,11 +43,13 @@ function renderTabla() {
             <td>${v.raza}</td>
             <td>${v.edad} años</td>
             <td>${estadoBadge(v.estado)}</td>
-            <td>
-                <button onclick="editarVaca(${index})">Editar</button>
-                <button onclick="mostrarHistorial('${v.id_esp32}')">Historial</button>
-                <button onclick="borrarVaca(${v.id})">Borrar</button>
-            </td>
+<td class="actions-cell">
+    <div class="action-buttons">
+        <button class="btn-action edit" onclick="editarVaca(${index})">✏️ Editar</button>
+        <button class="btn-action history" onclick="mostrarHistorial('${v.id_esp32}')">📖 Historial</button>
+        <button class="btn-action delete" onclick="borrarVaca(${v.id})">🗑️ Borrar</button>
+    </div>
+</td>
         `;
 
         tabla.appendChild(tr);

@@ -1,23 +1,14 @@
 /* =============================================
    COWS.CSS - Estilo Glassmorphism Profesional
-   Totalmente Responsivo
+   Manteniendo compatibilidad con .hidden
    ============================================= */
 
 :root {
   --primary: #3b82f6;
-  --primary-dark: #2563eb;
-  --success: #10b981;
-  --warning: #f97316;
-  --danger: #ef4444;
   --text: #0f172a;
   --text-light: #64748b;
   --bg-card: rgba(255, 255, 255, 0.92);
-  --border-glass: rgba(255, 255, 255, 0.7);
-}
-
-/* Base general */
-body {
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  --border-glass: rgba(255, 255, 255, 0.75);
 }
 
 /* Header */
@@ -37,15 +28,14 @@ body {
   margin: 0;
 }
 
-/* Botones */
+/* Botones principales */
 .btn-primary {
-  background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+  background: linear-gradient(45deg, #3b82f6, #2563eb);
   border: none;
   padding: 12px 24px;
   color: white;
   border-radius: 14px;
   font-weight: 600;
-  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
@@ -69,19 +59,16 @@ body {
 
 .btn-secondary:hover {
   background: #e2e8f0;
-  color: #334155;
 }
 
 /* Tarjeta principal */
 .apple-card {
   background: var(--bg-card);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 22px;
   border: 1px solid var(--border-glass);
   box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
   padding: 28px;
-  overflow: hidden;
 }
 
 /* TABLA */
@@ -94,12 +81,10 @@ body {
   width: 100%;
   border-collapse: collapse;
   font-size: 15.5px;
-  min-width: 800px; /* Para que no se rompa en pantallas pequeñas */
 }
 
 .apple-table thead {
   background: rgba(248, 250, 252, 0.95);
-  backdrop-filter: blur(10px);
 }
 
 .apple-table th {
@@ -120,44 +105,71 @@ body {
 }
 
 .apple-table tr:hover {
-  background: rgba(241, 245, 249, 0.8);
-  transition: background 0.2s;
+  background: rgba(241, 245, 249, 0.85);
 }
 
-/* Badges de estado */
+/* Badges */
 .badge {
   padding: 6px 12px;
   border-radius: 9999px;
   font-size: 13px;
   font-weight: 600;
-  display: inline-block;
 }
 
 .badge-ok     { background: #d1fae5; color: #10b981; }
 .badge-warn   { background: #fef3c7; color: #d97706; }
 .badge-danger { background: #fee2e2; color: #ef4444; }
 
-/* MODALES */
+/* ==================== BOTONES DE ACCIONES ==================== */
+.actions-cell {
+  text-align: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-action.edit   { background: #e0f2fe; color: #0369a1; }
+.btn-action.edit:hover   { background: #bae6fd; transform: translateY(-1px); }
+
+.btn-action.history { background: #f3e8ff; color: #7e22ce; }
+.btn-action.history:hover { background: #e9d5ff; transform: translateY(-1px); }
+
+.btn-action.delete { background: #fee2e2; color: #b91c1c; }
+.btn-action.delete:hover { background: #fecaca; transform: translateY(-1px); }
+
+/* ==================== MODALES (Manteniendo .hidden) ==================== */
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(8px);
-  display: flex;
+  display: none;                    /* Oculto por defecto */
   justify-content: center;
   align-items: center;
   z-index: 2000;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.3s ease;
 }
 
-.modal.show {
-  opacity: 1;
-  visibility: visible;
+.modal:not(.hidden) {
+  display: flex;
 }
 
 .modal-content {
@@ -168,11 +180,13 @@ body {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   padding: 32px;
   transform: scale(0.95);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.modal.show .modal-content {
+.modal:not(.hidden) .modal-content {
   transform: scale(1);
+  opacity: 1;
 }
 
 .modal-content h2 {
@@ -198,7 +212,6 @@ body {
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
   font-size: 15.5px;
-  transition: all 0.25s;
   background: #fff;
 }
 
@@ -222,51 +235,12 @@ body {
   margin-top: 12px;
 }
 
-/* ==================== RESPONSIVE ==================== */
-
-@media (max-width: 1024px) {
-  .apple-card {
-    padding: 20px;
-  }
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-  .cows-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .cows-header h1 {
-    font-size: 1.65rem;
-  }
-
-  .modal-content {
-    max-width: 92%;
-    padding: 24px;
-  }
-
-  .apple-table {
-    font-size: 14.5px;
-  }
-
-  .apple-table th,
-  .apple-table td {
-    padding: 14px 10px;
-  }
+  .cows-header { flex-direction: column; align-items: stretch; }
+  .modal-content { max-width: 92%; padding: 24px; }
 }
 
 @media (max-width: 480px) {
-  .apple-card {
-    padding: 16px;
-  }
-
-  .modal-content {
-    padding: 20px;
-  }
-
-  .btn-primary,
-  .btn-secondary {
-    padding: 11px 20px;
-    font-size: 14.5px;
-  }
+  .apple-card { padding: 20px; }
 }
