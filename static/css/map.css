@@ -1,13 +1,13 @@
 /* =============================================
-   MAP.CSS - Estilo Glassmorphism Profesional + Responsivo
+   MAP.CSS - Modal Corregido + Gráficas con tamaño fijo
    ============================================= */
 
 :root {
   --primary: #3b82f6;
   --text: #0f172a;
   --text-light: #64748b;
-  --bg-card: rgba(255, 255, 255, 0.93);
-  --border-glass: rgba(255, 255, 255, 0.75);
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --border-glass: rgba(255, 255, 255, 0.8);
 }
 
 h1 {
@@ -18,52 +18,37 @@ h1 {
   margin-bottom: 30px;
 }
 
-/* Contenedor principal */
+/* Map Container */
 .map-container {
   display: flex;
   gap: 24px;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 20px;
-  height: calc(100vh - 120px);   /* Ajusta según tu header */
+  height: calc(100vh - 120px);
   min-height: 620px;
 }
 
-/* Sidebar */
 .cow-sidebar {
   width: 280px;
   background: var(--bg-card);
-  backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px);
   border-radius: 22px;
   border: 1px solid var(--border-glass);
-  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
   padding: 24px;
-  display: flex;
-  flex-direction: column;
   height: 100%;
   overflow: hidden;
+  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
 }
 
-.cow-sidebar h3 {
-  margin: 0 0 16px 0;
-  font-size: 1.45rem;
-  font-weight: 600;
-  color: var(--text);
-}
+.cow-sidebar h3 { margin: 0 0 16px 0; font-size: 1.45rem; font-weight: 600; }
 
 #cowSearch {
   width: 100%;
   padding: 12px 16px;
   border: 1.5px solid #e2e8f0;
   border-radius: 12px;
-  font-size: 15.5px;
   margin-bottom: 18px;
-}
-
-#cowSearch:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-  outline: none;
 }
 
 #cowList {
@@ -80,57 +65,40 @@ h1 {
   border-radius: 12px;
   margin-bottom: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid #f1f5f9;
-  font-weight: 500;
+  transition: 0.2s;
 }
 
-#cowList li:hover {
-  background: #f0f9ff;
-  border-color: var(--primary);
-  transform: translateX(4px);
-}
+#cowList li:hover { background: #f0f9ff; transform: translateX(4px); }
+#cowList li.offline { opacity: 0.65; }
 
-#cowList li.offline {
-  opacity: 0.65;
-}
-
-/* Mapa principal */
 #map {
   flex: 1;
   height: 100%;
   border-radius: 22px;
   box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
-  border: 1px solid var(--border-glass);
-  overflow: hidden;
 }
 
-/* ==================== MODAL ==================== */
+/* ==================== MODAL CORREGIDO ==================== */
 .modal {
   display: none;
   position: fixed;
   z-index: 10000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
   background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(8px);
   justify-content: center;
   align-items: center;
 }
 
-.modal.show {
-  display: flex;
-}
+.modal.show { display: flex; }
 
 .modal-content {
   background: white;
   width: 100%;
-  max-width: 680px;
+  max-width: 720px;
   border-radius: 22px;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
-  position: relative;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
   overflow: hidden;
   margin: 20px;
 }
@@ -139,75 +107,78 @@ h1 {
   position: absolute;
   right: 24px;
   top: 18px;
-  font-size: 32px;
+  font-size: 34px;
   cursor: pointer;
   color: #64748b;
   z-index: 10;
 }
 
-.close:hover {
-  color: #ef4444;
-}
+.close:hover { color: #ef4444; }
 
+/* Cuerpo del modal */
 .modal-body {
   display: flex;
   gap: 24px;
-  padding: 0 28px 20px;
+  padding: 28px 28px 10px;
   flex-wrap: wrap;
 }
 
 .modal-info {
   flex: 1;
-  min-width: 260px;
+  min-width: 280px;
 }
 
 .modal-info p {
-  margin: 12px 0;
-  font-size: 15.5px;
+  margin: 14px 0;
+  font-size: 15.8px;
 }
 
-.modal-info b {
-  color: var(--text-light);
-}
+.modal-info b { color: var(--text-light); }
 
+/* Mini mapa */
 .modal-map {
   flex: 1;
-  min-width: 260px;
+  min-width: 280px;
   text-align: center;
 }
 
 .modal-map h4 {
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
   color: var(--text-light);
+  font-size: 1.05rem;
 }
 
 #modalMiniMap {
-  height: 180px;
+  height: 190px !important;
   border-radius: 12px;
-  overflow: hidden;
   border: 1px solid #e2e8f0;
 }
 
+/* Gráficas - TAMAÑO FIJO */
 .modal-charts {
-  padding: 0 28px 20px;
+  padding: 10px 28px 20px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
 .modal-charts canvas {
+  height: 135px !important;     /* ← Altura fija */
+  max-height: 135px !important;
   background: #f8fafc;
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
 }
 
+/* Footer */
 .modal-footer {
   padding: 20px 28px 28px;
   border-top: 1px solid #f1f5f9;
 }
 
 .modal-btn {
-  background: linear-gradient(45deg, var(--primary), #2563eb);
+  background: linear-gradient(45deg, #3b82f6, #2563eb);
   color: white;
   border: none;
   padding: 14px;
@@ -215,7 +186,6 @@ h1 {
   font-weight: 600;
   width: 100%;
   cursor: pointer;
-  transition: all 0.3s;
 }
 
 .modal-btn:hover {
@@ -225,32 +195,12 @@ h1 {
 
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 992px) {
-  .map-container {
-    flex-direction: column;
-    height: auto;
-  }
-  
-  .cow-sidebar {
-    width: 100%;
-    height: 320px;
-  }
-  
-  #map {
-    height: 500px;
-  }
+  .map-container { flex-direction: column; height: auto; }
+  .cow-sidebar { width: 100%; height: 340px; }
+  #map { height: 520px; }
 }
 
 @media (max-width: 640px) {
-  .modal-body {
-    flex-direction: column;
-  }
-  
-  .modal-content {
-    margin: 10px;
-    max-width: 96%;
-  }
-  
-  .modal-charts {
-    padding: 0 20px 20px;
-  }
+  .modal-body { flex-direction: column; }
+  .modal-content { margin: 10px; max-width: 96%; }
 }

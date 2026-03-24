@@ -101,23 +101,38 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function createMiniCharts() {
-        if (chartTemp) chartTemp.destroy();
-        if (chartHR) chartHR.destroy();
-
-        const config = (label, color) => ({
-            type: 'line',
-            data: { labels: [], datasets: [{ label, data: [], borderColor: color, tension: 0.4, fill: true, backgroundColor: color + '22' }] },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
+    if (chartTemp) chartTemp.destroy();
+    if (chartHR) chartHR.destroy();
+    
+    const config = (label, color) => ({
+        type: 'line',
+        data: { 
+            labels: [], 
+            datasets: [{ 
+                label: label, 
+                data: [], 
+                borderColor: color, 
+                tension: 0.4, 
+                fill: true, 
+                backgroundColor: color + '22',
+                borderWidth: 3,
+                pointRadius: 0
+            }] 
+        },
+        options: { 
+            responsive: true,
+            maintainAspectRatio: false,   // ← Importante
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { color: '#f1f5f9' } }
             }
-        });
+        }
+    });
 
-        chartTemp = new Chart(document.getElementById("chartTemp"), config("Temperatura", "#ef4444"));
-        chartHR = new Chart(document.getElementById("chartHR"), config("Ritmo Cardíaco", "#3b82f6"));
-    }
+    chartTemp = new Chart(document.getElementById("chartTemp"), config("Temperatura °C", "#ef4444"));
+    chartHR  = new Chart(document.getElementById("chartHR"),  config("Ritmo Cardíaco", "#3b82f6"));
+}
 
     function closeCowModal() {
         document.getElementById("cowModal").classList.remove("show");
