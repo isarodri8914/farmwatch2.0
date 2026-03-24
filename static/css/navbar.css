@@ -21,7 +21,14 @@
     flex-direction: column; /* Los obligamos a ser lista vertical */
     list-style: none;
     padding: 0;
+    margin: 10px 0; /* antes 20px */
     margin: 20px 0;
+    width: 100%;
+}
+
+.nav-left {
+    display: flex;
+    flex-direction: column; /* 🔥 CLAVE */
     width: 100%;
 }
 
@@ -45,6 +52,7 @@
 /* El logo en el sidebar */
 .nav-logo {
     padding: 10px 25px;
+    margin-bottom: 20px;
     font-size: 22px;
     font-weight: 700;
     color: white;
@@ -86,6 +94,7 @@
     .nav-links {
         display: none !important; /* MATAMOS los links que se ven arriba en tu imagen */
     }
+    
 
     .page-content {
         margin-left: 0;
