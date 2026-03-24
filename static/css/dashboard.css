@@ -111,14 +111,14 @@
 .middle-row {
   display: grid;
   grid-template-columns: 1fr 400px;
-  gap: 24px;
+  gap: 28px;
   align-items: start;
 }
 
 .left-pan {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
 .right-pan {
@@ -129,27 +129,38 @@
 .chart-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 28px;
 }
 
 .chart-card {
-  height: 420px;
-  padding: 24px;
+  height: 480px;                    /* ← Aumentado significativamente */
+  padding: 28px 28px 32px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
   position: relative;
-  background: var(--bg-card);
-  backdrop-filter: blur(16px) saturate(180%);
+  transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.15);
 }
 
 .chart-card h4 {
-  margin: 0 0 20px 0;
-  font-size: 1.15rem;
+  margin: 0 0 24px 0;
+  font-size: 1.22rem;
   font-weight: 600;
-  color: var(--text);
+  color: #0f172a;
+  letter-spacing: -0.3px;
 }
 
 .chart-card canvas {
   position: absolute;
-  inset: 70px 24px 24px 24px;
+  inset: 78px 28px 32px 28px;     /* Más espacio arriba y abajo */
+  width: 100% !important;
+  height: calc(100% - 110px) !important;
 }
 
 /* Selector de vaca */
@@ -186,12 +197,13 @@
 /* Mapa */
 .map-wrapper {
   flex: 1;
-  min-height: 620px;
-  max-height: 680px;
+  min-height: 660px;
+  max-height: 720px;
   padding: 0;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
 }
 
 .map {
@@ -203,23 +215,29 @@
 /* Small cards (Donuts) */
 .small-cards {
   display: flex;
-  gap: 20px;
-  padding: 24px;
-  background: var(--bg-card);
-  backdrop-filter: blur(16px);
+  gap: 24px;
+  padding: 28px;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
   border-radius: 20px;
 }
 
 .small-cards .mini {
   flex: 1;
   text-align: center;
-  max-width: 240px;
+  max-width: 260px;
+}
+
+.small-cards canvas {
+  max-height: 240px;
+  margin: 0 auto;
 }
 
 .small-cards h5 {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text);
+  color: #0f172a;
 }
 
 /* Alertas */
