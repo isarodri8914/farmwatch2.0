@@ -1,46 +1,28 @@
-/* NAVBAR TRANSFORMADO A SIDEBAR PROFESIONAL */
+/* ==================================
+   1. SIDEBAR PARA ESCRITORIO (PC)
+   ================================== */
 .navbar {
     width: 260px;
     height: 100vh;
     background: #1b263b;
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
-    padding: 30px 0;
     position: fixed;
     left: 0;
     top: 0;
     z-index: 1000;
-    border-right: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 4px 0 18px rgba(0,0,0,0.2);
-    transition: transform 0.3s ease; /* Para suavidad en móviles */
+    box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+    padding: 20px 0;
 }
 
-/* Contenedores internos */
-.nav-left {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    gap: 40px;
-}
-
-.nav-logo {
-    padding: 0 25px;
-    font-size: 24px;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 10px;
-}
-
+/* Ocultamos los links horizontales que se ven en tu imagen arriba */
 .nav-links {
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Los obligamos a ser lista vertical */
     list-style: none;
     padding: 0;
-    margin: 0;
+    margin: 20px 0;
     width: 100%;
-    gap: 5px;
 }
 
 .nav-links li a {
@@ -49,50 +31,48 @@
     gap: 12px;
     color: #cfcfcf;
     text-decoration: none;
+    padding: 15px 25px;
+    transition: 0.3s;
     font-size: 15px;
-    padding: 14px 25px;
-    transition: 0.3s ease;
 }
 
 .nav-links li a:hover {
     background: rgba(255,255,255,0.05);
-    color: #fff;
-    padding-left: 30px;
+    color: white;
     border-left: 4px solid #4e73df;
 }
 
-/* Usuario al fondo */
+/* El logo en el sidebar */
+.nav-logo {
+    padding: 10px 25px;
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+}
+
+/* El icono de usuario al fondo */
 .nav-right {
     margin-top: auto;
     padding: 20px 25px;
-    width: 100%;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.user-menu i {
-    font-size: 32px;
-    color: white;
 }
 
 .hamburger {
-    display: none; /* Oculto en PC */
-    color: white;
-    font-size: 28px;
-    cursor: pointer;
+    display: none; /* Escondido en PC */
 }
 
-/* Ajuste de página */
+/* ==================================
+   2. AJUSTE DEL CONTENIDO (DERECHA)
+   ================================== */
 .page-content {
-    margin-left: 260px;
-    padding: 30px;
+    margin-left: 260px; /* Empuja el contenido para que no lo tape el sidebar */
     width: calc(100% - 260px);
+    padding: 20px;
 }
 
-/* === RESPONSIVE (Móviles) === */
-@media(max-width: 850px) {
+/* ==================================
+   3. RESPONSIVE (MÓVIL Y TABLET)
+   ================================== */
+@media (max-width: 850px) {
     .navbar {
         width: 100%;
         height: 70px;
@@ -100,24 +80,11 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
-        border-right: none;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-        background: #1b263b;
+        position: fixed;
     }
 
-    .nav-left { flex-direction: row; width: auto; gap: 0; }
-    .nav-links { display: none; } /* Ocultamos los links normales */
-    
-    .nav-right {
-        margin-top: 0;
-        width: auto;
-        border: none;
-        padding: 0;
-        gap: 15px;
-    }
-
-    .hamburger {
-        display: block; /* Aparece el botón */
+    .nav-links {
+        display: none !important; /* MATAMOS los links que se ven arriba en tu imagen */
     }
 
     .page-content {
@@ -126,32 +93,40 @@
         padding-top: 90px;
     }
 
-    /* Ajuste del menú que se despliega (el que usa tu JS) */
+    .hamburger {
+        display: block; /* Aparecen las 3 rayitas */
+        color: white;
+        font-size: 26px;
+        cursor: pointer;
+    }
+
+    /* EL MENÚ MÓVIL (El que sale al dar clic) */
     .mobile-menu {
         display: flex;
+        flex-direction: column;
         position: fixed;
-        top: 70px;
+        top: 70px; /* Justo debajo de la barrita */
         right: 0;
-        width: 70%; /* Un poco más ancho para que se vea pro */
+        width: 250px;
         height: calc(100vh - 70px);
         background: #1b263b;
         z-index: 9999;
-        transform: translateX(100%);
-        transition: transform 0.3s ease-in-out;
+        transform: translateX(100%); /* Escondido a la derecha */
+        transition: transform 0.3s ease;
         box-shadow: -5px 0 15px rgba(0,0,0,0.3);
     }
 
     .mobile-menu.active {
-        transform: translateX(0);
+        transform: translateX(0); /* Se desliza hacia adentro */
     }
 
     .mobile-menu a {
-        padding: 20px;
-        border-bottom: 1px solid rgba(255,255,255,0.05);
         color: white;
         text-decoration: none;
+        padding: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 10px;
     }
 }
