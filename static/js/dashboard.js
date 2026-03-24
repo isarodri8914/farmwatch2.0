@@ -6,31 +6,33 @@ document.addEventListener("DOMContentLoaded", () => {
   let hrChart = null;
   let cowDonut = null;
   let sensorDonut = null;
-  let lastSync = null;
-
-  // Estilo común para textos en modo oscuro
-  const chartTextColor = 'rgba(255, 255, 255, 0.8)';
-  const chartGridColor = 'rgba(255, 255, 255, 0.05)';
+  let lastSync = null; // evita refrescar si no hay datos nuevos
 
   function initMap() {
     map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
       .setView([20.97, -89.62], 11);
 
-    // Tip: Puedes considerar usar un proveedor de mapas oscuros como CartoDB.DarkMatter
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; OpenStreetMap',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19
     }).addTo(map);
   }
 
+  // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
   async function updateCharts() {
     try {
-      const res = await fetch("/api/datos", { credentials: "same-origin" });
+      const res = await fetch("/api/datos", {
+  credentials: "same-origin"
+});
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const datos = await res.json();
 
-      if (!Array.isArray(datos) || datos.length === 0) return;
+      if (!Array.isArray(datos) || datos.length === 0) {
+        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
+        return;
+      }
 
+      // Agrupar por vaca
       const grouped = {};
       datos.forEach(d => {
         if (d.fecha && d.id_vaca) {
@@ -40,60 +42,136 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
+      // Ordenar cada grupo por fecha
       Object.keys(grouped).forEach(id => {
         grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       });
 
+      if (Object.keys(grouped).length === 0) {
+        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con vacas</p>";
+        return;
+      }
+
+      // --- CORRECCIÓN: Generar etiquetas globales para el eje X ---
       const allLabels = [...new Set(datos.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})))].sort();
 
-      // Colores estilo Neón
-      const colors = ["#00f2ff", "#7000ff", "#00ff88", "#ff0055", "#ffb300"];
-      
-      const createDataset = (label, data, colorIndex) => ({
-        label: label,
-        data: data,
-        borderColor: colors[colorIndex % colors.length],
-        backgroundColor: 'transparent',
-        tension: 0.4,
-        pointRadius: 4,
-        pointBackgroundColor: colors[colorIndex % colors.length],
-        borderWidth: 3,
-        shadowBlur: 10, // Efecto neón (requiere plugin o canvas shadow)
-        fill: false
-      });
+      const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
+      let colorIndex = 0;
 
-      // --- GRÁFICA DE TEMPERATURA ---
-      const tempDatasets = Object.keys(grouped).map((id, idx) => {
+      // Datasets temperatura
+      const tempDatasets = [];
+      Object.keys(grouped).forEach(id => {
         const group = grouped[id];
+        // Alineamos los datos con las etiquetas globales
         const temps = allLabels.map(label => {
-          const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
-          return match ? Number(match.temp_objeto) : null;
+            const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
+            return match ? Number(match.temp_objeto) : null;
         });
-        return createDataset(`Vaca ${id}`, temps, idx);
+
+        tempDatasets.push({
+          label: `Vaca ${id}`,
+          data: temps,
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+          tension: 0.3,
+          fill: true,
+          pointRadius: 6,
+          pointBackgroundColor: colors[colorIndex % colors.length],
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 9
+        });
+        colorIndex++;
       });
 
       if (tempChart) tempChart.destroy();
       tempChart = new Chart(document.getElementById("tempChart"), {
         type: "line",
-        data: { labels: allLabels, datasets: tempDatasets },
-        options: getChartOptions("°C", 30, 45)
+        data: { labels: allLabels, datasets: tempDatasets }, // Se agregaron las labels aquí
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "top",
+              labels: { font: { size: 13 } },
+              onClick: (e, legendItem, legend) => {
+                const index = legendItem.datasetIndex;
+                const ci = legend.chart;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                ci.update();
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
+              }
+            }
+          },
+          scales: {
+            y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
+            x: { title: { display: true, text: "Hora" } }
+          }
+        }
       });
 
-      // --- GRÁFICA DE RITMO CARDÍACO ---
-      const hrDatasets = Object.keys(grouped).map((id, idx) => {
+      // Datasets ritmo cardíaco
+      const hrDatasets = [];
+      colorIndex = 0;
+      Object.keys(grouped).forEach(id => {
         const group = grouped[id];
         const hrs = allLabels.map(label => {
-          const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
-          return match ? Number(match.ritmo_cardiaco) : null;
+            const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
+            return match ? Number(match.ritmo_cardiaco) : null;
         });
-        return createDataset(`Vaca ${id}`, hrs, idx);
+
+        hrDatasets.push({
+          label: `Vaca ${id}`,
+          data: hrs,
+          borderColor: colors[colorIndex % colors.length],
+          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+          tension: 0.3,
+          fill: true,
+          pointRadius: 6,
+          pointBackgroundColor: colors[colorIndex % colors.length],
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+          pointHoverRadius: 9
+        });
+        colorIndex++;
       });
 
       if (hrChart) hrChart.destroy();
       hrChart = new Chart(document.getElementById("hrChart"), {
         type: "line",
-        data: { labels: allLabels, datasets: hrDatasets },
-        options: getChartOptions("bpm", 40, 140)
+        data: { labels: allLabels, datasets: hrDatasets }, // Se agregaron las labels aquí
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "top",
+              labels: { font: { size: 13 } },
+              onClick: (e, legendItem, legend) => {
+                const index = legendItem.datasetIndex;
+                const ci = legend.chart;
+                const meta = ci.getDatasetMeta(index);
+                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                ci.update();
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
+              }
+            }
+          },
+          scales: {
+            y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
+            x: { title: { display: true, text: "Hora" } }
+          }
+        }
       });
 
       await addThresholdLines();
@@ -103,82 +181,64 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Función auxiliar para mantener opciones coherentes
-  function getChartOptions(unit, min, max) {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "top",
-          labels: { color: chartTextColor, font: { family: 'Inter', size: 12 } }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(15, 23, 42, 0.9)',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1
-        }
-      },
-      scales: {
-        y: {
-          suggestedMin: min,
-          suggestedMax: max,
-          grid: { color: chartGridColor },
-          ticks: { color: chartTextColor },
-          title: { display: true, text: unit, color: chartTextColor }
-        },
-        x: {
-          grid: { display: false },
-          ticks: { color: chartTextColor },
-          title: { display: true, text: "Hora", color: chartTextColor }
-        }
-      }
-    };
-  }
-
-  // Umbrales actualizados con colores neón
+  // Umbrales (sin cambios)
   async function addThresholdLines() {
     try {
-      const res = await fetch("/api/config/umbral", { credentials: "same-origin" });
+      const res = await fetch("/api/config/umbral", {
+  credentials: "same-origin"
+});
       if (!res.ok) return;
-      const u = await res.json();
+      const umbrales = await res.json();
 
-      const lineStyle = (label, val, color) => ({
-        label: label,
-        data: Array(tempChart.data.labels.length).fill(val),
-        borderColor: color,
-        borderDash: [10, 5],
-        borderWidth: 2,
-        pointRadius: 0,
-        fill: false
-      });
-
-      if (u.temp_max && tempChart) {
-        tempChart.data.datasets.push(lineStyle(`Máx ${u.temp_max}°C`, u.temp_max, "#ff4d4d"));
+      if (umbrales.temp_max && tempChart) {
+        tempChart.data.datasets.push({
+          label: `Umbral Máx (${umbrales.temp_max} °C)`,
+          data: Array(tempChart.data.labels.length).fill(umbrales.temp_max),
+          borderColor: "#dc2626",
+          borderDash: [5, 5],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
         tempChart.update();
       }
-      if (u.hr_max && hrChart) {
-        hrChart.data.datasets.push(lineStyle(`Máx ${u.hr_max}bpm`, u.hr_max, "#ffb732"));
+
+      if (umbrales.temp_min && tempChart) {
+        tempChart.data.datasets.push({
+          label: `Umbral Mín (${umbrales.temp_min} °C)`,
+          data: Array(tempChart.data.labels.length).fill(umbrales.temp_min),
+          borderColor: "#60a5fa",
+          borderDash: [5, 5],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
+        tempChart.update();
+      }
+
+      if (umbrales.hr_max && hrChart) {
+        hrChart.data.datasets.push({
+          label: `Umbral Máx (${umbrales.hr_max} bpm)`,
+          data: Array(hrChart.data.labels.length).fill(umbrales.hr_max),
+          borderColor: "#f97316",
+          borderDash: [5, 5],
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: false
+        });
         hrChart.update();
       }
-    } catch (e) { console.warn(e); }
+    } catch (err) {
+      console.warn("Umbrales no cargados:", err);
+    }
   }
 
+  // Donuts (sin cambios)
   function updateDonuts(cows) {
-    const count = {
+    const statusCount = {
       ok: cows.filter(c => c.status === "ok").length,
       alert: cows.filter(c => c.status === "alert").length,
       offline: cows.filter(c => c.status === "offline").length
-    };
-
-    const donutOptions = {
-      responsive: true,
-      cutout: "75%",
-      plugins: {
-        legend: { position: "bottom", labels: { color: chartTextColor } }
-      }
     };
 
     if (cowDonut) cowDonut.destroy();
@@ -187,49 +247,60 @@ document.addEventListener("DOMContentLoaded", () => {
       data: {
         labels: ["Normal", "Alerta", "Offline"],
         datasets: [{
-          data: [count.ok, count.alert, count.offline],
-          backgroundColor: ["#00ff88", "#ffb300", "#64748b"],
-          borderWidth: 0
+          data: [statusCount.ok, statusCount.alert, statusCount.offline],
+          backgroundColor: ["#10b981", "#f97316", "#9ca3af"]
         }]
       },
-      options: donutOptions
+      options: { responsive: true, cutout: "65%", plugins: { legend: { position: "bottom" } } }
     });
 
     if (sensorDonut) sensorDonut.destroy();
     sensorDonut = new Chart(document.getElementById("sensorDonut"), {
       type: "doughnut",
       data: {
-        labels: ["Online", "Offline"],
+        labels: ["Online", "Problema/Offline"],
         datasets: [{
-          data: [count.ok, cows.length - count.ok],
-          backgroundColor: ["#00f2ff", "#ff4d4d"],
-          borderWidth: 0
+          data: [statusCount.ok, cows.length - statusCount.ok],
+          backgroundColor: ["#10b981", "#ef4444"]
         }]
       },
-      options: donutOptions
+      options: { responsive: true, cutout: "65%", plugins: { legend: { position: "bottom" } } }
     });
   }
 
+  // Carga principal
   async function loadDashboard() {
     try {
-      const res = await fetch("/api/dashboard", { credentials: "same-origin" });
-      const data = await res.json();
-      if (!data.cows || (lastSync && data.last_sync === lastSync)) return;
+      const res = await fetch("/api/dashboard", {
+  credentials: "same-origin"
+});
+      if (!res.ok) throw new Error("Error en /api/dashboard");
+const data = await res.json();
 
-      lastSync = data.last_sync;
-      const cows = data.cows;
+if (!data.cows) return;
+
+// 🔹 EVITA ACTUALIZAR SI NO HAY DATOS NUEVOS
+if (lastSync && data.last_sync === lastSync) {
+  return;
+}
+
+lastSync = data.last_sync;
+
+const cows = data.cows;
 
       document.getElementById("stat-total").textContent = cows.length;
       document.getElementById("stat-alerts").textContent = cows.filter(c => c.status === "alert").length;
       document.getElementById("stat-offline").textContent = cows.filter(c => c.status === "offline").length;
-      document.getElementById("stat-updated").textContent = data.last_sync || "--:--:--";
-      document.getElementById("sys-sensors").textContent = `${cows.filter(c => c.status === "ok").length} / ${cows.length}`;
+      document.getElementById("stat-updated").textContent = data.last_sync || data.last_update || "--:--:--";
+
+      document.getElementById("sys-sensors").textContent = 
+        cows.filter(c => c.status === "ok").length + " / " + cows.length;
 
       const alertsList = document.getElementById("alertsList");
       alertsList.innerHTML = "";
       (data.alerts || []).forEach(a => {
         const li = document.createElement("li");
-        li.innerHTML = `<strong>${a.cow}</strong> — ${a.text} <small style="color:rgba(255,255,255,0.4)">(${a.time})</small>`;
+        li.innerHTML = `<strong>${a.cow}</strong> — ${a.text} <small>(${a.time})</small>`;
         alertsList.appendChild(li);
       });
 
@@ -238,27 +309,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
       cows.forEach(cow => {
         if (!cow.lat || !cow.lng) return;
-        const color = cow.status === "ok" ? "#00ff88" : cow.status === "alert" ? "#ffb300" : "#64748b";
+        const color = cow.status === "ok" ? "#10b981" : cow.status === "alert" ? "#f97316" : "#9ca3af";
         const marker = L.circleMarker([cow.lat, cow.lng], {
-          radius: 10,
-          color: "#fff",
+          radius: 11,
+          color: color,
           fillColor: color,
-          fillOpacity: 0.9,
+          fillOpacity: 0.75,
           weight: 2
         }).addTo(map);
 
-        marker.bindPopup(`<div style="color:#333"><b>${cow.name || "Vaca "+cow.id}</b><br>Temp: ${cow.temp ?? "--"} °C<br>Estado: ${cow.status}</div>`);
+        marker.bindPopup(`<b>${cow.name || "Vaca " + cow.id}</b><br>Temp: ${cow.temp ?? "--"} °C<br>Ritmo: ${cow.hr ?? "--"} bpm<br>Estado: <strong>${cow.status}</strong>`);
         markers.push(marker);
       });
 
-      if (markers.length > 0) map.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
 
       updateDonuts(cows);
       await updateCharts();
 
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error("Error en loadDashboard:", err);
+    }
   }
 
+  // Inicio
   initMap();
   loadDashboard();
   setInterval(loadDashboard, 15000);

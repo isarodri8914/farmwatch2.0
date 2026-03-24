@@ -1,128 +1,252 @@
-/* dashboard.css - Transformación a Estilo Glassmorphism Premium */
+/* dashboard.css - Estilo limpio, profesional y equilibrado */
 
-/* Base: Aplicamos el fondo degradado oscuro del login */
+/* Base */
 .dash-shell {
-    padding: 30px 20px;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
-    background: radial-gradient(circle at top right, #2a5298, #1e3c72, #0f172a);
-    min-height: 100vh;
-    color: white;
-}
-
-/* Re-estilo de todas las CARDS a efecto cristal */
-.card {
-    background: rgba(255, 255, 255, 0.08) !important; /* Transparente */
-    backdrop-filter: blur(12px) saturate(160%);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    border-radius: 16px;
-    padding: 18px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    transition: all 0.3s ease;
-    color: white;
-}
-
-.card:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.12) !important;
-    border-color: rgba(255, 255, 255, 0.25) !important;
+  padding: 20px 0;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  color: #0f172a;
 }
 
 /* TOP ROW - Tarjetas resumen */
 .top-row .top-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 15px;
-    margin-bottom: 25px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.05);
+  border: 1px solid rgba(15,23,42,0.04);
+  transition: transform 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Summary cards */
+.card.summary {
+  text-align: center;
+}
 .meta {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 6px;
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
 }
-
 .big {
-    font-size: 32px;
-    font-weight: 800;
-    color: #ffffff;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
 }
-
-/* Colores de alerta mejorados para fondo oscuro */
-.big.alert { color: #ff4d4d; } 
-.big.warn { color: #ffb732; }
-
-.hint {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 4px;
-}
+.big.alert { color: #dc2626; }
+.big.warn { color: #b45309; }
 
 /* System card */
+.system-card .system-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .sys-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-.sys-row span:last-child {
-    font-weight: bold;
-    color: #4ade80; /* Verde brillante para OK */
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #374151;
 }
 
-/* Gráficas */
+/* Middle layout - Gráficas + Mapa */
+.middle-row {
+  display: grid;
+  grid-template-columns: 1fr 380px; /* gráficas ocupan más espacio */
+  gap: 20px;
+  align-items: stretch;
+}
+
+.left-pan {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.right-pan {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Gráficas - más equilibradas */
+.chart-row {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chart-card {
+  position: relative;
+  height: 360px;               /* tamaño ideal: grande pero sin exceso */
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
 .chart-card h4 {
-    margin: 0 0 15px 0;
-    font-weight: 600;
-    font-size: 1.1rem;
-    color: white;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #1e293b;
 }
 
-/* Ajuste para que Chart.js se vea bien en fondo oscuro */
-canvas {
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+.chart-card canvas {
+  position: absolute;
+  inset: 50px 0 1rem 0;        /* top 50px para título, bottom 1rem */
+  width: 100% !important;
+  height: auto !important;
 }
 
-/* Selector de vacas (estilo login) */
+/* Selector de vacas - más profesional y arriba */
+.filter-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+  padding: 0 1rem;
+}
+
+.filter-container label {
+  font-weight: 500;
+  color: #374151;
+  margin-right: 10px;
+  font-size: 0.95rem;
+}
+
 #cowSelect {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    border-radius: 8px;
-    padding: 8px 12px;
-    outline: none;
+  min-width: 180px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-#cowSelect option {
-    background: #1e3c72; /* Color sólido para que se lea el dropdown */
-    color: white;
+#cowSelect:hover,
+#cowSelect:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  outline: none;
 }
 
-/* Mapa */
+/* Mapa - más grande y fluido */
 .map-wrapper {
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    overflow: hidden;
+  flex: 1;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.05);
 }
 
-/* Alertas */
+
+.map-wrapper {
+  flex: 1;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.05);
+  max-height: 600px;           /* ← altura máxima para no estirarse demasiado */
+  min-height: 400px;           /* mínimo para que se vea bien */
+}
+
+.map {
+  height: 100% !important;     /* ocupa todo el wrapper */
+  width: 100%;
+  border-radius: 12px;
+}
+
+/* Small cards (donuts) */
+.small-cards {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  justify-content: center;
+}
+.small-cards .mini {
+  flex: 1;
+  max-width: 220px;
+  text-align: center;
+}
+
+/* Alerts panel */
+.alerts-panel {
+  padding: 14px;
+}
+.alerts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
 .alerts-list li {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.8);
-    transition: 0.2s;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
-.alerts-list li:hover {
-    background: rgba(255, 255, 255, 0.1);
+/* Responsive */
+@media (max-width: 1200px) {
+  .middle-row {
+    grid-template-columns: 1fr 340px;
+  }
+  .map {
+    min-height: 450px;
+  }
 }
 
-/* Responsive fixes */
-@media (max-width: 850px) {
-    .dash-shell {
-        padding-top: 100px; /* Espacio para el navbar móvil */
-    }
+@media (max-width: 900px) {
+  .middle-row {
+    grid-template-columns: 1fr;
+  }
+  .right-pan {
+    order: 2;
+  }
+  .left-pan {
+    order: 1;
+  }
+  .top-row .top-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .chart-card {
+    height: 320px;
+  }
+  .map {
+    min-height: 400px;
+  }
+  .map-wrapper {
+    max-height: 500px;
+    min-height: 350px;
+  
+}
+}
+
+@media (max-width: 600px) {
+  .top-row .top-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .chart-card {
+    height: 280px;
+  }
+  .small-cards {
+    flex-direction: column;
+  }
 }
