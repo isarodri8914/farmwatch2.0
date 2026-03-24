@@ -155,10 +155,13 @@
 }
 
 .chart-card canvas {
-  position: absolute;
-  inset: 82px 32px 40px 32px;     /* buen margen en todos los lados */
-  width: 100% !important;
-  height: calc(100% - 122px) !important;
+    position: absolute;
+    top: 82px;
+    left: 32px;
+    right: 50px;          /* ← más espacio a la derecha */
+    bottom: 40px;
+    width: auto !important;
+    height: auto !important;
 }
 
 /* Selector de vaca */

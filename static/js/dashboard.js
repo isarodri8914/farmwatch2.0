@@ -19,167 +19,201 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
-  async function updateCharts() {
+  // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
+async function updateCharts() {
     try {
-      const res = await fetch("/api/datos", {
-  credentials: "same-origin"
-});
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const datos = await res.json();
+        const res = await fetch("/api/datos", {
+            credentials: "same-origin"
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const datos = await res.json();
 
-      if (!Array.isArray(datos) || datos.length === 0) {
-        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
-        return;
-      }
-
-      // Agrupar por vaca
-      const grouped = {};
-      datos.forEach(d => {
-        if (d.fecha && d.id_vaca) {
-          const id = d.id_vaca;
-          if (!grouped[id]) grouped[id] = [];
-          grouped[id].push(d);
+        if (!Array.isArray(datos) || datos.length === 0) {
+            document.querySelector(".chart-row").innerHTML += 
+                "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
+            return;
         }
-      });
 
-      // Ordenar cada grupo por fecha
-      Object.keys(grouped).forEach(id => {
-        grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-      });
-
-      if (Object.keys(grouped).length === 0) {
-        document.querySelector(".chart-row").innerHTML += "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con vacas</p>";
-        return;
-      }
-
-      // --- CORRECCIÓN: Generar etiquetas globales para el eje X ---
-      const allLabels = [...new Set(datos.map(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})))].sort();
-
-      const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
-      let colorIndex = 0;
-
-      // Datasets temperatura
-      const tempDatasets = [];
-      Object.keys(grouped).forEach(id => {
-        const group = grouped[id];
-        // Alineamos los datos con las etiquetas globales
-        const temps = allLabels.map(label => {
-            const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
-            return match ? Number(match.temp_objeto) : null;
-        });
-
-        tempDatasets.push({
-          label: `Vaca ${id}`,
-          data: temps,
-          borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-          tension: 0.3,
-          fill: true,
-          pointRadius: 6,
-          pointBackgroundColor: colors[colorIndex % colors.length],
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 2,
-          pointHoverRadius: 9
-        });
-        colorIndex++;
-      });
-
-      if (tempChart) tempChart.destroy();
-      tempChart = new Chart(document.getElementById("tempChart"), {
-        type: "line",
-        data: { labels: allLabels, datasets: tempDatasets }, // Se agregaron las labels aquí
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: "top",
-              labels: { font: { size: 13 } },
-              onClick: (e, legendItem, legend) => {
-                const index = legendItem.datasetIndex;
-                const ci = legend.chart;
-                const meta = ci.getDatasetMeta(index);
-                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
-                ci.update();
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
-              }
+        // Agrupar por vaca
+        const grouped = {};
+        datos.forEach(d => {
+            if (d.fecha && d.id_vaca) {
+                const id = d.id_vaca;
+                if (!grouped[id]) grouped[id] = [];
+                grouped[id].push(d);
             }
-          },
-          scales: {
-            y: { suggestedMin: 30, suggestedMax: 45, title: { display: true, text: "°C" } },
-            x: { title: { display: true, text: "Hora" } }
-          }
+        });
+
+        // Ordenar cada grupo por fecha
+        Object.keys(grouped).forEach(id => {
+            grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        });
+
+        if (Object.keys(grouped).length === 0) {
+            document.querySelector(".chart-row").innerHTML += 
+                "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con vacas</p>";
+            return;
         }
-      });
 
-      // Datasets ritmo cardíaco
-      const hrDatasets = [];
-      colorIndex = 0;
-      Object.keys(grouped).forEach(id => {
-        const group = grouped[id];
-        const hrs = allLabels.map(label => {
-            const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) === label);
-            return match ? Number(match.ritmo_cardiaco) : null;
+        // Etiquetas globales para el eje X
+        const allLabels = [...new Set(datos.map(d => 
+            new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        ))].sort();
+
+        const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
+        let colorIndex = 0;
+
+        // ==================== TEMPERATURA ====================
+        const tempDatasets = [];
+        Object.keys(grouped).forEach(id => {
+            const group = grouped[id];
+            const temps = allLabels.map(label => {
+                const match = group.find(d => 
+                    new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label
+                );
+                return match ? Number(match.temp_objeto) : null;
+            });
+
+            tempDatasets.push({
+                label: `Vaca ${id}`,
+                data: temps,
+                borderColor: colors[colorIndex % colors.length],
+                backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, 
+                                   ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, 
+                                   ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+                tension: 0.3,
+                fill: true,
+                pointRadius: 6,
+                pointBackgroundColor: colors[colorIndex % colors.length],
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 2,
+                pointHoverRadius: 9
+            });
+            colorIndex++;
         });
 
-        hrDatasets.push({
-          label: `Vaca ${id}`,
-          data: hrs,
-          borderColor: colors[colorIndex % colors.length],
-          backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-          tension: 0.3,
-          fill: true,
-          pointRadius: 6,
-          pointBackgroundColor: colors[colorIndex % colors.length],
-          pointBorderColor: "#ffffff",
-          pointBorderWidth: 2,
-          pointHoverRadius: 9
-        });
-        colorIndex++;
-      });
-
-      if (hrChart) hrChart.destroy();
-      hrChart = new Chart(document.getElementById("hrChart"), {
-        type: "line",
-        data: { labels: allLabels, datasets: hrDatasets }, // Se agregaron las labels aquí
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: "top",
-              labels: { font: { size: 13 } },
-              onClick: (e, legendItem, legend) => {
-                const index = legendItem.datasetIndex;
-                const ci = legend.chart;
-                const meta = ci.getDatasetMeta(index);
-                meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
-                ci.update();
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
-              }
+        if (tempChart) tempChart.destroy();
+        tempChart = new Chart(document.getElementById("tempChart"), {
+            type: "line",
+            data: { labels: allLabels, datasets: tempDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                clip: false,                    // ← Permite que los puntos salgan un poco
+                layout: {
+                    padding: { right: 25 }      // ← Espacio extra a la derecha
+                },
+                plugins: {
+                    legend: {
+                        position: "top",
+                        labels: { font: { size: 13 } },
+                        onClick: (e, legendItem, legend) => {
+                            const index = legendItem.datasetIndex;
+                            const ci = legend.chart;
+                            const meta = ci.getDatasetMeta(index);
+                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                            ci.update();
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        suggestedMin: 30, 
+                        suggestedMax: 45, 
+                        title: { display: true, text: "°C" } 
+                    },
+                    x: { 
+                        title: { display: true, text: "Hora" },
+                        offset: true                    // ← CLAVE: evita que se corte el último punto
+                    }
+                }
             }
-          },
-          scales: {
-            y: { suggestedMin: 40, suggestedMax: 140, title: { display: true, text: "bpm" } },
-            x: { title: { display: true, text: "Hora" } }
-          }
-        }
-      });
+        });
 
-      await addThresholdLines();
+        // ==================== RITMO CARDÍACO ====================
+        const hrDatasets = [];
+        colorIndex = 0;
+        Object.keys(grouped).forEach(id => {
+            const group = grouped[id];
+            const hrs = allLabels.map(label => {
+                const match = group.find(d => 
+                    new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label
+                );
+                return match ? Number(match.ritmo_cardiaco) : null;
+            });
+
+            hrDatasets.push({
+                label: `Vaca ${id}`,
+                data: hrs,
+                borderColor: colors[colorIndex % colors.length],
+                backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, 
+                                   ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, 
+                                   ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
+                tension: 0.3,
+                fill: true,
+                pointRadius: 6,
+                pointBackgroundColor: colors[colorIndex % colors.length],
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 2,
+                pointHoverRadius: 9
+            });
+            colorIndex++;
+        });
+
+        if (hrChart) hrChart.destroy();
+        hrChart = new Chart(document.getElementById("hrChart"), {
+            type: "line",
+            data: { labels: allLabels, datasets: hrDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                clip: false,
+                layout: {
+                    padding: { right: 25 }
+                },
+                plugins: {
+                    legend: {
+                        position: "top",
+                        labels: { font: { size: 13 } },
+                        onClick: (e, legendItem, legend) => {
+                            const index = legendItem.datasetIndex;
+                            const ci = legend.chart;
+                            const meta = ci.getDatasetMeta(index);
+                            meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+                            ci.update();
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
+                        }
+                    }
+                },
+                scales: {
+                    y: { 
+                        suggestedMin: 40, 
+                        suggestedMax: 140, 
+                        title: { display: true, text: "bpm" } 
+                    },
+                    x: { 
+                        title: { display: true, text: "Hora" },
+                        offset: true
+                    }
+                }
+            }
+        });
+
+        await addThresholdLines();
 
     } catch (err) {
-      console.error("Error en updateCharts:", err);
+        console.error("Error en updateCharts:", err);
     }
-  }
+}
 
   // Umbrales (sin cambios)
   async function addThresholdLines() {
