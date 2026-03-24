@@ -110,7 +110,7 @@
 /* ==================== MIDDLE ROW ==================== */
 .middle-row {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr 400px;   /* Gráficas a la izquierda (más espacio), mapa a la derecha */
   gap: 28px;
   align-items: start;
 }
@@ -118,7 +118,7 @@
 .left-pan {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;   /* más espacio entre secciones */
 }
 
 .right-pan {
@@ -127,40 +127,38 @@
 
 /* Gráficas */
 .chart-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
+  display: flex;
+  flex-direction: column;   /* ← Cambiado a columna */
+  gap: 32px;
 }
 
 .chart-card {
-  height: 480px;                    /* ← Aumentado significativamente */
-  padding: 28px 28px 32px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.88);
+  height: 460px;                    /* Altura óptima para gráficas anchas */
+  padding: 28px 32px 36px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
   position: relative;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .chart-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.15);
+  transform: translateY(-4px);
 }
 
 .chart-card h4 {
-  margin: 0 0 24px 0;
-  font-size: 1.22rem;
+  margin: 0 0 26px 0;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #0f172a;
-  letter-spacing: -0.3px;
 }
 
 .chart-card canvas {
   position: absolute;
-  inset: 78px 28px 32px 28px;     /* Más espacio arriba y abajo */
+  inset: 82px 32px 40px 32px;     /* buen margen en todos los lados */
   width: 100% !important;
-  height: calc(100% - 110px) !important;
+  height: calc(100% - 122px) !important;
 }
 
 /* Selector de vaca */
@@ -197,19 +195,19 @@
 /* Mapa */
 .map-wrapper {
   flex: 1;
-  min-height: 660px;
-  max-height: 720px;
+  min-height: 680px;
+  max-height: 740px;
   padding: 0;
-  border-radius: 20px;
+  border-radius: 22px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
 }
 
 .map {
   height: 100% !important;
   width: 100%;
-  border-radius: 20px;
+  border-radius: 22px;
 }
 
 /* Small cards (Donuts) */
@@ -217,20 +215,18 @@
   display: flex;
   gap: 24px;
   padding: 28px;
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(20px);
-  border-radius: 20px;
+  border-radius: 22px;
 }
 
 .small-cards .mini {
   flex: 1;
-  text-align: center;
-  max-width: 260px;
+  max-width: 270px;
 }
 
 .small-cards canvas {
-  max-height: 240px;
-  margin: 0 auto;
+  max-height: 250px;
 }
 
 .small-cards h5 {
