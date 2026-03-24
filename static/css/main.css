@@ -9,7 +9,21 @@ body {
     padding: 0;
     font-family: "Poppins", sans-serif;
     background: #f5f7fa;
-    display: flex;
+    display: block; /* Cambiado de flex para evitar colapsos */
+}
+
+/* Asegúrate de que .content no duplique el margen si usas esta clase */
+.content {
+    margin-left: 260px;
+    padding: 30px;
+    width: calc(100% - 260px);
+}
+
+@media (max-width: 850px) {
+    .content {
+        margin-left: 0;
+        width: 100%;
+    }
 }
 
 /* =============================
@@ -51,11 +65,7 @@ body {
    CONTENIDO PRINCIPAL
 ============================= */
 
-.content {
-    margin-left: 260px;
-    padding: 30px;
-    width: calc(100% - 260px);
-}
+
 
 h1, h2, h3 {
     margin-top: 0;
