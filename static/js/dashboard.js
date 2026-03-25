@@ -235,64 +235,42 @@ async function updateCharts() {
 
 // ==================== GIROSCOPIO ====================
 // Dentro de updateCharts, en la sección de Giroscopio:
-// ... dentro de updateCharts() ...
-
 const actividadDatasets = [];
-let colorIndex = 0;
 
 Object.keys(grouped).forEach(id => {
     const group = grouped[id];
-
-    // 1. TRANSFORMACIÓN MATEMÁTICA: Magnitud Vectorial (Norma)
-    const magnitudes = group.map(d => {
-        return Math.sqrt(
-            Math.pow(Number(d.gyro_x), 2) + 
-            Math.pow(Number(d.gyro_y), 2) + 
-            Math.pow(Number(d.gyro_z), 2)
-        );
+    
+    const dataActividad = allLabels.map(label => {
+        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
+        if (match) {
+            // Calculamos la magnitud del movimiento (Pitágoras 3D)
+            const mag = Math.sqrt(Math.pow(match.gyro_x, 2) + Math.pow(match.gyro_y, 2) + Math.pow(match.gyro_z, 2));
+            return mag.toFixed(2);
+        }
+        return null;
     });
 
-    // 2. FILTRADO: Media Móvil (Suavizado de 5 puntos)
-    const datosSuavizados = magnitudes.map((val, i, arr) => {
-        if (i < 4) return val; 
-        return (arr[i] + arr[i-1] + arr[i-2] + arr[i-3] + arr[i-4]) / 5;
-    });
-
-    // 3. AGREGAR AL DATASET
     actividadDatasets.push({
-        label: `Esfuerzo Vaca ${id}`,
-        data: datosSuavizados,
-        borderColor: colors[colorIndex % colors.length],
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-        tension: 0.4, // Esto hace que la línea sea curva y elegante
+        label: `Gasto Energético Vaca ${id}`,
+        data: dataActividad,
+        borderColor: '#f59e0b', // Color naranja/quemado para energía
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
         fill: true,
-        pointRadius: 0 // Quitamos los puntos para que se vea como una señal limpia
+        tension: 0.4 // Línea suave
     });
-    colorIndex++;
 });
 
-// 4. RENDERIZAR EN EL CANVAS
+// Crear la gráfica enfocada en ESFUERZO FISICO
 if (gyroChart) gyroChart.destroy();
 gyroChart = new Chart(document.getElementById("gyroChart"), {
     type: "line",
-    data: { 
-        labels: allLabels, 
-        datasets: actividadDatasets 
-    },
+    data: { labels: allLabels, datasets: actividadDatasets },
     options: {
-        responsive: true,
-        maintainAspectRatio: false,
         plugins: {
-            title: {
-                display: true,
-                text: 'ANÁLISIS DE GASTO ENERGÉTICO (MAGNITUD SUAVIZADA)'
-            }
+            title: { display: true, text: 'INTENSIDAD DE ACTIVIDAD (Estimación de Gasto Calórico)' }
         },
         scales: {
-            y: {
-                title: { display: true, text: 'Índice de Actividad' },
-                beginAtZero: true
-            }
+            y: { beginAtZero: true, title: { display: true, text: 'Índice de Esfuerzo' } }
         }
     }
 });
