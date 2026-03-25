@@ -347,7 +347,7 @@ async function updateCharts() {
 // ... (código anterior del mapa) ...
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(4.5));
+        map.fitBounds(group.getBounds().pad(25));
       }
 
       // --- NUEVO: LISTA DE ESTADOS EN TIEMPO REAL ---
