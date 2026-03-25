@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let cowDonut = null;
   let sensorDonut = null;
   let lastSync = null; // evita refrescar si no hay datos nuevos
+  let gyroChart = null; // Debajo de hrChart
 
   function initMap() {
     map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
@@ -228,6 +229,55 @@ async function updateCharts() {
             }
         }
     }
+
+    
+});
+
+// ==================== GIROSCOPIO ====================
+const gyroDatasets = [];
+colorIndex = 0;
+
+Object.keys(grouped).forEach(id => {
+    const group = grouped[id];
+    
+    // Extraemos los 3 ejes
+    const dataX = allLabels.map(label => {
+        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
+        return match ? Number(match.gyro_x) : null;
+    });
+    const dataY = allLabels.map(label => {
+        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
+        return match ? Number(match.gyro_y) : null;
+    });
+    const dataZ = allLabels.map(label => {
+        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
+        return match ? Number(match.gyro_z) : null;
+    });
+
+    // Añadimos los datasets al gráfico
+    gyroDatasets.push(
+        { label: `Vaca ${id} - X`, data: dataX, borderColor: '#ef4444', borderWidth: 2, pointRadius: 0, fill: false },
+        { label: `Vaca ${id} - Y`, data: dataY, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, fill: false },
+        { label: `Vaca ${id} - Z`, data: dataZ, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, fill: false }
+    );
+});
+
+if (gyroChart) gyroChart.destroy();
+gyroChart = new Chart(document.getElementById("gyroChart"), {
+    type: "line",
+    data: { labels: allLabels, datasets: gyroDatasets },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: "top", labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+            y: { title: { display: true, text: "rad/s o deg/s" }, grid: { color: 'rgba(0,0,0,0.05)' } },
+            x: { grid: { display: false } }
+        }
+    }
 });
 
         await addThresholdLines();
@@ -235,6 +285,8 @@ async function updateCharts() {
     } catch (err) {
         console.error("Error en updateCharts:", err);
     }
+
+    
 }
 
   // Umbrales (sin cambios)
