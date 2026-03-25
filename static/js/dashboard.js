@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function initMap() {
     map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
-      .setView([20.97, -89.62], 11);
+      .setView([20.97, -89.62], 15);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -347,7 +347,7 @@ async function updateCharts() {
 // ... (código anterior del mapa) ...
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.2));
+        map.fitBounds(group.getBounds().pad(4.5));
       }
 
       // --- NUEVO: LISTA DE ESTADOS EN TIEMPO REAL ---
