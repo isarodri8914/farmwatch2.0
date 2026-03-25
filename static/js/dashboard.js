@@ -344,12 +344,45 @@ async function updateCharts() {
       });
 
       // Ajustar zoom para ver todas las vacas
+// ... (código anterior del mapa) ...
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.2));
       }
 
-      // Actualizar gráficas de dona y líneas
+      // --- NUEVO: LISTA DE ESTADOS EN TIEMPO REAL ---
+      const behaviorList = document.getElementById("behaviorList");
+      if (behaviorList) {
+          behaviorList.innerHTML = ""; // Limpiar lista previa
+          cows.forEach(cow => {
+              // Calculamos la misma intensidad que en el mapa
+              const intensidad = cow.actividad || 
+                                 (cow.gyro_x ? Math.sqrt(Math.pow(cow.gyro_x,2) + Math.pow(cow.gyro_y,2) + Math.pow(cow.gyro_z,2)) : 0);
+              
+              const comportamiento = obtenerEstadoVaca(intensidad);
+              
+              // Definir colores rápidos para las etiquetas
+              const bg = comportamiento === "Reposo" ? "#e2e8f0" : 
+                         comportamiento === "Rumia/Descanso" ? "#dcfce7" : 
+                         comportamiento === "Pastoreo" ? "#fef9c3" : "#fee2e2";
+              
+              const colorText = comportamiento === "Reposo" ? "#475569" : 
+                                comportamiento === "Rumia/Descanso" ? "#166534" : 
+                                comportamiento === "Pastoreo" ? "#854d0e" : "#991b1b";
+
+              const item = document.createElement("div");
+              item.style = `background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;`;
+              item.innerHTML = `
+                  <div style="font-weight: 600; font-size: 0.85rem; color: #64748b;">Vaca ${cow.id}</div>
+                  <div style="background: ${bg}; color: ${colorText}; font-size: 0.75rem; font-weight: bold; padding: 4px 8px; border-radius: 12px; margin-top: 5px; display: inline-block;">
+                    ${comportamiento}
+                  </div>
+              `;
+              behaviorList.appendChild(item);
+          });
+      }
+      // ----------------------------------------------
+
       updateDonuts(cows);
       await updateCharts();
 
