@@ -234,48 +234,43 @@ async function updateCharts() {
 });
 
 // ==================== GIROSCOPIO ====================
-const gyroDatasets = [];
-colorIndex = 0;
+// Dentro de updateCharts, en la sección de Giroscopio:
+const actividadDatasets = [];
 
 Object.keys(grouped).forEach(id => {
     const group = grouped[id];
     
-    // Extraemos los 3 ejes
-    const dataX = allLabels.map(label => {
+    const dataActividad = allLabels.map(label => {
         const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
-        return match ? Number(match.gyro_x) : null;
-    });
-    const dataY = allLabels.map(label => {
-        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
-        return match ? Number(match.gyro_y) : null;
-    });
-    const dataZ = allLabels.map(label => {
-        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
-        return match ? Number(match.gyro_z) : null;
+        if (match) {
+            // Calculamos la magnitud del movimiento (Pitágoras 3D)
+            const mag = Math.sqrt(Math.pow(match.gyro_x, 2) + Math.pow(match.gyro_y, 2) + Math.pow(match.gyro_z, 2));
+            return mag.toFixed(2);
+        }
+        return null;
     });
 
-    // Añadimos los datasets al gráfico
-    gyroDatasets.push(
-        { label: `Vaca ${id} - X`, data: dataX, borderColor: '#ef4444', borderWidth: 2, pointRadius: 0, fill: false },
-        { label: `Vaca ${id} - Y`, data: dataY, borderColor: '#3b82f6', borderWidth: 2, pointRadius: 0, fill: false },
-        { label: `Vaca ${id} - Z`, data: dataZ, borderColor: '#10b981', borderWidth: 2, pointRadius: 0, fill: false }
-    );
+    actividadDatasets.push({
+        label: `Gasto Energético Vaca ${id}`,
+        data: dataActividad,
+        borderColor: '#f59e0b', // Color naranja/quemado para energía
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        fill: true,
+        tension: 0.4 // Línea suave
+    });
 });
 
+// Crear la gráfica enfocada en ESFUERZO FISICO
 if (gyroChart) gyroChart.destroy();
 gyroChart = new Chart(document.getElementById("gyroChart"), {
     type: "line",
-    data: { labels: allLabels, datasets: gyroDatasets },
+    data: { labels: allLabels, datasets: actividadDatasets },
     options: {
-        responsive: true,
-        maintainAspectRatio: false,
         plugins: {
-            legend: { position: "top", labels: { boxWidth: 12, font: { size: 11 } } },
-            tooltip: { mode: 'index', intersect: false }
+            title: { display: true, text: 'INTENSIDAD DE ACTIVIDAD (Estimación de Gasto Calórico)' }
         },
         scales: {
-            y: { title: { display: true, text: "rad/s o deg/s" }, grid: { color: 'rgba(0,0,0,0.05)' } },
-            x: { grid: { display: false } }
+            y: { beginAtZero: true, title: { display: true, text: 'Índice de Esfuerzo' } }
         }
     }
 });
