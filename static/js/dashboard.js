@@ -9,15 +9,19 @@ document.addEventListener("DOMContentLoaded", () => {
     let lastSync = null; 
     let gyroChart = null;
 
-  function initMap() {
-    map = L.map("map", { scrollWheelZoom: false, zoomControl: true })
-      .setView([20.97, -89.62], 15);
+function initMap() {
+    // Añadimos maxZoom: 16 para que NUNCA se acerque más de lo que se ve en tu segunda imagen
+    map = L.map("map", { 
+        scrollWheelZoom: false, 
+        zoomControl: true,
+        maxZoom: 16  // <--- AGREGA ESTO
+    }).setView([20.97, -89.62], 15);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 19
+        attribution: '&copy; OpenStreetMap',
+        maxZoom: 19
     }).addTo(map);
-  }
+}
 
   // Clasificador lógico de comportamiento (Para el reporte de ingeniería)
     function obtenerEstadoVaca(magnitud) {
@@ -347,7 +351,7 @@ async function updateCharts() {
 // ... (código anterior del mapa) ...
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(25));
+        map.fitBounds(group.getBounds().pad(10));
       }
 
       // --- NUEVO: LISTA DE ESTADOS EN TIEMPO REAL ---
