@@ -266,35 +266,102 @@ async function updateCharts() {
     });
   }
 
+ // Carga principal
   async function loadDashboard() {
-        try {
-            const res = await fetch("/api/dashboard", { credentials: "same-origin" });
-            const data = await res.json();
-            if (!data.cows || (lastSync && data.last_sync === lastSync)) return;
-            
-            lastSync = data.last_sync;
-            const cows = data.cows;
+    try {
+      const res = await fetch("/api/dashboard", {
+        credentials: "same-origin"
+      });
+      if (!res.ok) throw new Error("Error en /api/dashboard");
+      const data = await res.json();
 
-            document.getElementById("stat-total").textContent = cows.length;
-            document.getElementById("stat-alerts").textContent = cows.filter(c => c.status === "alert").length;
-            document.getElementById("stat-updated").textContent = data.last_sync || "--:--";
+      if (!data.cows) return;
 
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
-            cows.forEach(cow => {
-                if (!cow.lat || !cow.lng) return;
-                const marker = L.circleMarker([cow.lat, cow.lng], {
-                    radius: 10, color: cow.status === "ok" ? "#10b981" : "#f97316", fillOpacity: 0.8
-                }).addTo(map);
-                markers.push(marker);
-            });
+      // 🔹 EVITA ACTUALIZAR SI NO HAY DATOS NUEVOS
+      if (lastSync && data.last_sync === lastSync) {
+        return;
+      }
 
-            updateDonuts(cows);
-            await updateCharts();
-        } catch (err) { console.error(err); }
+      lastSync = data.last_sync;
+      const cows = data.cows;
+
+      // Actualizar estadísticas superiores
+      document.getElementById("stat-total").textContent = cows.length;
+      document.getElementById("stat-alerts").textContent = cows.filter(c => c.status === "alert").length;
+      document.getElementById("stat-offline").textContent = cows.filter(c => c.status === "offline").length;
+      document.getElementById("stat-updated").textContent = data.last_sync || data.last_update || "--:--:--";
+
+      document.getElementById("sys-sensors").textContent = 
+        cows.filter(c => c.status === "ok").length + " / " + cows.length;
+
+      // Actualizar lista de alertas recientes
+      const alertsList = document.getElementById("alertsList");
+      alertsList.innerHTML = "";
+      (data.alerts || []).forEach(a => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${a.cow}</strong> — ${a.text} <small>(${a.time})</small>`;
+        alertsList.appendChild(li);
+      });
+
+      // Limpiar marcadores antiguos del mapa
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      // Dibujar vacas en el mapa con su nuevo estado de comportamiento
+      cows.forEach(cow => {
+        if (!cow.lat || !cow.lng) return;
+
+        // --- CÁLCULO DE COMPORTAMIENTO (Uso de la función antes transparente) ---
+        // Si tu API no manda 'actividad', calculamos la norma si vienen gyro_x, y, z
+        const intensidad = cow.actividad || 
+                           (cow.gyro_x ? Math.sqrt(Math.pow(cow.gyro_x,2) + Math.pow(cow.gyro_y,2) + Math.pow(cow.gyro_z,2)) : 0);
+        
+        const comportamiento = obtenerEstadoVaca(intensidad); 
+        // -----------------------------------------------------------------------
+
+        const color = cow.status === "ok" ? "#10b981" : cow.status === "alert" ? "#f97316" : "#9ca3af";
+        
+        const marker = L.circleMarker([cow.lat, cow.lng], {
+          radius: 11,
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.75,
+          weight: 2
+        }).addTo(map);
+
+        // Popup actualizado con Comportamiento detectado
+        marker.bindPopup(`
+          <div style="font-family: sans-serif;">
+            <b style="font-size: 1.1rem;">${cow.name || "Vaca " + cow.id}</b><br>
+            <hr style="margin: 5px 0;">
+            <b>Comportamiento:</b> <span style="color: #2563eb;">${comportamiento}</span><br>
+            <b>Temp:</b> ${cow.temp ?? "--"} °C<br>
+            <b>Ritmo:</b> ${cow.hr ?? "--"} bpm<br>
+            <b>Estado Vital:</b> <span style="color: ${color};">${cow.status.toUpperCase()}</span>
+          </div>
+        `);
+        markers.push(marker);
+      });
+
+      // Ajustar zoom para ver todas las vacas
+      if (markers.length > 0) {
+        const group = L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.2));
+      }
+
+      // Actualizar gráficas de dona y líneas
+      updateDonuts(cows);
+      await updateCharts();
+
+    } catch (err) {
+      console.error("Error en loadDashboard:", err);
     }
+  }
 
-    initMap();
-    loadDashboard();
-    setInterval(loadDashboard, 15000);
+  // --- INICIO DEL CICLO DEL DASHBOARD ---
+  initMap();
+  loadDashboard();
+  
+  // Refrescar cada 15 segundos (coincidiendo con tu frecuencia de datos)
+  setInterval(loadDashboard, 15000); 
 });
