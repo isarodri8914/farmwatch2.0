@@ -20,7 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
-  // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
 async function updateCharts() {
     try {
         const res = await fetch("/api/datos", {
@@ -30,12 +29,12 @@ async function updateCharts() {
         const datos = await res.json();
 
         if (!Array.isArray(datos) || datos.length === 0) {
-            document.querySelector(".chart-row").innerHTML += 
-                "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
+            const row = document.querySelector(".chart-row");
+            if (row) row.innerHTML = "<p style='text-align:center; padding:3rem; color:#666;'>Sin datos disponibles</p>";
             return;
         }
 
-        // Agrupar por vaca
+        // 1. Agrupar por vaca y ordenar cronológicamente
         const grouped = {};
         datos.forEach(d => {
             if (d.fecha && d.id_vaca) {
@@ -45,243 +44,114 @@ async function updateCharts() {
             }
         });
 
-        // Ordenar cada grupo por fecha
         Object.keys(grouped).forEach(id => {
             grouped[id].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
         });
 
-        if (Object.keys(grouped).length === 0) {
-            document.querySelector(".chart-row").innerHTML += 
-                "<p style='text-align:center; padding:3rem; color:#666;'>No hay datos con vacas</p>";
-            return;
-        }
-
-        // Etiquetas globales para el eje X
+        // 2. Generar etiquetas de tiempo únicas para el eje X
         const allLabels = [...new Set(datos.map(d => 
             new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         ))].sort();
 
         const colors = ["#ef4444", "#3b82f6", "#10b981", "#f97316", "#a855f7"];
+        
+        // --- DATASETS PARA LAS 3 GRÁFICAS ---
+        const tempDatasets = [];
+        const hrDatasets = [];
+        const actividadDatasets = [];
         let colorIndex = 0;
 
-        // ==================== TEMPERATURA ====================
-        const tempDatasets = [];
         Object.keys(grouped).forEach(id => {
             const group = grouped[id];
-            const temps = allLabels.map(label => {
-                const match = group.find(d => 
-                    new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label
-                );
-                return match ? Number(match.temp_objeto) : null;
+            const color = colors[colorIndex % colors.length];
+
+            // Mapeo de datos alineado con las etiquetas del eje X
+            const rowData = allLabels.map(label => {
+                return group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label) || null;
             });
 
+            // Dataset Temperatura
             tempDatasets.push({
                 label: `Vaca ${id}`,
-                data: temps,
-                borderColor: colors[colorIndex % colors.length],
-                backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, 
-                                   ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, 
-                                   ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-                tension: 0.3,
-                fill: true,
-                pointRadius: 6,
-                pointBackgroundColor: colors[colorIndex % colors.length],
-                pointBorderColor: "#ffffff",
-                pointBorderWidth: 2,
-                pointHoverRadius: 9
+                data: rowData.map(d => d ? Number(d.temp_objeto) : null),
+                borderColor: color,
+                backgroundColor: `${color}26`, // 15% opacidad
+                tension: 0.3, fill: true
             });
+
+            // Dataset Ritmo Cardíaco
+            hrDatasets.push({
+                label: `Vaca ${id}`,
+                data: rowData.map(d => d ? Number(d.ritmo_cardiaco) : null),
+                borderColor: color,
+                backgroundColor: `${color}26`,
+                tension: 0.3, fill: true
+            });
+
+            // Dataset GIROSCOPIO (Matemática Aplicada)
+            const rawMagnitudes = rowData.map(d => {
+                if (!d) return null;
+                // Pitágoras 3D: Norma del vector rotación
+                return Math.sqrt(Math.pow(d.gyro_x, 2) + Math.pow(d.gyro_y, 2) + Math.pow(d.gyro_z, 2));
+            });
+
+            // Filtro de Media Móvil para suavizar la señal (evita picos por ruido electrónico)
+            const smoothedMagnitudes = rawMagnitudes.map((val, i, arr) => {
+                if (val === null) return null;
+                let sum = 0, count = 0;
+                for (let j = Math.max(0, i - 4); j <= i; j++) {
+                    if (arr[j] !== null) { sum += arr[j]; count++; }
+                }
+                return (sum / count).toFixed(2);
+            });
+
+            actividadDatasets.push({
+                label: `Esfuerzo Vaca ${id}`,
+                data: smoothedMagnitudes,
+                borderColor: color,
+                backgroundColor: `${color}26`,
+                tension: 0.4, fill: true, pointRadius: 0
+            });
+
             colorIndex++;
         });
 
+        // --- RENDERIZADO DE GRÁFICAS ---
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { x: { ticks: { maxRotation: 45 } } }
+        };
+
         if (tempChart) tempChart.destroy();
-       tempChart = new Chart(document.getElementById("tempChart"), {
-    type: "line",
-    data: { labels: allLabels, datasets: tempDatasets },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        clip: false,
-        layout: {
-            padding: {
-                left: 10,
-                right: 30,     // ← más espacio a la derecha
-                top: 10,
-                bottom: 10
-            }
-        },
-        plugins: {
-            legend: {
-                position: "top",
-                labels: { font: { size: 13 } },
-                onClick: (e, legendItem, legend) => {
-                    const index = legendItem.datasetIndex;
-                    const ci = legend.chart;
-                    const meta = ci.getDatasetMeta(index);
-                    meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
-                    ci.update();
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} °C a las ${ctx.label}`
-                }
-            }
-        },
-        scales: {
-            x: {
-                title: { display: true, text: "Hora" },
-                offset: true,               // importante
-                grid: { display: true },
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 0,
-                    padding: 8
-                }
-            },
-            y: {
-                suggestedMin: 30,
-                suggestedMax: 45,
-                title: { display: true, text: "°C" }
-            }
-        }
-    }
-});
-
-        // ==================== RITMO CARDÍACO ====================
-        const hrDatasets = [];
-        colorIndex = 0;
-        Object.keys(grouped).forEach(id => {
-            const group = grouped[id];
-            const hrs = allLabels.map(label => {
-                const match = group.find(d => 
-                    new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label
-                );
-                return match ? Number(match.ritmo_cardiaco) : null;
-            });
-
-            hrDatasets.push({
-                label: `Vaca ${id}`,
-                data: hrs,
-                borderColor: colors[colorIndex % colors.length],
-                backgroundColor: `rgba(${parseInt(colors[colorIndex % colors.length].slice(1,3),16)}, 
-                                   ${parseInt(colors[colorIndex % colors.length].slice(3,5),16)}, 
-                                   ${parseInt(colors[colorIndex % colors.length].slice(5,7),16)}, 0.15)`,
-                tension: 0.3,
-                fill: true,
-                pointRadius: 6,
-                pointBackgroundColor: colors[colorIndex % colors.length],
-                pointBorderColor: "#ffffff",
-                pointBorderWidth: 2,
-                pointHoverRadius: 9
-            });
-            colorIndex++;
+        tempChart = new Chart(document.getElementById("tempChart"), {
+            type: "line",
+            data: { labels: allLabels, datasets: tempDatasets },
+            options: commonOptions
         });
 
         if (hrChart) hrChart.destroy();
-       hrChart = new Chart(document.getElementById("hrChart"), {
-    type: "line",
-    data: { labels: allLabels, datasets: hrDatasets },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        clip: false,
-        layout: {
-            padding: {
-                left: 10,
-                right: 30,
-                top: 10,
-                bottom: 10
+        hrChart = new Chart(document.getElementById("hrChart"), {
+            type: "line",
+            data: { labels: allLabels, datasets: hrDatasets },
+            options: commonOptions
+        });
+
+        if (gyroChart) gyroChart.destroy();
+        gyroChart = new Chart(document.getElementById("gyroChart"), {
+            type: "line",
+            data: { labels: allLabels, datasets: actividadDatasets },
+            options: {
+                ...commonOptions,
+                plugins: { title: { display: true, text: 'Gasto Energético Basado en Movimiento' } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Índice de Actividad (Norma)' } } }
             }
-        },
-        plugins: {
-            legend: {
-                position: "top",
-                labels: { font: { size: 13 } },
-                onClick: (e, legendItem, legend) => {
-                    const index = legendItem.datasetIndex;
-                    const ci = legend.chart;
-                    const meta = ci.getDatasetMeta(index);
-                    meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
-                    ci.update();
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? '--'} bpm a las ${ctx.label}`
-                }
-            }
-        },
-        scales: {
-            x: {
-                title: { display: true, text: "Hora" },
-                offset: true,
-                grid: { display: true },
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 0,
-                    padding: 8
-                }
-            },
-            y: {
-                suggestedMin: 40,
-                suggestedMax: 140,
-                title: { display: true, text: "bpm" }
-            }
-        }
-    }
-
-    
-});
-
-// ==================== GIROSCOPIO ====================
-// Dentro de updateCharts, en la sección de Giroscopio:
-const actividadDatasets = [];
-
-Object.keys(grouped).forEach(id => {
-    const group = grouped[id];
-    
-    const dataActividad = allLabels.map(label => {
-        const match = group.find(d => new Date(d.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) === label);
-        if (match) {
-            // Calculamos la magnitud del movimiento (Pitágoras 3D)
-            const mag = Math.sqrt(Math.pow(match.gyro_x, 2) + Math.pow(match.gyro_y, 2) + Math.pow(match.gyro_z, 2));
-            return mag.toFixed(2);
-        }
-        return null;
-    });
-
-    actividadDatasets.push({
-        label: `Gasto Energético Vaca ${id}`,
-        data: dataActividad,
-        borderColor: '#f59e0b', // Color naranja/quemado para energía
-        backgroundColor: 'rgba(245, 158, 11, 0.1)',
-        fill: true,
-        tension: 0.4 // Línea suave
-    });
-});
-
-// Crear la gráfica enfocada en ESFUERZO FISICO
-if (gyroChart) gyroChart.destroy();
-gyroChart = new Chart(document.getElementById("gyroChart"), {
-    type: "line",
-    data: { labels: allLabels, datasets: actividadDatasets },
-    options: {
-        plugins: {
-            title: { display: true, text: 'INTENSIDAD DE ACTIVIDAD (Estimación de Gasto Calórico)' }
-        },
-        scales: {
-            y: { beginAtZero: true, title: { display: true, text: 'Índice de Esfuerzo' } }
-        }
-    }
-});
+        });
 
         await addThresholdLines();
-
     } catch (err) {
         console.error("Error en updateCharts:", err);
     }
-
-    
 }
 
   // Umbrales (sin cambios)
