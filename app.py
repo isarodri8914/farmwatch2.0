@@ -2,7 +2,8 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from flask import Flask, render_template, request, jsonify
 import os
 import pymysql
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import json
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import math
@@ -29,7 +30,41 @@ app.config.update(
     SESSION_COOKIE_SECURE=True,  # SESION DE COOKIES PARA HTTPS
     SESSION_COOKIE_SAMESITE="Lax"
 )
+def get_client_ip():
+    """
+    Obtiene la IP real del cliente.
+    En Cloud Run normalmente viene en X-Forwarded-For.
+    """
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
 
+    return request.headers.get("X-Real-IP", request.remote_addr or "unknown")
+
+
+def log_security_event(severity, event_type, message, **extra_fields):
+    """
+    Genera logs estructurados en JSON para Cloud Logging y Wazuh.
+    IMPORTANTE: nunca registrar contraseñas.
+    """
+    event = {
+        "severity": severity,
+        "event_type": event_type,
+        "system": "farmwatch",
+        "service": "farmwatch2-0",
+        "message": message,
+        "endpoint": request.path,
+        "method": request.method,
+        "remote_ip": get_client_ip(),
+        "user_agent": request.headers.get("User-Agent", "unknown"),
+        "trace": request.headers.get("X-Cloud-Trace-Context", "unknown"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "password_logged": False
+    }
+
+    event.update(extra_fields)
+
+    print(json.dumps(event, ensure_ascii=False), flush=True)
 
 
 def get_connection():
@@ -554,8 +589,13 @@ def api_registrar():
         if not data:
             return jsonify({"error": "No se recibió JSON"}), 400
 
-        print("DEBUG: Datos recibidos →", data)  # ← muy importante
-
+        log_security_event(
+    "INFO",
+    "auth_register_attempt",
+    "FarmWatch intento de registro recibido",
+    username_attempted=(data.get('correo') or '').strip().lower(),
+    result="attempt"
+)
         nombre   = data.get('nombre', '').strip()
         correo   = data.get('correo', '').strip().lower()
         password = data.get('password', '')
@@ -585,7 +625,14 @@ def api_registrar():
                 )
             conn.commit()
 
-        print("DEBUG: Usuario creado correctamente →", correo)
+        log_security_event(
+    "INFO",
+    "auth_register_success",
+    "FarmWatch usuario registrado correctamente",
+    username_attempted=correo,
+    result="success",
+    status_code=201
+)
         return jsonify({"status": "ok", "message": "Registro exitoso"}), 201
 
     except pymysql.err.IntegrityError as e:
@@ -599,25 +646,80 @@ def api_registrar():
 #LOGIN APRUEBA DE INYECCIONES SQL
 @app.route('/api/login', methods=['POST'])
 def api_login():
-    data = request.get_json()
-    correo = data.get('correo')
-    password = data.get('password')
+    data = request.get_json(silent=True) or {}
+
+    correo = (data.get('correo') or '').strip().lower()
+    password = data.get('password') or ''
+
+    if not correo or not password:
+        log_security_event(
+            "WARNING",
+            "auth_login_failed",
+            "FarmWatch login fallido: campos incompletos",
+            username_attempted=correo,
+            result="failed",
+            reason="missing_fields",
+            status_code=400
+        )
+
+        return jsonify({"error": "Correo y contraseña son obligatorios"}), 400
+
+    conn = None
+    cursor = None
 
     try:
         conn = get_connection()
         cursor = conn.cursor(pymysql.cursors.DictCursor)
+
         cursor.execute("SELECT * FROM usuarios WHERE correo = %s", (correo,))
         user = cursor.fetchone()
 
         if user and check_password_hash(user['password'], password):
             session['user_id'] = user['id']
             session['user_name'] = user['nombre']
+
+            log_security_event(
+                "INFO",
+                "auth_login_success",
+                "FarmWatch login exitoso",
+                username_attempted=correo,
+                user_id=user['id'],
+                result="success",
+                status_code=200
+            )
+
             return jsonify({"status": "ok", "redirect": "/dashboard"})
+
+        log_security_event(
+            "WARNING",
+            "auth_login_failed",
+            "FarmWatch login fallido: credenciales incorrectas",
+            username_attempted=correo,
+            result="failed",
+            reason="invalid_credentials",
+            status_code=401
+        )
 
         return jsonify({"error": "Correo o contraseña incorrectos"}), 401
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        log_security_event(
+            "ERROR",
+            "auth_login_error",
+            "FarmWatch error interno durante login",
+            username_attempted=correo,
+            result="error",
+            reason=type(e).__name__,
+            status_code=500
+        )
+
+        return jsonify({"error": "Error interno del servidor"}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 @app.route('/logout')
 def logout():
