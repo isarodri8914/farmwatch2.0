@@ -664,7 +664,6 @@ def sensors():
     return render_template('sensors.html')
 
 @app.route('/register')
-@login_required
 def register():
     return render_template('register.html')
 
