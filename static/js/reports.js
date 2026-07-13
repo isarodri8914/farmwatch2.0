@@ -40,6 +40,11 @@ alert(data.error);
 return;
 }
 
+console.log(data);
+console.log(data.estadisticas);
+console.log(typeof data.estadisticas.temp_avg);
+console.log(data.estadisticas.temp_avg);
+
 mostrarAnalisis(data);
 crearGraficas(data.datos);
 crearMapa(data.datos);
@@ -58,11 +63,17 @@ function mostrarAnalisis(data){
 
 document.getElementById("analisis").innerText = data.analisis;
 
-document.getElementById("temp_avg").innerText = data.estadisticas.temp_avg.toFixed(2);
-document.getElementById("temp_max").innerText = data.estadisticas.temp_max.toFixed(2);
+document.getElementById("temp_avg").innerText =
+    Number(data.estadisticas.temp_avg).toFixed(2);
 
-document.getElementById("hr_avg").innerText = data.estadisticas.hr_avg.toFixed(2);
-document.getElementById("hr_max").innerText = data.estadisticas.hr_max.toFixed(2);
+document.getElementById("temp_max").innerText =
+    Number(data.estadisticas.temp_max).toFixed(2);
+
+document.getElementById("hr_avg").innerText =
+    Number(data.estadisticas.hr_avg).toFixed(2);
+
+document.getElementById("hr_max").innerText =
+    Number(data.estadisticas.hr_max).toFixed(2);
 
 document.getElementById("estado").innerText = data.estadisticas.estado;
 
