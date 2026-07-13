@@ -40,10 +40,7 @@ alert(data.error);
 return;
 }
 
-console.log(data);
-console.log(data.estadisticas);
-console.log(typeof data.estadisticas.temp_avg);
-console.log(data.estadisticas.temp_avg);
+
 
 mostrarAnalisis(data);
 crearGraficas(data.datos);
