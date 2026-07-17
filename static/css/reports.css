@@ -230,6 +230,11 @@
   margin: 0;
 }
 
+.state-panel[hidden],
+.alert-banner[hidden] {
+  display: none !important;
+}
+
 .spinner {
   width: 34px;
   height: 34px;
