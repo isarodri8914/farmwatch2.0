@@ -9,6 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let lastSync = null; 
     let gyroChart = null;
 
+    // Valor de respaldo si no hay un BPM de reposo configurado en la BD (clave "hr_reposo")
+    const HR_REPOSO_DEFAULT = 60;
+
 function initMap() {
     // Añadimos maxZoom: 16 para que NUNCA se acerque más de lo que se ve en tu segunda imagen
     map = L.map("map", { 
@@ -30,14 +33,48 @@ function initMap() {
         if (magnitud < 4.5) return "Pastoreo";
         return "Actividad Alta";
     }
+
+    // Trae los umbrales/config guardados en la BD (tabla `configuracion`)
+    async function obtenerUmbrales() {
+        try {
+            const res = await fetch("/api/config/umbral", { credentials: "same-origin" });
+            if (!res.ok) return {};
+            return await res.json();
+        } catch (err) {
+            console.warn("Umbrales no cargados:", err);
+            return {};
+        }
+    }
+
+    // NUEVA FÓRMULA DE GASTO CALÓRICO
+    // Gasto Calórico = ( (0.15*BPM + 0.35*A + 0.08*(T-38.5) - 0.05*(98-SpO2)) / (0.15*BPM_reposo) ) * 100
+    function calcularGastoCalorico(bpm, actividad, temp, spo2, bpmReposo) {
+        if (bpm === null || bpm === undefined || !bpmReposo) return null;
+        if (temp === null || temp === undefined) temp = 38.5;
+        if (spo2 === null || spo2 === undefined) spo2 = 98;
+        if (actividad === null || actividad === undefined) actividad = 0;
+
+        const numerador = 0.15 * bpm + 0.35 * actividad + 0.08 * (temp - 38.5) - 0.05 * (98 - spo2);
+        const denominador = 0.15 * bpmReposo;
+
+        if (denominador === 0) return null;
+
+        return (numerador / denominador) * 100;
+    }
+
   // Gráficas con leyenda interactiva (clic para ocultar/mostrar vaca)
 async function updateCharts() {
         try {
-            const res = await fetch("/api/datos", { credentials: "same-origin" });
+            const [res, umbrales] = await Promise.all([
+                fetch("/api/datos", { credentials: "same-origin" }),
+                obtenerUmbrales()
+            ]);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const datos = await res.json();
 
             if (!Array.isArray(datos) || datos.length === 0) return;
+
+            const bpmReposo = Number(umbrales.hr_reposo) || HR_REPOSO_DEFAULT;
 
             // 1. Agrupar y ordenar
             const grouped = {};
@@ -88,27 +125,32 @@ async function updateCharts() {
                     tension: 0.3, fill: false
                 });
 
-                // --- MATEMÁTICA PARA EL GIROSCOPIO (CADA 15 SEG) ---
-                let energiaAcumulada = 0;
+                // --- INTENSIDAD DE MOVIMIENTO (magnitud del giroscopio) ---
                 const magnitudes = [];
-                const acumuladoArr = [];
+                // --- GASTO CALÓRICO (nueva fórmula, por lectura) ---
+                const gastoArr = [];
 
                 rowData.forEach(d => {
                     if (d) {
-                        // Norma del vector (Pitágoras 3D)
+                        // Norma del vector (Pitágoras 3D) = variable "A" (actividad) de la fórmula
                         const mag = Math.sqrt(Math.pow(d.gyro_x, 2) + Math.pow(d.gyro_y, 2) + Math.pow(d.gyro_z, 2));
                         magnitudes.push(mag.toFixed(2));
-                        
-                        // Integral aproximada: Energía = Intensidad * Delta_Tiempo (15s)
-                        energiaAcumulada += (mag * 15); 
-                        acumuladoArr.push(energiaAcumulada.toFixed(2));
+
+                        const gasto = calcularGastoCalorico(
+                            Number(d.ritmo_cardiaco),
+                            mag,
+                            Number(d.temp_objeto),
+                            Number(d.oxigeno),
+                            bpmReposo
+                        );
+                        gastoArr.push(gasto !== null ? gasto.toFixed(2) : null);
                     } else {
                         magnitudes.push(null);
-                        acumuladoArr.push(energiaAcumulada > 0 ? energiaAcumulada.toFixed(2) : null);
+                        gastoArr.push(null);
                     }
                 });
 
-                // Dataset de Intensidad (Lo que hace en ese bloque de 15s)
+                // Dataset de Intensidad (movimiento en ese bloque de 15s)
                 actividadDatasets.push({
                     label: `Intensidad Vaca ${id}`,
                     data: magnitudes,
@@ -119,10 +161,10 @@ async function updateCharts() {
                     yAxisID: 'y'
                 });
 
-                // Dataset de Energía (Déficit Calórico Acumulado)
+                // Dataset de Gasto Calórico (nueva fórmula, relativo al BPM de reposo)
                 actividadDatasets.push({
-                    label: `Gasto Acumulado Vaca ${id}`,
-                    data: acumuladoArr,
+                    label: `Gasto Calórico Vaca ${id}`,
+                    data: gastoArr,
                     borderColor: color,
                     borderDash: [5, 5],
                     fill: false,
@@ -144,14 +186,26 @@ async function updateCharts() {
             tempChart = new Chart(document.getElementById("tempChart"), {
                 type: "line",
                 data: { labels: allLabels, datasets: tempDatasets },
-                options: commonOptions
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: { title: { display: true, text: 'Temperatura (°C)' } }
+                    }
+                }
             });
 
             if (hrChart) hrChart.destroy();
             hrChart = new Chart(document.getElementById("hrChart"), {
                 type: "line",
                 data: { labels: allLabels, datasets: hrDatasets },
-                options: commonOptions
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        ...commonOptions.scales,
+                        y: { title: { display: true, text: 'Ritmo cardíaco (bpm)' } }
+                    }
+                }
             });
 
             if (gyroChart) gyroChart.destroy();
@@ -161,36 +215,32 @@ async function updateCharts() {
                 options: {
                     ...commonOptions,
                     plugins: { 
-                        title: { display: true, text: 'ANÁLISIS METABÓLICO (INTENSIDAD VS ENERGÍA TOTAL)' } 
+                        title: { display: true, text: `GASTO CALÓRICO VS INTENSIDAD DE MOVIMIENTO (BPM reposo: ${bpmReposo})` } 
                     },
                     scales: {
                         y: { 
                             beginAtZero: true, 
-                            title: { display: true, text: 'Nivel de Esfuerzo' } 
+                            title: { display: true, text: 'Nivel de Esfuerzo (Intensidad)' } 
                         },
                         y1: { 
                             position: 'right', 
-                            title: { display: true, text: 'Energía Acumulada (Suma Riemann)' },
+                            title: { display: true, text: 'Gasto Calórico (%)' },
                             grid: { drawOnChartArea: false }
                         }
                     }
                 }
             });
 
-            await addThresholdLines();
+            addThresholdLines(umbrales);
         } catch (err) {
             console.error("Error en updateCharts:", err);
         }
     }
 
-  // Umbrales (sin cambios)
-  async function addThresholdLines() {
+  // Umbrales (ahora recibe los umbrales ya cargados, evita una segunda petición)
+  function addThresholdLines(umbrales) {
     try {
-      const res = await fetch("/api/config/umbral", {
-  credentials: "same-origin"
-});
-      if (!res.ok) return;
-      const umbrales = await res.json();
+      if (!umbrales) return;
 
       if (umbrales.temp_max && tempChart) {
         tempChart.data.datasets.push({
@@ -231,7 +281,7 @@ async function updateCharts() {
         hrChart.update();
       }
     } catch (err) {
-      console.warn("Umbrales no cargados:", err);
+      console.warn("No se pudieron dibujar los umbrales:", err);
     }
   }
 
