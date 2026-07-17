@@ -127,6 +127,25 @@
     line-height:1.4;
   }
   .chart-note strong{ color:#334155; }
+
+  /* ---------- Caja del canvas ----------
+     Chart.js (responsive + maintainAspectRatio:false) estira el <canvas>
+     para llenar TODO su contenedor. Si el título, filtros o notas viven en
+     el mismo contenedor de altura fija, el canvas se dibuja encima de ellos.
+     Por eso el canvas ahora vive en su propia caja con altura fija y
+     position:relative, separada del título y de la nota. */
+  .card.chart-card{
+    height:auto;
+    display:flex;
+    flex-direction:column;
+  }
+  .chart-canvas-box{
+    position:relative;
+    width:100%;
+    height:300px;
+    flex-shrink:0;
+  }
+  .chart-canvas-box--tall{ height:320px; }
 </style>
 {% endblock %}
 
@@ -190,24 +209,28 @@
     <div class="left-pan">
 
 <div class="chart-row">
-  <div class="card chart-card" style="height: 420px;">
+  <div class="card chart-card">
     <div class="card-title-row">
       <h4 style="margin:0;">Temperatura promedio (12 h)</h4>
       <button class="info-btn" type="button" data-help="temp" aria-label="Qué significa este gráfico">?</button>
     </div>
-    <canvas id="tempChart"></canvas>
+    <div class="chart-canvas-box">
+      <canvas id="tempChart"></canvas>
+    </div>
   </div>
 
-  <div class="card chart-card" style="height: 420px;">
+  <div class="card chart-card">
     <div class="card-title-row">
       <h4 style="margin:0;">Ritmo cardíaco (12 h)</h4>
       <button class="info-btn" type="button" data-help="hr" aria-label="Qué significa este gráfico">?</button>
     </div>
-    <canvas id="hrChart"></canvas>
+    <div class="chart-canvas-box">
+      <canvas id="hrChart"></canvas>
+    </div>
   </div>
 </div>
 
-<div class="card chart-card" style="height: 460px;">
+<div class="card chart-card">
     <div class="card-title-row">
       <h4 style="margin:0;">Análisis de Movimiento (Giroscopio)</h4>
       <button class="info-btn" type="button" data-help="gasto" aria-label="Qué significa este gráfico">?</button>
@@ -215,7 +238,9 @@
     <div class="filter-container">
         <small class="hint">Ejes X, Y, Z y Nivel de Actividad</small>
     </div>
-    <canvas id="gyroChart"></canvas>
+    <div class="chart-canvas-box chart-canvas-box--tall">
+      <canvas id="gyroChart"></canvas>
+    </div>
     <div class="chart-note">
       <strong>Cómo leerlo:</strong> la línea sólida (Intensidad) muestra qué tan activa está la vaca en cada momento.
       La línea punteada (Gasto Calórico) compara su esfuerzo actual contra su estado de reposo: <strong>100% = igual que en reposo</strong>,
