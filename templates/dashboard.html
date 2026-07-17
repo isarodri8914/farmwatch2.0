@@ -5,185 +5,47 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-
-<style>
-  /* ---------- Ayuda / botón "?" ---------- */
-  .card-title-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:.5rem;
-  }
-  .info-btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    width:22px;
-    height:22px;
-    border-radius:50%;
-    border:1.5px solid #94a3b8;
-    color:#475569;
-    background:#f8fafc;
-    font-size:.8rem;
-    font-weight:700;
-    cursor:pointer;
-    line-height:1;
-    flex-shrink:0;
-    transition:background .15s ease, color .15s ease, border-color .15s ease;
-  }
-  .info-btn:hover, .info-btn:focus-visible{
-    background:#2563eb;
-    border-color:#2563eb;
-    color:#fff;
-    outline:none;
-  }
-  .card.summary{ position:relative; }
-  .card.summary .info-btn{
-    position:absolute;
-    top:.6rem;
-    right:.6rem;
-    width:18px;
-    height:18px;
-    font-size:.68rem;
-  }
-
-  /* ---------- Modal ---------- */
-  .help-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(15,23,42,.55);
-    display:none;
-    align-items:center;
-    justify-content:center;
-    z-index:1000;
-    padding:1rem;
-  }
-  .help-overlay.open{ display:flex; }
-  .help-modal{
-    background:#fff;
-    border-radius:14px;
-    max-width:560px;
-    width:100%;
-    max-height:85vh;
-    overflow-y:auto;
-    box-shadow:0 20px 50px rgba(0,0,0,.25);
-    padding:1.5rem 1.5rem 1.25rem;
-  }
-  .help-modal-header{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:1rem;
-    margin-bottom:.75rem;
-  }
-  .help-modal-header h3{
-    margin:0;
-    font-size:1.15rem;
-    color:#0f172a;
-  }
-  .help-close{
-    border:none;
-    background:#f1f5f9;
-    color:#334155;
-    width:28px;
-    height:28px;
-    border-radius:50%;
-    font-size:1rem;
-    cursor:pointer;
-    flex-shrink:0;
-  }
-  .help-close:hover{ background:#e2e8f0; }
-  .help-modal p{ color:#334155; line-height:1.5; margin:.5rem 0; }
-  .help-modal .help-section-label{
-    font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.05em;
-    font-weight:700;
-    color:#64748b;
-    margin-top:1rem;
-  }
-  .help-badges{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.5rem; }
-  .help-badge{
-    display:flex;
-    align-items:center;
-    gap:.4rem;
-    font-size:.8rem;
-    background:#f8fafc;
-    border:1px solid #e2e8f0;
-    border-radius:8px;
-    padding:.35rem .6rem;
-  }
-  .help-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-
-  /* ---------- Leyenda fija bajo el gráfico de gasto/movimiento ---------- */
-  .chart-note{
-    font-size:.8rem;
-    color:#64748b;
-    background:#f8fafc;
-    border:1px dashed #cbd5e1;
-    border-radius:8px;
-    padding:.6rem .75rem;
-    margin-top:.6rem;
-    line-height:1.4;
-  }
-  .chart-note strong{ color:#334155; }
-
-  /* ---------- Caja del canvas ----------
-     Chart.js (responsive + maintainAspectRatio:false) estira el <canvas>
-     para llenar TODO su contenedor. Si el título, filtros o notas viven en
-     el mismo contenedor de altura fija, el canvas se dibuja encima de ellos.
-     Por eso el canvas ahora vive en su propia caja con altura fija y
-     position:relative, separada del título y de la nota. */
-  .card.chart-card{
-    height:auto;
-    display:flex;
-    flex-direction:column;
-  }
-  .chart-canvas-box{
-    position:relative;
-    width:100%;
-    height:300px;
-    flex-shrink:0;
-  }
-  .chart-canvas-box--tall{ height:320px; }
-</style>
 {% endblock %}
 
 {% block content %}
 <main class="dash-shell container">
 
-  <!-- TOP ROW: resumen + estado -->
+  <!-- ===================== RESUMEN GENERAL ===================== -->
   <section class="top-row">
+    <div class="section-header">
+      <span class="section-eyebrow">Resumen general</span>
+    </div>
+
     <div class="top-cards">
-      <article class="card summary">
+      <article class="card summary accent-info">
         <button class="info-btn" type="button" data-help="total" aria-label="Qué significa esta tarjeta">?</button>
         <div class="meta">Vacas totales</div>
         <div class="big" id="stat-total">--</div>
         <div class="hint">Registradas en el sistema</div>
       </article>
 
-      <article class="card summary">
+      <article class="card summary accent-danger">
         <button class="info-btn" type="button" data-help="alerts" aria-label="Qué significa esta tarjeta">?</button>
         <div class="meta">En alerta</div>
         <div class="big alert" id="stat-alerts">--</div>
         <div class="hint">Requieren atención</div>
       </article>
 
-      <article class="card summary">
+      <article class="card summary accent-warning">
         <button class="info-btn" type="button" data-help="offline" aria-label="Qué significa esta tarjeta">?</button>
         <div class="meta">Sensores offline</div>
         <div class="big warn" id="stat-offline">--</div>
         <div class="hint">Sin conexión</div>
       </article>
 
-      <article class="card summary">
+      <article class="card summary accent-warning">
         <button class="info-btn" type="button" data-help="battery" aria-label="Qué significa esta tarjeta">?</button>
         <div class="meta">Sensores con batería baja</div>
         <div class="big warn" id="stat-battlow">--</div>
         <div class="hint">Reemplazar pronto</div>
       </article>
 
-      <article class="card summary">
+      <article class="card summary accent-neutral">
         <button class="info-btn" type="button" data-help="sync" aria-label="Qué significa esta tarjeta">?</button>
         <div class="meta">Última sync</div>
         <div class="big" id="stat-updated">--</div>
@@ -204,55 +66,67 @@
     </div>
   </section>
 
-  <!-- MIDDLE ROW: charts (izq) + map (der) -->
+  <!-- ===================== TENDENCIAS + MAPA ===================== -->
   <section class="middle-row">
     <div class="left-pan">
 
-<div class="chart-row">
-  <div class="card chart-card">
-    <div class="card-title-row">
-      <h4 style="margin:0;">Temperatura promedio (12 h)</h4>
-      <button class="info-btn" type="button" data-help="temp" aria-label="Qué significa este gráfico">?</button>
-    </div>
-    <div class="chart-canvas-box">
-      <canvas id="tempChart"></canvas>
-    </div>
-  </div>
+      <div class="section-header">
+        <span class="section-eyebrow">Tendencias de salud (12 h)</span>
+      </div>
 
-  <div class="card chart-card">
-    <div class="card-title-row">
-      <h4 style="margin:0;">Ritmo cardíaco (12 h)</h4>
-      <button class="info-btn" type="button" data-help="hr" aria-label="Qué significa este gráfico">?</button>
-    </div>
-    <div class="chart-canvas-box">
-      <canvas id="hrChart"></canvas>
-    </div>
-  </div>
-</div>
+      <div class="chart-row">
+        <div class="card chart-card">
+          <div class="card-title-row">
+            <h4>Temperatura promedio</h4>
+            <button class="info-btn" type="button" data-help="temp" aria-label="Qué significa este gráfico">?</button>
+          </div>
+          <div class="chart-canvas-box">
+            <canvas id="tempChart"></canvas>
+          </div>
+        </div>
 
-<div class="card chart-card">
-    <div class="card-title-row">
-      <h4 style="margin:0;">Análisis de Movimiento (Giroscopio)</h4>
-      <button class="info-btn" type="button" data-help="gasto" aria-label="Qué significa este gráfico">?</button>
-    </div>
-    <div class="filter-container">
-        <small class="hint">Ejes X, Y, Z y Nivel de Actividad</small>
-    </div>
-    <div class="chart-canvas-box chart-canvas-box--tall">
-      <canvas id="gyroChart"></canvas>
-    </div>
-    <div class="chart-note">
-      <strong>Cómo leerlo:</strong> la línea sólida (Intensidad) muestra qué tan activa está la vaca en cada momento.
-      La línea punteada (Gasto Calórico) compara su esfuerzo actual contra su estado de reposo: <strong>100% = igual que en reposo</strong>,
-      valores más altos = más esfuerzo/energía, valores más bajos pueden indicar reposo profundo o una lectura de sensor a revisar.
-      Toca el ⓘ del título para ver la explicación completa.
-    </div>
-</div>
+        <div class="card chart-card">
+          <div class="card-title-row">
+            <h4>Ritmo cardíaco</h4>
+            <button class="info-btn" type="button" data-help="hr" aria-label="Qué significa este gráfico">?</button>
+          </div>
+          <div class="chart-canvas-box">
+            <canvas id="hrChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-eyebrow">Movimiento y gasto energético</span>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-title-row">
+          <h4>Análisis de Movimiento (Giroscopio)</h4>
+          <button class="info-btn" type="button" data-help="gasto" aria-label="Qué significa este gráfico">?</button>
+        </div>
+        <div class="filter-container">
+          <small class="hint">Ejes X, Y, Z y Nivel de Actividad</small>
+        </div>
+        <div class="chart-canvas-box chart-canvas-box--tall">
+          <canvas id="gyroChart"></canvas>
+        </div>
+        <div class="chart-note">
+          <strong>Cómo leerlo:</strong> la línea sólida (Intensidad) muestra qué tan activa está la vaca en cada momento.
+          La línea punteada (Gasto Calórico) compara su esfuerzo actual contra su estado de reposo: <strong>100% = igual que en reposo</strong>,
+          valores más altos = más esfuerzo/energía, valores más bajos pueden indicar reposo profundo o una lectura de sensor a revisar.
+          Toca el ⓘ del título para ver la explicación completa.
+        </div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-eyebrow">Comportamiento del hato</span>
+      </div>
 
       <div class="card small-cards">
         <div class="mini">
           <div class="card-title-row">
-            <h5 style="margin:0;">Estado del hato</h5>
+            <h5>Estado del hato</h5>
             <button class="info-btn" type="button" data-help="cowdonut" aria-label="Qué significa este gráfico">?</button>
           </div>
           <canvas id="cowDonut" width="220" height="220"></canvas>
@@ -260,38 +134,39 @@
 
         <div class="mini">
           <div class="card-title-row">
-            <h5 style="margin:0;">Estado de sensores</h5>
+            <h5>Estado de sensores</h5>
             <button class="info-btn" type="button" data-help="sensordonut" aria-label="Qué significa este gráfico">?</button>
           </div>
           <canvas id="sensorDonut" width="220" height="220"></canvas>
         </div>
       </div>
 
-      <div class="card behavior-panel" style="margin-top: 1rem; padding: 1rem;">
-    <div class="card-title-row">
-      <h4 style="margin-bottom: 1rem;">Estado de Actividad Actual</h4>
-      <button class="info-btn" type="button" data-help="behavior" aria-label="Qué significa esta sección">?</button>
-    </div>
-    <div id="behaviorList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+      <div class="card behavior-panel">
+        <div class="card-title-row">
+          <h4>Estado de Actividad Actual</h4>
+          <button class="info-btn" type="button" data-help="behavior" aria-label="Qué significa esta sección">?</button>
         </div>
-</div>
+        <div id="behaviorList" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;"></div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-eyebrow">Alertas recientes</span>
+      </div>
 
       <div class="card alerts-panel">
         <div class="card-title-row">
-          <h4 style="margin:0;">Alertas recientes</h4>
+          <h4>Últimos eventos</h4>
           <button class="info-btn" type="button" data-help="alertlist" aria-label="Qué significa esta sección">?</button>
         </div>
         <ul id="alertsList" class="alerts-list"></ul>
       </div>
 
-
-
     </div>
 
     <aside class="right-pan">
       <div class="map-wrapper card">
-        <div class="card-title-row" style="padding:.5rem .75rem 0;">
-          <span></span>
+        <div class="card-title-row">
+          <h5 style="margin:0;">Ubicación en tiempo real</h5>
           <button class="info-btn" type="button" data-help="map" aria-label="Qué significa este mapa">?</button>
         </div>
         <div id="map" class="map"></div>

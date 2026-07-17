@@ -8,23 +8,27 @@
   --success: #10b981;
   --warning: #f97316;
   --danger: #ef4444;
+  --neutral: #64748b;
   --text: #0f172a;
   --text-light: #64748b;
   --bg-card: rgba(255, 255, 255, 0.95);     /* más opaco y blanco */
   --border-glass: rgba(226, 232, 240, 0.8);
+
+  /* Escala de espaciado consistente (antes había 16/24/28/32/50px sueltos) */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 20px;
+  --space-lg: 28px;
+  --space-xl: 40px;
 }
 
 /* ==================== FONDO GENERAL ==================== */
 .dash-shell {
-  padding: 24px 0;
+  padding: 24px 0 56px;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   color: var(--text);
   min-height: 100vh;
-  
-  /* Fondo nuevo: mucho más discreto y limpio */
-  background: #f8fafc;                    /* gris muy claro (casi blanco) */
-  /* Si quieres un toque muy suave de azul: */
-  /* background: linear-gradient(to bottom right, #f8fafc, #f1f5f9); */
+  background: #f8fafc;
 }
 
 .dash-shell::before {
@@ -39,51 +43,106 @@
   pointer-events: none;
 }
 
+/* ==================== ENCABEZADOS DE SECCIÓN ====================
+   Cada bloque del dashboard (resumen, tendencias, movimiento, etc.)
+   lleva una etiqueta corta para que la jerarquía se lea de un vistazo,
+   en vez de que todas las tarjetas se sientan del mismo nivel. */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-md);
+}
+
+.section-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+
+.section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border-glass), transparent);
+}
+
 /* ==================== TARJETAS ==================== */
 .card {
   background: var(--bg-card);
   backdrop-filter: blur(16px) saturate(180%);
   -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border-radius: 20px;
+  border-radius: 18px;
   border: 1px solid var(--border-glass);
   box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.1),
               0 4px 12px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow .25s ease, transform .25s ease;
   overflow: hidden;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.15);
+/* El efecto "flotante" al pasar el mouse se reserva para tarjetas con
+   contenido que invita a explorar (gráficos, mapa). Las tarjetas de
+   estadísticas se quedan quietas: son para leer de un vistazo, no para
+   interactuar, y el movimiento constante distrae. */
+.chart-card:hover,
+.map-wrapper:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 36px -14px rgba(15, 23, 42, 0.16);
 }
 
 /* TOP ROW - Tarjetas resumen */
+.top-row {
+  margin-bottom: var(--space-xl);
+}
+
 .top-row .top-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 16px;
-  margin-bottom: 28px;
 }
 
 .card.summary {
-  text-align: center;
-  padding: 20px 16px;
+  position: relative;
+  text-align: left;
+  padding: 18px 18px 18px 22px;
+  overflow: visible;
 }
+
+/* Barra de color a la izquierda: da un código visual instantáneo
+   (info / atención / advertencia) sin necesitar leer el número primero. */
+.card.summary::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--neutral);
+}
+.card.summary.accent-info::before    { background: var(--primary); }
+.card.summary.accent-danger::before  { background: var(--danger); }
+.card.summary.accent-warning::before { background: var(--warning); }
+.card.summary.accent-neutral::before { background: var(--neutral); }
 
 .meta {
   font-size: 12.5px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-light);
   margin-bottom: 6px;
   letter-spacing: 0.3px;
 }
 
 .big {
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .big.alert { color: var(--danger); }
@@ -96,21 +155,21 @@
 
 /* System card */
 .system-card {
-  padding: 20px;
+  padding: 18px 20px;
 }
 
 .system-card .system-list {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
 }
 
 .sys-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text);
 }
 
@@ -118,7 +177,7 @@
   font-weight: 600;
   padding: 2px 10px;
   border-radius: 9999px;
-  font-size: 12.5px;
+  font-size: 12px;
   background: rgba(16, 185, 129, 0.1);
   color: var(--success);
 }
@@ -126,66 +185,78 @@
 /* ==================== MIDDLE ROW ==================== */
 .middle-row {
   display: grid;
-  grid-template-columns: 1fr 400px;   /* Gráficas a la izquierda (más espacio), mapa a la derecha */
-  gap: 28px;
+  grid-template-columns: 1fr 400px;
+  gap: var(--space-lg);
   align-items: start;
 }
 
 .left-pan {
   display: flex;
   flex-direction: column;
-  gap: 32px;   /* más espacio entre secciones */
+  gap: var(--space-lg);
 }
 
 .right-pan {
   display: flex;
+  /* El mapa se queda visible mientras se recorren las gráficas de la
+     izquierda — en un panel de monitoreo es la referencia constante. */
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  width: 100%;
 }
 
 /* Gráficas */
 .chart-row {
-  display: flex;
-  flex-direction: column;   /* ← Cambiado a columna */
-  gap: 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
 }
 
 .chart-card {
-    height: 460px;
-    padding: 28px 32px 50px 32px;   /* más padding abajo para las etiquetas */
-    position: relative;
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.90);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
-}
-
-.chart-card:hover {
-  transform: translateY(-4px);
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 24px 24px;
+  position: relative;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
 }
 
 .chart-card h4 {
-    margin: 0 0 20px 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #0f172a;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
 }
+
+/* Caja del canvas — antes el <canvas> se posicionaba `absolute !important`
+   estirado a todo el alto de la tarjeta, así que se dibujaba ENCIMA del
+   título, el filtro y cualquier nota debajo (por eso se veían atropellados).
+   Ahora el canvas vive en su propia caja de altura fija, en flujo normal,
+   debajo del título y arriba de cualquier nota. */
+.chart-canvas-box {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  margin-top: var(--space-md);
+  flex-shrink: 0;
+}
+.chart-canvas-box--tall { height: 320px; }
 
 .chart-card canvas {
-    position: absolute !important;
-    top: 70px !important;
-    left: 20px !important;
-    right: 20px !important;     /* márgenes simétricos */
-    bottom: 30px !important;
-    width: calc(100% - 40px) !important;
-    height: calc(100% - 100px) !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
-/* Selector de vaca */
+/* Selector de vaca / leyenda de ejes */
 .filter-container {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 8px;
-  margin-bottom: 12px;
+  margin-top: 4px;
 }
 
 .filter-container label {
@@ -210,32 +281,51 @@
   outline: none;
 }
 
+/* Nota explicativa bajo el gráfico de gasto/movimiento */
+.chart-note {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin-top: var(--space-sm);
+  line-height: 1.45;
+}
+.chart-note strong { color: #334155; }
+
 /* Mapa */
 .map-wrapper {
   flex: 1;
-  min-height: 680px;
-  max-height: 740px;
+  height: 100%;
+  min-height: 640px;
   padding: 0;
-  border-radius: 22px;
+  border-radius: 18px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 15px 40px -12px rgba(15, 23, 42, 0.13);
+  display: flex;
+  flex-direction: column;
+}
+
+.map-wrapper .card-title-row {
+  padding: 14px 18px 0;
 }
 
 .map {
-  height: 100% !important;
+  flex: 1;
   width: 100%;
-  border-radius: 22px;
+  min-height: 560px;
 }
 
 /* Small cards (Donuts) */
 .small-cards {
   display: flex;
   gap: 24px;
-  padding: 28px;
+  padding: var(--space-lg);
   background: rgba(255, 255, 255, 0.90);
   backdrop-filter: blur(20px);
-  border-radius: 22px;
+  border-radius: 18px;
 }
 
 .small-cards .mini {
@@ -244,44 +334,69 @@
 }
 
 .small-cards canvas {
-  max-height: 250px;
+  max-height: 220px;
 }
 
 .small-cards h5 {
-  margin-bottom: 20px;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Actividad / comportamiento */
+.behavior-panel {
+  padding: var(--space-lg) !important;
+  margin-top: 0 !important;
+}
+
+.behavior-panel h4 {
+  margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
   color: #0f172a;
 }
 
+#behaviorList { margin-top: var(--space-md); }
+
 /* Alertas */
 .alerts-panel {
-  padding: 24px;
+  padding: var(--space-lg);
   background: var(--bg-card);
   backdrop-filter: blur(16px);
 }
 
 .alerts-panel h4 {
-  margin-bottom: 18px;
+  margin: 0;
   color: var(--text);
+  font-size: 1.05rem;
 }
 
 .alerts-list {
   list-style: none;
-  margin: 0;
+  margin: var(--space-md) 0 0;
   padding: 0;
   max-height: 260px;
   overflow-y: auto;
 }
 
+.alerts-list:empty::after {
+  content: 'Sin alertas por ahora — todo el hato está dentro de rango.';
+  display: block;
+  font-size: 13.5px;
+  color: var(--text-light);
+  padding: 10px 2px;
+}
+
 .alerts-list li {
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 10px;
   background: rgba(248, 250, 252, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.8);
-  font-size: 14px;
-  transition: all 0.2s;
+  border-left: 3px solid var(--warning);
+  font-size: 13.5px;
+  transition: background .2s ease, border-color .2s ease;
 }
 
 .alerts-list li:hover {
@@ -301,24 +416,128 @@
     grid-template-columns: 1fr;
   }
   .right-pan {
-    order: 2;
+    position: static;
+    order: -1; /* en móvil, el mapa se ve primero: es lo que da contexto inmediato */
   }
   .chart-row {
     grid-template-columns: 1fr;
   }
   .map-wrapper {
-    min-height: 520px;
+    min-height: 380px;
   }
+  .map { min-height: 340px; }
 }
 
 @media (max-width: 640px) {
   .top-row .top-cards {
     grid-template-columns: repeat(2, 1fr);
   }
-  .chart-card {
-    height: 360px;
-  }
   .small-cards {
     flex-direction: column;
   }
+  .chart-canvas-box { height: 240px; }
+  .chart-canvas-box--tall { height: 260px; }
 }
+
+/* ==================== AYUDA CONTEXTUAL (botones "?" + modal) ==================== */
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #94a3b8;
+  color: #475569;
+  background: #f8fafc;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.info-btn:hover, .info-btn:focus-visible {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: #fff;
+  outline: none;
+}
+.card.summary .info-btn {
+  position: absolute;
+  top: .6rem;
+  right: .6rem;
+  width: 18px;
+  height: 18px;
+  font-size: .68rem;
+}
+
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.help-overlay.open { display: flex; }
+.help-modal {
+  background: #fff;
+  border-radius: 14px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+  padding: 1.5rem 1.5rem 1.25rem;
+}
+.help-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .75rem;
+}
+.help-modal-header h3 { margin: 0; font-size: 1.15rem; color: #0f172a; }
+.help-close {
+  border: none;
+  background: #f1f5f9;
+  color: #334155;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.help-close:hover { background: #e2e8f0; }
+.help-modal p { color: #334155; line-height: 1.5; margin: .5rem 0; }
+.help-modal .help-section-label {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 1rem;
+}
+.help-badges { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.help-badge {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .8rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: .35rem .6rem;
+}
+.help-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
