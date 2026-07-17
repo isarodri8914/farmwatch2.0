@@ -1,347 +1,439 @@
 let map;
 let ruta;
-let marcadores=[];
+let marcadores = [];
 let tempChart;
 let hrChart;
 let reporteActual = null;
 
+// Paginación de la tabla
+const FILAS_POR_PAGINA = 8;
+let filasTabla = [];
+let paginaActual = 1;
+
 document.addEventListener("DOMContentLoaded", function () {
 
-document.getElementById("generar").onclick = generarInforme;
+  document.getElementById("generar").onclick = generarInforme;
+  document.getElementById("exportPDF").onclick = exportPDF;
+  document.getElementById("prevPage").onclick = () => cambiarPagina(-1);
+  document.getElementById("nextPage").onclick = () => cambiarPagina(1);
 
-document.getElementById("exportPDF").onclick = exportPDF;
-
-cargarVacas();
+  cargarVacas();
 
 });
+
+function mostrarEstado(estado) {
+  // estado: "empty" | "loading" | "content"
+  document.getElementById("emptyState").hidden = estado !== "empty";
+  document.getElementById("loadingState").hidden = estado !== "loading";
+  document.getElementById("reportContent").hidden = estado !== "content";
+}
 
 async function generarInforme() {
 
-const vaca = document.getElementById("vaca").value;
-const inicio = document.getElementById("inicio").value;
-const fin = document.getElementById("fin").value;
+  const vaca = document.getElementById("vaca").value;
+  const inicio = document.getElementById("inicio").value;
+  const fin = document.getElementById("fin").value;
 
-try{
+  const btnGenerar = document.getElementById("generar");
+  const btnExport = document.getElementById("exportPDF");
 
-const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
-let data;
+  btnGenerar.disabled = true;
+  btnExport.disabled = true;
+  mostrarEstado("loading");
 
-try {
-    data = await res.json();
-} catch (err) {
-    const text = await res.text();
-    console.error("Respuesta NO JSON:", text);
-    throw new Error("El servidor no devolvió JSON");
-}
-reporteActual = data;
+  try {
 
-if(data.error){
-alert(data.error);
-return;
-}
+    const res = await fetch(`/api/reporte?vaca=${vaca}&inicio=${inicio}&fin=${fin}`);
+    let data;
 
+    try {
+      data = await res.json();
+    } catch (err) {
+      const text = await res.text();
+      console.error("Respuesta NO JSON:", text);
+      throw new Error("El servidor no devolvió JSON");
+    }
 
+    if (data.error) {
+      alert(data.error);
+      mostrarEstado("empty");
+      return;
+    }
 
-mostrarAnalisis(data);
-crearGraficas(data.datos);
-crearMapa(data.datos);
-crearTabla(data.datos);
+    reporteActual = data;
 
-}catch(e){
+    mostrarAnalisis(data);
+    crearGraficas(data.datos);
+    crearMapa(data.datos);
+    prepararTabla(data.datos);
 
-console.error("Error generando informe",e);
-alert("Error al generar informe");
+    mostrarEstado("content");
+    btnExport.disabled = false;
 
-}
+    const ahora = new Date();
+    document.getElementById("headerStatus").textContent =
+      "Actualizado " + ahora.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("liveDot").classList.add("live");
 
-}
+  } catch (e) {
 
-function mostrarAnalisis(data){
+    console.error("Error generando informe", e);
+    alert("Error al generar informe");
+    mostrarEstado("empty");
 
-document.getElementById("analisis").innerText = data.analisis;
-
-document.getElementById("temp_avg").innerText =
-    Number(data.estadisticas.temp_avg).toFixed(2);
-
-document.getElementById("temp_max").innerText =
-    Number(data.estadisticas.temp_max).toFixed(2);
-
-document.getElementById("hr_avg").innerText =
-    Number(data.estadisticas.hr_avg).toFixed(2);
-
-document.getElementById("hr_max").innerText =
-    Number(data.estadisticas.hr_max).toFixed(2);
-
-document.getElementById("estado").innerText = data.estadisticas.estado;
-
-if(data.movimiento){
-
-document.getElementById("analisis").innerText +=
-"\n\nDistancia recorrida: " + data.movimiento.distancia_km.toFixed(2) + " km";
+  } finally {
+    btnGenerar.disabled = false;
+  }
 
 }
 
-if(data.analisis_sistema){
+function claseEstado(texto) {
+  const t = (texto || "").toLowerCase();
+  if (t.includes("alerta") || t.includes("critico") || t.includes("crítico") || t.includes("peligro")) {
+    return "status-danger";
+  }
+  if (t.includes("precauc") || t.includes("atenci")) {
+    return "status-warning";
+  }
+  return "";
+}
 
-document.getElementById("analisis").innerText +=
-"\n\n" + data.analisis_sistema;
+function mostrarAnalisis(data) {
+
+  document.getElementById("analisis").innerText = data.analisis;
+
+  document.getElementById("temp_avg").innerText = Number(data.estadisticas.temp_avg).toFixed(2);
+  document.getElementById("temp_max").innerText = Number(data.estadisticas.temp_max).toFixed(2);
+  document.getElementById("hr_avg").innerText = Number(data.estadisticas.hr_avg).toFixed(2);
+  document.getElementById("hr_max").innerText = Number(data.estadisticas.hr_max).toFixed(2);
+
+  const estadoTexto = data.estadisticas.estado;
+  document.getElementById("estado").innerText = estadoTexto;
+
+  const cardEstado = document.getElementById("card_estado");
+  cardEstado.classList.remove("status-danger", "status-warning");
+  const clase = claseEstado(estadoTexto);
+
+  const banner = document.getElementById("alertBanner");
+  if (clase) {
+    cardEstado.classList.add(clase);
+    if (clase === "status-danger") {
+      document.getElementById("alertText").textContent =
+        "Este animal presenta un estado de alerta: " + estadoTexto + ". Revisa el análisis y los registros recientes.";
+      banner.hidden = false;
+    } else {
+      banner.hidden = true;
+    }
+  } else {
+    banner.hidden = true;
+  }
+
+  let analisisTexto = data.analisis;
+
+  if (data.movimiento) {
+    analisisTexto += "\n\nDistancia recorrida: " + data.movimiento.distancia_km.toFixed(2) + " km";
+
+    const badge = document.getElementById("distanciaBadge");
+    badge.textContent = data.movimiento.distancia_km.toFixed(2) + " km recorridos";
+    badge.hidden = false;
+  } else {
+    document.getElementById("distanciaBadge").hidden = true;
+  }
+
+  if (data.analisis_sistema) {
+    analisisTexto += "\n\n" + data.analisis_sistema;
+  }
+
+  document.getElementById("analisis").innerText = analisisTexto;
 
 }
 
+function crearGraficas(datos) {
+
+  const datosLimitados = datos.slice(-30);
+
+  const labels = datosLimitados.map(d => d.fecha);
+  const temps = datosLimitados.map(d => d.temp_objeto);
+  const hr = datosLimitados.map(d => d.ritmo_cardiaco);
+
+  const clayColor = "#b6502f";
+  const skyColor = "#3e7ca6";
+
+  if (tempChart) tempChart.destroy();
+
+  tempChart = new Chart(document.getElementById("tempChart"), {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Temperatura",
+        data: temps,
+        borderColor: clayColor,
+        backgroundColor: clayColor + "22",
+        pointRadius: 2,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { maxTicksLimit: 6 } } }
+    }
+  });
+
+  if (hrChart) hrChart.destroy();
+
+  hrChart = new Chart(document.getElementById("hrChart"), {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Ritmo cardiaco",
+        data: hr,
+        borderColor: skyColor,
+        backgroundColor: skyColor + "22",
+        pointRadius: 2,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { maxTicksLimit: 6 } } }
+    }
+  });
 }
 
-function crearGraficas(datos){
+function crearMapa(datos) {
 
-// 🔥 SOLO TOMAR LOS ÚLTIMOS 30 REGISTROS
-const datosLimitados = datos.slice(-30);
+  if (!map) {
+    map = L.map("map").setView([20.97, -89.62], 12);
 
-const labels = datosLimitados.map(d => d.fecha);
-const temps = datosLimitados.map(d => d.temp_objeto);
-const hr = datosLimitados.map(d => d.ritmo_cardiaco);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap"
+    }).addTo(map);
+  }
 
-if(tempChart) tempChart.destroy();
+  marcadores.forEach(m => map.removeLayer(m));
+  marcadores = [];
 
-tempChart = new Chart(document.getElementById("tempChart"),{
-type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Temperatura",
-data:temps,
-borderColor:"red",
-fill:false,
-tension:0.3 // 🔥 suaviza línea
-}]
-}
-});
+  if (ruta) {
+    map.removeLayer(ruta);
+  }
 
-if(hrChart) hrChart.destroy();
+  const puntos = [];
 
-hrChart = new Chart(document.getElementById("hrChart"),{
-type:"line",
-data:{
-labels:labels,
-datasets:[{
-label:"Ritmo cardiaco",
-data:hr,
-borderColor:"blue",
-fill:false,
-tension:0.3
-}]
-}
-});
-}
+  datos.forEach(d => {
+    if (d.latitud && d.longitud && d.latitud != 0 && d.longitud != 0) {
+      const punto = [d.latitud, d.longitud];
+      puntos.push(punto);
+      const marker = L.marker(punto).addTo(map);
+      marcadores.push(marker);
+    }
+  });
 
-function crearMapa(datos){
+  if (ruta) ruta = null;
 
-if(!map){
+  if (puntos.length > 1) {
+    ruta = L.polyline(puntos, {
+      color: "#1f4d3a",
+      weight: 3
+    }).addTo(map);
 
-map = L.map("map").setView([20.97,-89.62],12);
+    map.fitBounds(puntos);
+  } else if (puntos.length === 1) {
+    map.setView(puntos[0], 14);
+  }
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-attribution:"© OpenStreetMap"
-}).addTo(map);
-
+  // El mapa vive dentro de un contenedor que estaba oculto (display:none)
+  // durante la carga; hay que forzar un recalculo de tamaño.
+  setTimeout(() => map.invalidateSize(), 150);
 }
 
-marcadores.forEach(m=>map.removeLayer(m));
-marcadores=[];
+/* ---------- TABLA PAGINADA ---------- */
 
-if(ruta){
-map.removeLayer(ruta);
+function prepararTabla(datos) {
+  filasTabla = datos;
+  paginaActual = 1;
+  renderizarTabla();
 }
 
-const puntos=[];
-
-datos.forEach(d=>{
-
-if(d.latitud && d.longitud && d.latitud!=0 && d.longitud!=0){
-
-const punto=[d.latitud,d.longitud];
-
-puntos.push(punto);
-
-const marker=L.marker(punto).addTo(map);
-
-marcadores.push(marker);
-
+function cambiarPagina(delta) {
+  const totalPaginas = Math.max(1, Math.ceil(filasTabla.length / FILAS_POR_PAGINA));
+  paginaActual = Math.min(totalPaginas, Math.max(1, paginaActual + delta));
+  renderizarTabla();
 }
 
-});
+function renderizarTabla() {
 
-if(puntos.length>1){
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = "";
 
-ruta=L.polyline(puntos,{
-color:"red",
-weight:3
-}).addTo(map);
+  const totalPaginas = Math.max(1, Math.ceil(filasTabla.length / FILAS_POR_PAGINA));
+  paginaActual = Math.min(paginaActual, totalPaginas);
 
-map.fitBounds(puntos);
+  const inicio = (paginaActual - 1) * FILAS_POR_PAGINA;
+  const pagina = filasTabla.slice(inicio, inicio + FILAS_POR_PAGINA);
 
+  pagina.forEach(d => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.fecha}</td>
+      <td>${d.temp_objeto}</td>
+      <td>${d.ritmo_cardiaco}</td>
+      <td>${d.latitud}</td>
+      <td>${d.longitud}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("pageIndicator").textContent =
+    `Página ${paginaActual} de ${totalPaginas}`;
+
+  document.getElementById("tableCount").textContent =
+    `${filasTabla.length} registro${filasTabla.length === 1 ? "" : "s"}`;
+
+  document.getElementById("prevPage").disabled = paginaActual <= 1;
+  document.getElementById("nextPage").disabled = paginaActual >= totalPaginas;
 }
 
+/* ---------- EXPORTAR PDF ---------- */
+
+async function exportPDF() {
+
+  if (!reporteActual) {
+    alert("Primero genera un reporte");
+    return;
+  }
+
+  const btnExport = document.getElementById("exportPDF");
+  btnExport.disabled = true;
+
+  try {
+
+    const doc = new window.jspdf.jsPDF();
+
+    let y = 20;
+
+    doc.setFontSize(18);
+    doc.text("FarmWatch - Informe de Monitoreo", 20, y);
+
+    y += 10;
+
+    doc.setFontSize(12);
+
+    const analisis = doc.splitTextToSize(
+      document.getElementById("analisis").innerText,
+      170
+    );
+
+    doc.text("Analisis:", 20, y);
+    y += 8;
+
+    doc.text(analisis, 20, y);
+
+    y += analisis.length * 6 + 5;
+
+    doc.text("Estadisticas:", 20, y);
+    y += 8;
+
+    doc.text("Temp promedio: " + document.getElementById("temp_avg").innerText, 20, y); y += 6;
+    doc.text("Temp maxima: " + document.getElementById("temp_max").innerText, 20, y); y += 6;
+    doc.text("Ritmo promedio: " + document.getElementById("hr_avg").innerText, 20, y); y += 6;
+    doc.text("Ritmo maximo: " + document.getElementById("hr_max").innerText, 20, y); y += 6;
+    doc.text("Estado: " + document.getElementById("estado").innerText, 20, y);
+
+    y += 10;
+
+    /* -------- GRAFICA TEMPERATURA -------- */
+
+    const tempCanvas = document.getElementById("tempChart");
+    const tempImg = tempCanvas.toDataURL("image/png");
+
+    doc.text("Grafica de temperatura", 20, y);
+    y += 5;
+
+    doc.addImage(tempImg, "PNG", 20, y, 170, 60);
+
+    doc.addPage();
+    y = 20;
+
+    /* -------- GRAFICA RITMO -------- */
+
+    const hrCanvas = document.getElementById("hrChart");
+    const hrImg = hrCanvas.toDataURL("image/png");
+
+    doc.text("Grafica de ritmo cardiaco", 20, y);
+    y += 5;
+
+    doc.addImage(hrImg, "PNG", 20, y, 170, 60);
+
+    doc.addPage();
+    y = 20;
+
+    /* -------- MAPA -------- */
+
+    const mapElement = document.getElementById("map");
+
+    await new Promise(r => setTimeout(r, 1000));
+
+    const canvasMapa = await html2canvas(mapElement, {
+      useCORS: true,
+      scale: 2
+    });
+
+    const mapaImg = canvasMapa.toDataURL("image/png");
+
+    doc.text("Ruta recorrida del animal", 20, 20);
+    doc.addImage(mapaImg, "PNG", 20, 30, 170, 100);
+
+    /* -------- TABLA (todos los registros, no solo la pagina visible) -------- */
+
+    const rows = filasTabla.map(d => [
+      d.fecha, d.temp_objeto, d.ritmo_cardiaco, d.latitud, d.longitud
+    ]);
+
+    doc.addPage();
+
+    doc.text("Registros", 20, 20);
+
+    doc.autoTable({
+      startY: 28,
+      head: [["Fecha", "Temp", "Ritmo", "Lat", "Lng"]],
+      body: rows,
+      styles: { fontSize: 8 }
+    });
+
+    doc.save("informe_farmwatch.pdf");
+
+  } catch (e) {
+    console.error("Error exportando PDF", e);
+    alert("Error al exportar el PDF");
+  } finally {
+    btnExport.disabled = false;
+  }
 }
 
-function crearTabla(datos){
+async function cargarVacas() {
 
-const tbody = document.querySelector("#tabla tbody");
-tbody.innerHTML="";
+  try {
 
-datos.forEach(d=>{
+    const res = await fetch("/api/vacasnew");
+    const vacas = await res.json();
 
-const tr=document.createElement("tr");
+    const select = document.getElementById("vaca");
 
-tr.innerHTML=`
+    vacas.forEach(v => {
+      const option = document.createElement("option");
+      option.value = v;
+      option.textContent = v;
+      select.appendChild(option);
+    });
 
-<td>${d.fecha}</td>
-<td>${d.temp_objeto}</td>
-<td>${d.ritmo_cardiaco}</td>
-<td>${d.latitud}</td>
-<td>${d.longitud}</td>
-
-`;
-
-tbody.appendChild(tr);
-
-});
-
-}
-
-async function exportPDF(){
-
-if(!reporteActual){
-alert("Primero genera un reporte");
-return;
-}
-
-const doc = new window.jspdf.jsPDF();
-
-let y = 20;
-
-doc.setFontSize(18);
-doc.text("FarmWatch - Informe de Monitoreo",20,y);
-
-y += 10;
-
-doc.setFontSize(12);
-
-// 🔥 ANALISIS CON SALTO AUTOMATICO
-const analisis = doc.splitTextToSize(
-document.getElementById("analisis").innerText,
-170
-);
-
-doc.text("Analisis:",20,y);
-y += 8;
-
-doc.text(analisis,20,y);
-
-y += analisis.length * 6 + 5;
-
-// 🔥 ESTADISTICAS
-doc.text("Estadisticas:",20,y);
-y += 8;
-
-doc.text("Temp promedio: "+document.getElementById("temp_avg").innerText,20,y); y+=6;
-doc.text("Temp maxima: "+document.getElementById("temp_max").innerText,20,y); y+=6;
-doc.text("Ritmo promedio: "+document.getElementById("hr_avg").innerText,20,y); y+=6;
-doc.text("Ritmo maximo: "+document.getElementById("hr_max").innerText,20,y); y+=6;
-doc.text("Estado: "+document.getElementById("estado").innerText,20,y);
-
-y += 10;
-
-/* -------- GRAFICA TEMPERATURA -------- */
-
-const tempCanvas = document.getElementById("tempChart");
-const tempImg = tempCanvas.toDataURL("image/png");
-
-doc.text("Grafica de temperatura",20,y);
-y += 5;
-
-doc.addImage(tempImg,"PNG",20,y,170,60);
-
-/* 🔥 SALTO DE PAGINA */
-doc.addPage();
-
-y = 20;
-
-/* -------- GRAFICA RITMO -------- */
-
-const hrCanvas = document.getElementById("hrChart");
-const hrImg = hrCanvas.toDataURL("image/png");
-
-doc.text("Grafica de ritmo cardiaco",20,y);
-y += 5;
-
-doc.addImage(hrImg,"PNG",20,y,170,60);
-
-/* 🔥 NUEVA PAGINA PARA MAPA */
-doc.addPage();
-
-y = 20;
-
-/* -------- MAPA (ARREGLADO) -------- */
-
-const mapElement = document.getElementById("map");
-
-// 🔥 IMPORTANTE: esperar render
-await new Promise(r => setTimeout(r, 1000));
-
-const canvasMapa = await html2canvas(mapElement, {
-useCORS: true,
-scale: 2
-});
-
-const mapaImg = canvasMapa.toDataURL("image/png");
-
-doc.text("Ruta recorrida del animal",20,20);
-
-doc.addImage(mapaImg,"PNG",20,30,170,100);
-
-/* -------- TABLA -------- */
-
-const rows=[];
-
-document.querySelectorAll("#tabla tbody tr").forEach(tr=>{
-const cols=[...tr.children].map(td=>td.innerText);
-rows.push(cols);
-});
-
-doc.autoTable({
-startY:140,
-head:[["Fecha","Temp","Ritmo","Lat","Lng"]],
-body:rows
-});
-
-doc.save("informe_farmwatch.pdf");
-}
-
-
-
-async function cargarVacas(){
-
-try{
-
-const res = await fetch("/api/vacasnew");
-const vacas = await res.json();
-
-const select = document.getElementById("vaca");
-
-vacas.forEach(v=>{
-
-const option = document.createElement("option");
-
-option.value=v;
-option.textContent=v;
-
-select.appendChild(option);
-
-});
-
-}catch(e){
-
-console.error("Error cargando vacas",e);
-
-}
+  } catch (e) {
+    console.error("Error cargando vacas", e);
+  }
 
 }
