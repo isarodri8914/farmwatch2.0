@@ -729,6 +729,10 @@ def logout():
 # ---------- RUTAS ----------
 
 @app.route('/')
+def landing():
+    return render_template('index.html')
+
+@app.route('/login')
 def login():
     return render_template('login.html')
 
