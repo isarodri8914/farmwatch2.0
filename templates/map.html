@@ -2,32 +2,46 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 {% endblock %}
 
 {% block content %}
-<h1>Mapa de Ubicación</h1>
+<div class="map-page">
 
-<div class="map-container">
+  <h1>Mapa de Ubicación</h1>
+
+  <!-- ===== LEYENDA: para que cualquiera entienda los colores sin preguntar ===== -->
+  <div class="legend-strip">
+    <span class="legend-chip"><span class="dot" style="background:#10b981;"></span> Normal</span>
+    <span class="legend-chip"><span class="dot" style="background:#f97316;"></span> Alerta</span>
+    <span class="legend-chip"><span class="dot" style="background:#9ca3af;"></span> Offline</span>
+    <span class="legend-note">Toca una vaca (en la lista o en el mapa) para ver su detalle.</span>
+  </div>
+
+  <div class="map-container">
 
     <!-- SIDEBAR LISTA DE VACAS -->
     <div class="cow-sidebar">
-        <h3>Vacas</h3>
-        <input type="text" id="cowSearch" placeholder="Buscar vaca...">
-
-        <ul id="cowList"></ul>
+      <h3>Vacas</h3>
+      <input type="text" id="cowSearch" placeholder="Buscar vaca...">
+      <ul id="cowList"></ul>
     </div>
 
     <!-- MAPA -->
     <div id="map"></div>
+  </div>
+
 </div>
 
-<!-- MODAL -->
 <!-- MODAL -->
 <div id="cowModal" class="modal">
   <div class="modal-content">
     <span id="closeModal" class="close">&times;</span>
 
-    <h2 id="modalName">Vaca</h2>
+    <div class="modal-header">
+      <h2 id="modalName">Vaca</h2>
+      <span id="m_state_badge" class="state-badge">--</span>
+    </div>
 
     <div class="modal-body">
       <div class="modal-info">
@@ -35,23 +49,22 @@
         <p><b>Ritmo cardíaco:</b> <span id="m_hr">--</span> BPM</p>
         <p><b>Actividad:</b> <span id="m_act">--</span></p>
         <p><b>Última ubicación:</b> <span id="m_loc">--</span></p>
-        <p><b>Estado:</b> <span id="m_state">--</span></p>
       </div>
 
       <div class="modal-map">
-        <h4>Mérida</h4>
-        <div id="modalMiniMap" style="height: 180px; border-radius: 8px; overflow: hidden;"></div>
+        <h4>Ubicación actual</h4>
+        <div id="modalMiniMap"></div>
       </div>
     </div>
 
-    <h3>Mini Gráficas</h3>
+    <h3 class="modal-charts-title">Últimas lecturas</h3>
     <div class="modal-charts">
       <canvas id="chartTemp" height="120"></canvas>
       <canvas id="chartHR" height="120"></canvas>
     </div>
 
     <div class="modal-footer">
-      <button class="modal-btn">Ver detalle</button>
+      <a class="modal-btn" href="/reports">Ver reporte completo</a>
     </div>
   </div>
 </div>
@@ -59,6 +72,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
 {% endblock %}
