@@ -46,7 +46,7 @@ function initMap() {
         }
     }
 
-    // NUEVA FÓRMULA DE GASTO CALÓRICO
+    // FÓRMULA DE GASTO CALÓRICO (índice relativo al reposo, no calorías exactas)
     // Gasto Calórico = ( (0.15*BPM + 0.35*A + 0.08*(T-38.5) - 0.05*(98-SpO2)) / (0.15*BPM_reposo) ) * 100
     function calcularGastoCalorico(bpm, actividad, temp, spo2, bpmReposo) {
         if (bpm === null || bpm === undefined || !bpmReposo) return null;
@@ -127,7 +127,7 @@ async function updateCharts() {
 
                 // --- INTENSIDAD DE MOVIMIENTO (magnitud del giroscopio) ---
                 const magnitudes = [];
-                // --- GASTO CALÓRICO (nueva fórmula, por lectura) ---
+                // --- GASTO CALÓRICO (índice relativo al reposo, por lectura) ---
                 const gastoArr = [];
 
                 rowData.forEach(d => {
@@ -161,7 +161,7 @@ async function updateCharts() {
                     yAxisID: 'y'
                 });
 
-                // Dataset de Gasto Calórico (nueva fórmula, relativo al BPM de reposo)
+                // Dataset de Gasto Calórico (índice relativo al BPM de reposo)
                 actividadDatasets.push({
                     label: `Gasto Calórico Vaca ${id}`,
                     data: gastoArr,
@@ -173,6 +173,19 @@ async function updateCharts() {
                 });
 
                 colorIndex++;
+            });
+
+            // Línea de referencia: 100% = mismo esfuerzo que en reposo.
+            // Ayuda a leer el gráfico de un vistazo sin tener que hacer cuentas.
+            actividadDatasets.push({
+                label: "Referencia: nivel de reposo (100%)",
+                data: Array(allLabels.length).fill(100),
+                borderColor: "#16a34a",
+                borderDash: [2, 3],
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                yAxisID: 'y1'
             });
 
             // Renderizado de gráficas
@@ -224,7 +237,7 @@ async function updateCharts() {
                         },
                         y1: { 
                             position: 'right', 
-                            title: { display: true, text: 'Gasto Calórico (%)' },
+                            title: { display: true, text: 'Gasto Calórico (% vs. reposo)' },
                             grid: { drawOnChartArea: false }
                         }
                     }
@@ -398,13 +411,12 @@ async function updateCharts() {
       });
 
       // Ajustar zoom para ver todas las vacas
-// ... (código anterior del mapa) ...
       if (markers.length > 0) {
         const group = L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(10));
       }
 
-      // --- NUEVO: LISTA DE ESTADOS EN TIEMPO REAL ---
+      // --- LISTA DE ESTADOS EN TIEMPO REAL ---
       const behaviorList = document.getElementById("behaviorList");
       if (behaviorList) {
           behaviorList.innerHTML = ""; // Limpiar lista previa
