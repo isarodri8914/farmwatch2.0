@@ -9,50 +9,82 @@
 
 <div class="data-container">
 
-    <h1 class="page-title">📊 Historial de Datos</h1>
+    <h1 class="page-title">Historial de Datos</h1>
 
-    <!-- BUSCADOR -->
-    <div class="search-box">
-        <input type="text" id="search-input" placeholder="🔍 Buscar por vaca, temperatura, ritmo, fecha...">
+    <!-- ===== TIRA DE ESTADO ===== -->
+    <div class="stat-strip">
+        <div class="stat-chip">
+            <span class="stat-label">Registros totales</span>
+            <span class="stat-value" id="stat-total-rows">--</span>
+        </div>
+        <div class="stat-chip">
+            <span class="stat-label">Mostrando</span>
+            <span class="stat-value" id="stat-showing">--</span>
+        </div>
+        <div class="stat-chip">
+            <span class="stat-label">Última actualización</span>
+            <span class="stat-value" id="stat-last-update">--:--:--</span>
+        </div>
     </div>
 
-    <!-- FILTRO -->
-    <div class="filter-box">
-        <label>Filtrar por vaca:</label>
-        <select id="cow-filter">
-            <option value="all">Todas</option>
-            <option value="101">#101</option>
-            <option value="104">#104</option>
-            <option value="109">#109</option>
-        </select>
+    <!-- ===== BARRA DE HERRAMIENTAS: buscar + filtro + exportar ===== -->
+    <div class="toolbar card">
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="Buscar por vaca, temperatura, ritmo, fecha...">
+        </div>
+
+        <div class="filter-box">
+            <label for="cow-filter">Vaca:</label>
+            <select id="cow-filter">
+                <option value="all">Todas</option>
+            </select>
+        </div>
+
+        <div class="export-box">
+            <button class="btn export" id="export-excel" title="Exporta lo que está filtrado ahora mismo">📥 Excel</button>
+            <button class="btn export" id="export-pdf" title="Exporta lo que está filtrado ahora mismo">📄 PDF</button>
+        </div>
+    </div>
+
+    <!-- ===== PESTAÑAS DE COLUMNAS =====
+         En vez de mostrar las 10 columnas siempre (obligando a scroll
+         horizontal), se agrupan por tema: lo que más se revisa (vitales)
+         queda de entrada, y movimiento/ubicación quedan a un clic. -->
+    <div class="tabs" id="columnTabs">
+        <button class="tab-btn active" type="button" data-tab="vitales">Vitales</button>
+        <button class="tab-btn" type="button" data-tab="movimiento">Movimiento</button>
+        <button class="tab-btn" type="button" data-tab="ubicacion">Ubicación</button>
+        <button class="tab-btn" type="button" data-tab="todo">Todo</button>
     </div>
 
     <!-- TABLA -->
-    <div class="card">
-        <table class="styled-table" id="data-table">
-            <thead>
-<tr>
-    <th>Vaca</th>
-    <th>Temp Amb.</th>
-    <th>Temp Obj.</th>
-    <th>Ritmo</th>
-    <th>Oxígeno</th>
-    <th>Gyro X</th>
-    <th>Gyro Y</th>
-    <th>Gyro Z</th>
-    <th>Ubicación</th>
-    <th>Fecha</th>
-</tr>
-</thead>
+    <div class="card table-card">
+        <div class="table-scroll">
+            <table class="styled-table" id="data-table" data-active-tab="vitales">
+                <thead>
+                    <tr>
+                        <th data-col="vaca">Vaca</th>
+                        <th data-col="temp_amb">Temp Amb.</th>
+                        <th data-col="temp_obj">Temp Obj.</th>
+                        <th data-col="ritmo">Ritmo</th>
+                        <th data-col="oxigeno">Oxígeno</th>
+                        <th data-col="gyro_x">Gyro X</th>
+                        <th data-col="gyro_y">Gyro Y</th>
+                        <th data-col="gyro_z">Gyro Z</th>
+                        <th data-col="ubicacion">Ubicación</th>
+                        <th data-col="fecha">Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
 
-            <tbody id="table-body"></tbody>
-        </table>
-    </div>
-
-    <!-- EXPORTAR -->
-    <div class="export-box">
-        <button class="btn export" id="export-excel">📥 Exportar Excel</button>
-        <button class="btn export" id="export-pdf">📄 Exportar PDF</button>
+        <!-- PAGINACIÓN -->
+        <div class="pagination" id="pagination">
+            <button class="page-btn" id="page-prev" type="button">‹ Anterior</button>
+            <span class="page-info" id="page-info">Página 1 de 1</span>
+            <button class="page-btn" id="page-next" type="button">Siguiente ›</button>
+        </div>
     </div>
 
 </div>
