@@ -1,10 +1,42 @@
 document.addEventListener("DOMContentLoaded", () => {
+
+    function showAlert(el, message) {
+        if (!el) { alert(message); return; }
+        el.textContent = message;
+        el.hidden = false;
+    }
+
+    function hideAlert(el) {
+        if (!el) return;
+        el.hidden = true;
+        el.textContent = "";
+    }
+
+    function setLoading(btn, loading, idleText) {
+        if (!btn) return;
+        btn.disabled = loading;
+        const label = btn.querySelector(".btn-primary__text");
+        if (label) label.textContent = loading ? "Ingresando..." : idleText;
+    }
+
     const loginForm = document.getElementById("login-form");
     if (loginForm) {
+        const alertEl = document.getElementById("authAlert");
+        const loginBtn = document.getElementById("loginBtn");
+
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const correo = document.getElementById("username").value;
+            hideAlert(alertEl);
+
+            const correo = document.getElementById("username").value.trim();
             const pass = document.getElementById("password").value;
+
+            if (!correo || !pass) {
+                showAlert(alertEl, "Ingresa tu usuario y contraseña.");
+                return;
+            }
+
+            setLoading(loginBtn, true, "Iniciar sesión");
 
             try {
                 const response = await fetch('/api/login', {
@@ -14,13 +46,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const result = await response.json();
+
                 if (response.ok) {
                     window.location.href = result.redirect; // Solo entra si el servidor dice OK
                 } else {
-                    alert("Error: " + result.error); // Aquí te dirá por qué no entras
+                    showAlert(alertEl, result.error || "Correo o contraseña incorrectos.");
+                    setLoading(loginBtn, false, "Iniciar sesión");
                 }
             } catch (err) {
-                alert("Error de conexión con el servidor");
+                showAlert(alertEl, "No pudimos conectar con el servidor. Intenta de nuevo.");
+                setLoading(loginBtn, false, "Iniciar sesión");
             }
         });
     }
