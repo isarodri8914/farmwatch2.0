@@ -457,6 +457,77 @@ async function updateCharts() {
     }
   }
 
+  // ==================== EXPANDIR GRÁFICO ====================
+  // Los gráficos pequeños se actualizan solos cada 15s (tempChart, hrChart,
+  // gyroChart se reasignan en updateCharts). Al expandir, clonamos los datos
+  // y opciones del gráfico que esté vigente EN ESE MOMENTO y los dibujamos
+  // más grandes en el modal — así siempre se ve la info más reciente.
+  let expandChart = null;
+  const expandOverlay = document.getElementById("expandOverlay");
+  const expandCanvas = document.getElementById("expandCanvas");
+  const expandTitleEl = document.getElementById("expandTitle");
+  const expandCloseBtn = document.getElementById("expandClose");
+
+  const EXPAND_TITLES = {
+    temp: "Temperatura promedio (12 h)",
+    hr: "Ritmo cardíaco (12 h)",
+    gyro: "Análisis de Movimiento (Giroscopio)"
+  };
+
+  function getChartByKey(key) {
+    if (key === "temp") return tempChart;
+    if (key === "hr") return hrChart;
+    if (key === "gyro") return gyroChart;
+    return null;
+  }
+
+  function openExpand(key) {
+    const sourceChart = getChartByKey(key);
+    if (!sourceChart) return; // el gráfico aún no cargó datos
+
+    if (expandChart) {
+      expandChart.destroy();
+      expandChart = null;
+    }
+
+    expandTitleEl.textContent = EXPAND_TITLES[key] || "Gráfico";
+
+    const clonedData = JSON.parse(JSON.stringify(sourceChart.config.data));
+    const clonedOptions = JSON.parse(JSON.stringify(sourceChart.config.options || {}));
+    clonedOptions.responsive = true;
+    clonedOptions.maintainAspectRatio = false;
+
+    expandChart = new Chart(expandCanvas, {
+      type: sourceChart.config.type,
+      data: clonedData,
+      options: clonedOptions
+    });
+
+    expandOverlay.classList.add("open");
+  }
+
+  function closeExpand() {
+    expandOverlay.classList.remove("open");
+    if (expandChart) {
+      expandChart.destroy();
+      expandChart = null;
+    }
+  }
+
+  document.querySelectorAll("[data-expand]").forEach(btn => {
+    btn.addEventListener("click", () => openExpand(btn.getAttribute("data-expand")));
+  });
+
+  if (expandCloseBtn) expandCloseBtn.addEventListener("click", closeExpand);
+  if (expandOverlay) {
+    expandOverlay.addEventListener("click", (e) => {
+      if (e.target === expandOverlay) closeExpand();
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeExpand();
+  });
+
   // --- INICIO DEL CICLO DEL DASHBOARD ---
   initMap();
   loadDashboard();
