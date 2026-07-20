@@ -536,7 +536,10 @@ def dashboard_data():
                 "lng": d["longitud"] or -89.62,
                 "temp": d["temp_objeto"],
                 "hr": d["ritmo_cardiaco"],
-                "status": estado
+                "status": estado,
+                "gyro_x": d["gyro_x"],
+                "gyro_y": d["gyro_y"],
+                "gyro_z": d["gyro_z"]
             })
 
         # =========================================
