@@ -54,7 +54,7 @@ function initMap() {
         if (spo2 === null || spo2 === undefined) spo2 = 98;
         if (actividad === null || actividad === undefined) actividad = 0;
 
-        const numerador = 0.15 * bpm + 0.35 * actividad + 0.08 * (temp - 38.5) - 0.05 * (98 - spo2);
+        const numerador = 0.15 * bpm + 0.35 * actividad + 0.08 * (temp - 38.5) + 0.05 * (98 - spo2);
         const denominador = 0.15 * bpmReposo;
 
         if (denominador === 0) return null;
