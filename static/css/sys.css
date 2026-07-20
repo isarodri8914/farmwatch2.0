@@ -206,8 +206,66 @@ img { max-width: 100%; display: block; }
 .section__lead--light { color: var(--gray-400); }
 .section__text { font-size: 15.5px; color: var(--gray-700); line-height: 1.75; margin-top: 16px; }
 
-[data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
-[data-reveal].is-visible { opacity: 1; transform: translateY(0); }
+/* Los elementos [data-reveal] se ven SIEMPRE por defecto (fallback seguro).
+   Solo se ocultan para animar la entrada si el JS confirma que cargó
+   correctamente (agrega la clase "js-reveal" a <html>). Así, si script.js
+   no carga por cualquier motivo, el contenido nunca desaparece. */
+html.js-reveal [data-reveal] { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+html.js-reveal [data-reveal].is-visible { opacity: 1; transform: translateY(0); }
+
+/* ==================== DISPOSITIVO ==================== */
+.device-section { padding-top: 40px; }
+
+.device-showcase {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.device-glow {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 197, 94, .16), rgba(47, 111, 237, .1) 55%, transparent 75%);
+  filter: blur(4px);
+  z-index: 0;
+}
+
+.device-showcase__img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 480px;
+  filter: drop-shadow(0 30px 40px rgba(11, 31, 58, .28));
+  animation: deviceFloat 5.5s ease-in-out infinite;
+}
+
+@keyframes deviceFloat {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-16px) rotate(1deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .device-showcase__img { animation: none; }
+}
+
+.device-specs { list-style: none; margin: 32px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.device-specs__item { display: flex; gap: 16px; align-items: flex-start; padding: 14px; border-radius: var(--radius-md); transition: background .2s ease; }
+.device-specs__item:hover { background: var(--gray-50); }
+.device-specs__icon {
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 11px;
+  background: rgba(47,111,237,.1); color: var(--blue-500);
+  display: flex; align-items: center; justify-content: center;
+}
+.device-specs__item h3 { font-size: 15px; color: var(--navy-900); margin-bottom: 3px; }
+.device-specs__item p { font-size: 13.5px; color: var(--gray-500); line-height: 1.5; }
+
+@media (max-width: 767px) {
+  .device-showcase__img { max-width: 300px; }
+}
 
 /* ==================== NOSOTROS / STACK PANEL ==================== */
 .stack-panel {
