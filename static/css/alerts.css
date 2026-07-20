@@ -7,32 +7,79 @@
   --text: #0f172a;
   --text-light: #64748b;
   --bg-card: rgba(255, 255, 255, 0.93);
-  --border-glass: rgba(255, 255, 255, 0.75);
+  --border-glass: rgba(226, 232, 240, 0.8);
   --success: #10b981;
   --warning: #f97316;
   --danger: #ef4444;
+  --neutral: #94a3b8;
+}
+
+.alerts-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 56px;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+.alerts-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 h1 {
-  font-size: 2.1rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 35px;
+  margin: 0;
 }
+
+.last-check {
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+/* ==================== RESUMEN ==================== */
+.summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.summary-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  color: var(--text-light);
+  font-weight: 500;
+}
+
+.summary-chip strong {
+  font-size: 15px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.summary-chip.critical strong { color: var(--danger); }
+.summary-chip.warning strong  { color: var(--warning); }
+.summary-chip.success strong  { color: var(--success); }
 
 /* Contenedor principal */
 .alerts-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 28px;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 20px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
 }
 
-.alerts-container h2 {
-  margin: 0 0 20px 0;
-  font-size: 1.55rem;
+.alerts-col h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.2rem;
   font-weight: 600;
   color: var(--text);
   display: flex;
@@ -40,50 +87,69 @@ h1 {
   gap: 10px;
 }
 
+.alerts-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 /* Tarjetas de alertas */
 .alert-item {
   background: var(--bg-card);
   backdrop-filter: blur(16px) saturate(180%);
-  border-radius: 18px;
-  padding: 20px;
-  margin-bottom: 14px;
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-bottom: 12px;
   box-shadow: 0 10px 25px -8px rgba(15, 23, 42, 0.1);
-  border-left: 6px solid transparent;
-  transition: all 0.25s ease;
+  border-left: 5px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: alertFadeIn .25s ease;
+}
+
+@keyframes alertFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .alert-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -10px rgba(15, 23, 42, 0.15);
 }
 
 /* Colores por nivel de alerta */
 .alert-item.success {
   border-left-color: var(--success);
-  background: rgba(209, 250, 229, 0.85);
+  background: rgba(209, 250, 229, 0.6);
 }
 
 .alert-item.warning {
   border-left-color: var(--warning);
-  background: rgba(254, 243, 199, 0.85);
+  background: rgba(254, 243, 199, 0.6);
 }
 
 .alert-item.critical {
   border-left-color: var(--danger);
-  background: rgba(254, 226, 226, 0.85);
+  background: rgba(254, 226, 226, 0.6);
+}
+
+/* "Sin datos todavía" — deliberadamente distinto de "success": no es lo
+   mismo "todo bien" que "no tenemos información para saberlo". */
+.alert-item.info {
+  border-left-color: var(--neutral);
+  background: rgba(226, 232, 240, 0.5);
 }
 
 /* Texto de alerta */
 .alert-text {
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text);
-  margin: 0 0 8px 0;
+  margin: 0 0 6px 0;
   line-height: 1.4;
 }
 
 .alert-time {
-  font-size: 13.2px;
+  font-size: 12.5px;
   color: var(--text-light);
   margin: 0;
 }
@@ -92,10 +158,12 @@ h1 {
 @media (max-width: 768px) {
   .alerts-container {
     grid-template-columns: 1fr;
-    padding: 0 15px;
   }
-  
   .alert-item {
-    padding: 18px;
+    padding: 14px 16px;
+  }
+  .alerts-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

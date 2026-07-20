@@ -6,23 +6,37 @@
 
 {% block content %}
 
-<h1>Centro de Alertas</h1>
+<div class="alerts-page">
 
-<div class="alerts-container">
-
-    <div id="alertasSistema">
-        <h2>⚠️ Sistema</h2>
-        <ul id="listaSistema"></ul>
+    <div class="alerts-header">
+        <h1>Centro de Alertas</h1>
+        <span class="last-check" id="lastCheck">Verificando...</span>
     </div>
 
-    <div id="alertasVacas">
-        <h2>🐄 Salud de Vacas</h2>
-        <ul id="listaVacas"></ul>
+    <!-- ===== RESUMEN GENERAL ===== -->
+    <div class="summary-strip" id="summaryStrip">
+        <span class="summary-chip critical"><strong id="countCritical">--</strong> críticas</span>
+        <span class="summary-chip warning"><strong id="countWarning">--</strong> advertencias</span>
+        <span class="summary-chip success"><strong id="countOk">--</strong> en orden</span>
     </div>
 
-    <div id="alertasSensores">
-        <h2>📡 Sensores</h2>
-        <ul id="listaSensores"></ul>
+    <div class="alerts-container">
+
+        <div id="alertasSistema" class="alerts-col">
+            <h2>⚠️ Sistema</h2>
+            <ul id="listaSistema"></ul>
+        </div>
+
+        <div id="alertasVacas" class="alerts-col">
+            <h2>🐄 Salud de Vacas</h2>
+            <ul id="listaVacas"></ul>
+        </div>
+
+        <div id="alertasSensores" class="alerts-col">
+            <h2>📡 Sensores</h2>
+            <ul id="listaSensores"></ul>
+        </div>
+
     </div>
 
 </div>
