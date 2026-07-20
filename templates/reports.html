@@ -3,200 +3,164 @@
 
 {% block content %}
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
-
 <div class="report-container">
 
-  <header class="report-header">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 6h18l10 11-14 17L8 17V6z" fill="currentColor" opacity="0.16"/>
-          <path d="M8 6h18l10 11-14 17L8 17V6z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-          <circle cx="16" cy="14" r="2.4" fill="currentColor"/>
-        </svg>
-      </span>
-      <div>
-        <h1>FarmWatch</h1>
-        <p class="brand-sub">Informe de monitoreo ganadero</p>
-      </div>
-    </div>
-    <div class="header-meta">
-      <span class="meta-dot" id="liveDot"></span>
-      <span id="headerStatus">Sin generar</span>
-    </div>
-  </header>
+<h1>Generar Informe</h1>
 
-  <section class="toolbar" aria-label="Filtros de informe">
-    <div class="field">
-      <label for="vaca">Animal</label>
-      <select id="vaca">
-        <option value="all">Todas</option>
-      </select>
+<!-- ===== FILTROS + RANGOS RÁPIDOS ===== -->
+<div class="report-filters">
+    <div class="filter-row">
+        <label>Vaca:</label>
+        <select id="vaca">
+            <option value="all">Todas</option>
+        </select>
+
+        <label>Inicio:</label>
+        <input type="date" id="inicio">
+
+        <label>Fin:</label>
+        <input type="date" id="fin">
+
+        <button id="generar">Generar informe</button>
     </div>
 
-    <div class="field">
-      <label for="inicio">Desde</label>
-      <input type="date" id="inicio">
+    <div class="quick-ranges">
+        <span class="quick-label">Rango rápido:</span>
+        <button class="quick-btn" data-range="today">Hoy</button>
+        <button class="quick-btn" data-range="7">Últimos 7 días</button>
+        <button class="quick-btn" data-range="30">Últimos 30 días</button>
+        <button class="quick-btn" data-range="all">Todo el historial</button>
     </div>
 
-    <div class="field">
-      <label for="fin">Hasta</label>
-      <input type="date" id="fin">
+    <div class="export-row">
+        <button class="export-btn" id="exportExcel" disabled>📊 Exportar Excel</button>
+        <button class="export-btn" id="exportPDF" disabled>📄 Exportar PDF</button>
     </div>
+</div>
 
-    <div class="toolbar-actions">
-      <button id="generar" class="btn btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h13M11 6l6 6-6 6"/></svg>
-        Generar informe
-      </button>
-      <button class="btn btn-ghost" id="exportPDF" disabled>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>
-        Exportar PDF
-      </button>
-    </div>
-  </section>
+<div id="errorBanner" class="error-banner" style="display:none;"></div>
 
-  <div id="emptyState" class="state-panel">
-    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19V6a2 2 0 012-2h7l5 5v10a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M13 4v5h5M8 13h8M8 17h5"/></svg>
-    <h2>Aún no hay ningún informe</h2>
-    <p>Elige un animal y un rango de fechas, luego pulsa «Generar informe» para ver sus datos de temperatura, ritmo cardíaco y ruta.</p>
-  </div>
+<!-- ===== ESTADO VACÍO (antes de generar el primer informe) ===== -->
+<div id="emptyState" class="empty-state">
+    <p><strong>Todavía no hay ningún informe generado.</strong></p>
+    <p>Elige una vaca y un rango de fechas (o usa un rango rápido) y presiona "Generar informe".</p>
+</div>
 
-  <div id="loadingState" class="state-panel" hidden>
-    <div class="spinner" aria-hidden="true"></div>
-    <p>Generando informe…</p>
-  </div>
+<!-- ===== RESULTADOS ===== -->
+<div id="resultsSection" style="display:none;">
 
-  <div id="reportContent" class="report-content" hidden>
-
-    <div id="alertBanner" class="alert-banner" hidden>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
-      <span id="alertText"></span>
-    </div>
-
-    <div class="analysis-box">
-      <span class="section-label">Análisis</span>
-      <p id="analisis"></p>
+    <!-- Resumen + estado de salud -->
+    <div class="summary-row">
+        <div class="analysis-box" id="analisis"></div>
+        <div class="health-badge" id="healthBadge">
+            <span class="health-score" id="healthScore">--</span>
+            <span class="health-label" id="healthLabel">--</span>
+        </div>
     </div>
 
     <div class="stats">
-      <div class="stat-card" id="card_temp_avg">
-        <span class="stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>
-        </span>
-        <div class="stat-body">
-          <h3 id="temp_avg">--</h3>
-          <p>Temp. promedio (°C)</p>
+        <div class="stat-card accent-temp">
+            <h3 id="temp_avg">--</h3>
+            <p>Temperatura promedio (°C)</p>
         </div>
-      </div>
-
-      <div class="stat-card" id="card_temp_max">
-        <span class="stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/><path d="M14 8h-3"/></svg>
-        </span>
-        <div class="stat-body">
-          <h3 id="temp_max">--</h3>
-          <p>Temp. máxima (°C)</p>
+        <div class="stat-card accent-temp">
+            <h3 id="temp_max">--</h3>
+            <p>Temperatura máxima (°C)</p>
         </div>
-      </div>
-
-      <div class="stat-card" id="card_hr_avg">
-        <span class="stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 8.6c0 5-8.8 10.4-8.8 10.4S3.2 13.6 3.2 8.6a4.6 4.6 0 018.8-1.9 4.6 4.6 0 018.8 1.9z"/></svg>
-        </span>
-        <div class="stat-body">
-          <h3 id="hr_avg">--</h3>
-          <p>Ritmo prom. (lpm)</p>
+        <div class="stat-card accent-hr">
+            <h3 id="hr_avg">--</h3>
+            <p>Ritmo cardíaco promedio (bpm)</p>
         </div>
-      </div>
-
-      <div class="stat-card" id="card_hr_max">
-        <span class="stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>
-        </span>
-        <div class="stat-body">
-          <h3 id="hr_max">--</h3>
-          <p>Ritmo máx. (lpm)</p>
+        <div class="stat-card accent-hr">
+            <h3 id="hr_max">--</h3>
+            <p>Ritmo cardíaco máximo (bpm)</p>
         </div>
-      </div>
-
-      <div class="stat-card stat-status" id="card_estado">
-        <span class="stat-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-        </span>
-        <div class="stat-body">
-          <span id="estado" class="status-pill">--</span>
-          <p>Estado del animal</p>
-        </div>
-      </div>
     </div>
 
+    <!-- Movimiento -->
+    <div class="section-card" id="movimientoCard">
+        <h3>Movimiento</h3>
+        <div class="movement-row">
+            <div class="movement-distance">
+                <span class="big-number" id="distancia_km">--</span>
+                <span class="big-number-label">km recorridos</span>
+            </div>
+            <div class="movement-zones">
+                <span class="zones-label">Zonas más frecuentadas</span>
+                <ul id="zonasList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnóstico del sistema -->
+    <div class="section-card" id="sistemaCard">
+        <h3>Diagnóstico del sistema</h3>
+        <p class="system-status" id="sistemaEstado">--</p>
+        <div class="sensor-bars" id="sensorBars"></div>
+        <p class="hint">Basado en <span id="totalRegistros">--</span> lecturas del periodo seleccionado.</p>
+    </div>
+
+    <!-- Gráficas -->
     <div class="charts">
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <h3><span class="legend-dot temp"></span>Temperatura corporal</h3>
-          <span class="chart-note">últimos 30 registros</span>
+        <div class="chart-card">
+            <h3>Temperatura</h3>
+            <small class="hint">Últimos 30 registros del periodo</small>
+            <canvas id="tempChart"></canvas>
         </div>
-        <canvas id="tempChart"></canvas>
-      </div>
-
-      <div class="chart-card">
-        <div class="chart-card-head">
-          <h3><span class="legend-dot hr"></span>Ritmo cardíaco</h3>
-          <span class="chart-note">últimos 30 registros</span>
+        <div class="chart-card">
+            <h3>Ritmo cardíaco</h3>
+            <small class="hint">Últimos 30 registros del periodo</small>
+            <canvas id="hrChart"></canvas>
         </div>
-        <canvas id="hrChart"></canvas>
-      </div>
     </div>
 
+    <!-- Mapa -->
     <div class="map-card">
-      <div class="chart-card-head">
-        <h3><span class="legend-dot route"></span>Ruta de movimiento</h3>
-        <span id="distanciaBadge" class="badge" hidden></span>
-      </div>
-      <div id="map"></div>
+        <h3>Ruta de movimiento</h3>
+        <div id="map"></div>
     </div>
 
+    <!-- Tabla paginada -->
     <div class="table-card">
-      <div class="chart-card-head">
-        <h3>Registros</h3>
-        <span id="tableCount" class="chart-note"></span>
-      </div>
-      <div class="table-scroll">
-        <table class="data-table" id="tabla">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Temp. (°C)</th>
-              <th>Ritmo (lpm)</th>
-              <th>Latitud</th>
-              <th>Longitud</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="table-pagination">
-        <button id="prevPage" class="page-btn" type="button">‹ Anterior</button>
-        <span id="pageIndicator">Página 1 de 1</span>
-        <button id="nextPage" class="page-btn" type="button">Siguiente ›</button>
-      </div>
+        <div class="table-header">
+            <h3>Registros del periodo</h3>
+            <span class="hint" id="tableCount">--</span>
+        </div>
+        <div class="table-scroll">
+            <table class="data-table" id="tabla">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Temperatura</th>
+                        <th>Ritmo cardíaco</th>
+                        <th>Latitud</th>
+                        <th>Longitud</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div class="pagination">
+            <button class="page-btn" id="page-prev">‹ Anterior</button>
+            <span class="page-info" id="page-info">Página 1 de 1</span>
+            <button class="page-btn" id="page-next">Siguiente ›</button>
+        </div>
     </div>
-
-  </div>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable"></script>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
 
 {% endblock %}

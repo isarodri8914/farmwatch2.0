@@ -11,7 +11,23 @@
     <button id="btnNuevaVaca" class="btn-primary">+ Nueva Vaca</button>
 </div>
 
+<!-- ===== LEYENDA DE ESTADOS ===== -->
+<div class="legend-strip">
+    <span class="legend-chip"><span class="dot dot-ok"></span> Saludable</span>
+    <span class="legend-chip"><span class="dot dot-alert"></span> En alerta</span>
+    <span class="legend-chip"><span class="dot dot-offline"></span> Sin datos recientes</span>
+    <span class="legend-note">El estado se calcula con la última lectura de su sensor, no es un dato que se escriba a mano.</span>
+</div>
+
+<div id="errorBanner" class="error-banner" style="display:none;"></div>
+
 <div class="apple-card table-wrapper">
+
+    <div class="table-toolbar">
+        <input type="text" id="searchCow" placeholder="Buscar por nombre, raza o identificador...">
+        <span class="hint" id="cowCount">-- vacas registradas</span>
+    </div>
+
     <table class="apple-table">
         <thead>
             <tr>
@@ -19,6 +35,7 @@
                 <th>Nombre</th>
                 <th>Raza</th>
                 <th>Edad</th>
+                <th>Peso</th>
                 <th>Estado</th>
                 <th>Acciones</th>
             </tr>
@@ -35,29 +52,27 @@
     <div class="modal-content">
         <h2 id="modalTitulo">Nueva vaca</h2>
 
-        <label>Identificador del ESP32:</label>
+        <div id="formError" class="form-error" style="display:none;"></div>
+
+        <label>Identificador del ESP32: <span class="req">*</span></label>
         <select id="selectIdVaca">
             <option value="">-- Selecciona una vaca detectada --</option>
-            <option value="vaca 1">vaca 1</option>
-            <option value="vaca 2">vaca 2</option>
-            <option value="vaca 3">vaca 3</option>
-            <option value="vaca 4">vaca 4</option>
         </select>
 
-        <label>Nombre:</label>
-        <input id="inputNombre">
+        <label>Nombre: <span class="req">*</span></label>
+        <input id="inputNombre" placeholder="Ej. Canela">
 
         <label>Raza:</label>
-        <input id="inputRaza">
+        <input id="inputRaza" placeholder="Ej. Holstein">
 
-        <label>Edad:</label>
-        <input type="number" id="inputEdad">
+        <label>Edad (años):</label>
+        <input type="number" min="0" id="inputEdad">
 
         <label>Peso (kg):</label>
-        <input type="number" id="inputPeso">
+        <input type="number" min="0" id="inputPeso">
 
         <label>Notas:</label>
-        <textarea id="inputNotas"></textarea>
+        <textarea id="inputNotas" placeholder="Cualquier detalle que quieras recordar sobre esta vaca..."></textarea>
 
         <div class="modal-footer">
             <button class="btn-secondary" id="btnCancelar">Cancelar</button>
@@ -66,13 +81,15 @@
     </div>
 </div>
 
-<!-- MODAL HISTORIAL -->
+<!-- MODAL ÚLTIMA LECTURA -->
 <div id="modalHistorial" class="modal hidden">
     <div class="modal-content">
-        <h2>Historial de la vaca</h2>
+        <h2>Última lectura registrada</h2>
+        <p class="modal-subtitle">Este es el dato más reciente de su sensor, no el historial completo.</p>
         <ul id="listaHistorial"></ul>
 
-        <div class="modal-footer">
+        <div class="modal-footer modal-footer-split">
+            <a class="btn-secondary" id="btnVerReporte" href="/reports">Ver informe completo</a>
             <button class="btn-primary" id="btnCerrarHistorial">Cerrar</button>
         </div>
     </div>
