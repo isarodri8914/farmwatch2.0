@@ -13,46 +13,64 @@
     <!-- =================== UMBRALES =================== -->
     <div class="card">
         <h2>Umbrales de alerta</h2>
-<div class="table-wrapper">
-        <table class="table">
-            <tr>
-                <th>Parámetro</th>
-                <th>Valor actual</th>
-                <th>Modificar</th>
-            </tr>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Valor actual</th>
+                        <th>Modificar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Temperatura Máxima</td>
+                        <td id="tempMaxValue">39.5 °C</td>
+                        <td><button class="btn" onclick="openEditModal('Temperatura Máxima', 'tempMaxValue')">Editar</button></td>
+                    </tr>
 
-            <tr>
-                <td>Temperatura Máxima</td>
-                <td id="tempMaxValue">39.5 °C</td>
-                <td><button class="btn" onclick="openEditModal('Temperatura Máxima', 'tempMaxValue')">Editar</button></td>
-            </tr>
+                    <tr>
+                        <td>Temperatura Mínima</td>
+                        <td id="tempMinValue">36.5 °C</td>
+                        <td><button class="btn" onclick="openEditModal('Temperatura Mínima', 'tempMinValue')">Editar</button></td>
+                    </tr>
 
-            <tr>
-                <td>Temperatura Mínima</td>
-                <td id="tempMinValue">36.5 °C</td>
-                <td><button class="btn" onclick="openEditModal('Temperatura Mínima', 'tempMinValue')">Editar</button></td>
-            </tr>
+                    <tr>
+                        <td>Ritmo Cardíaco Máximo</td>
+                        <td id="hrMaxValue">110 bpm</td>
+                        <td><button class="btn" onclick="openEditModal('Ritmo Cardíaco Máximo', 'hrMaxValue')">Editar</button></td>
+                    </tr>
 
-            <tr>
-                <td>Ritmo Cardíaco Máximo</td>
-                <td id="hrMaxValue">110 bpm</td>
-                <td><button class="btn" onclick="openEditModal('Ritmo Cardíaco Máximo', 'hrMaxValue')">Editar</button></td>
-            </tr>
-        </table>
+                    <tr>
+                        <td>
+                            Ritmo Cardíaco en Reposo
+                            <span class="field-hint">Se usa para calcular el Gasto Calórico en el dashboard</span>
+                        </td>
+                        <td id="hrReposoValue">60 bpm</td>
+                        <td><button class="btn" onclick="openEditModal('Ritmo Cardíaco en Reposo', 'hrReposoValue')">Editar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
     <!-- =================== LISTA DE SENSORES =================== -->
-<div class="card">
-    <h2>Sensores instalados</h2>
+    <div class="card">
+        <div class="card-title-row">
+            <h2>Sensores instalados</h2>
+            <span class="last-check" id="lastCheck"></span>
+        </div>
 
-    <div id="sensor-grid" class="sensor-grid">
-        <!-- Se llenará con JS -->
+        <div class="legend-strip">
+            <span class="legend-chip"><span class="dot dot-ok"></span> Activo</span>
+            <span class="legend-chip"><span class="dot dot-warn"></span> Sin señal (revisar cableado/posición)</span>
+            <span class="legend-chip"><span class="dot dot-offline"></span> Offline (sin conexión del todo)</span>
+        </div>
+
+        <div id="sensor-grid" class="sensor-grid">
+            <!-- Se llenará con JS -->
+        </div>
     </div>
-    </div>
-
-
-
 
 </div>
 
@@ -61,16 +79,19 @@
     <div class="modal-content">
         <h3 id="modalTitle"></h3>
 
-        <input type="text" id="newValue" placeholder="Nuevo valor">
+        <div id="modalError" class="modal-error" style="display:none;"></div>
+
+        <input type="number" step="0.1" id="newValue" placeholder="Nuevo valor">
 
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-            <button class="btn-save" onclick="saveValue()">Guardar</button>
+            <button class="btn-save" id="btnSaveValue" onclick="saveValue()">Guardar</button>
         </div>
     </div>
 </div>
 
-
+<!-- =================== TOAST DE CONFIRMACIÓN =================== -->
+<div id="toast" class="toast"></div>
 
 {% endblock %}
 
