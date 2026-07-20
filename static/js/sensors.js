@@ -1,5 +1,30 @@
 let currentField = null;
 
+// Umbrales cargados del servidor — se usan también para validar que, por
+// ejemplo, la temperatura mínima no termine siendo mayor que la máxima.
+let umbralesActuales = { temp_max: null, temp_min: null, hr_max: null, hr_reposo: null };
+
+const CLAVE_POR_CAMPO = {
+    tempMaxValue: "temp_max",
+    tempMinValue: "temp_min",
+    hrMaxValue: "hr_max",
+    hrReposoValue: "hr_reposo"
+};
+
+// ==========================
+// TOAST (reemplaza los alert() de antes)
+// ==========================
+let toastTimeout = null;
+function showToast(msg, tipo = "success") {
+    const toast = document.getElementById("toast");
+    clearTimeout(toastTimeout);
+    toast.textContent = msg;
+    toast.className = "toast show " + tipo;
+    toastTimeout = setTimeout(() => {
+        toast.className = "toast " + tipo;
+    }, 2800);
+}
+
 // ==========================
 // MODAL EDITAR UMBRALES
 // ==========================
@@ -7,10 +32,17 @@ function openEditModal(title, fieldId) {
     currentField = fieldId;
 
     document.getElementById("modalTitle").innerText = "Editar " + title;
-    document.getElementById("newValue").value = "";
-    
+    document.getElementById("modalError").style.display = "none";
+
+    // Prellenar con el valor actual (antes quedaba vacío y había que
+    // recordar/retipear el número desde cero).
+    const clave = CLAVE_POR_CAMPO[fieldId];
+    const valorActual = umbralesActuales[clave];
+    document.getElementById("newValue").value = (valorActual !== null && valorActual !== undefined) ? valorActual : "";
+
     const modal = document.getElementById("editModal");
     modal.classList.add("show");
+    document.getElementById("newValue").focus();
 }
 
 function closeModal() {
@@ -18,22 +50,42 @@ function closeModal() {
     modal.classList.remove("show");
 }
 
+function mostrarErrorModal(msg) {
+    const el = document.getElementById("modalError");
+    el.textContent = msg;
+    el.style.display = "block";
+}
+
 async function saveValue() {
     let newValue = document.getElementById("newValue").value.trim();
 
     if (newValue === "" || isNaN(newValue)) {
-        alert("Ingresa un valor numérico válido");
+        mostrarErrorModal("Ingresa un valor numérico válido.");
         return;
     }
 
     const valor = parseFloat(newValue);
+    const clave = CLAVE_POR_CAMPO[currentField];
+    if (!clave) return;
 
-    // Mapear el campo actual a la clave de BD
-    let clave;
-    if (currentField === "tempMaxValue") clave = "temp_max";
-    else if (currentField === "tempMinValue") clave = "temp_min";
-    else if (currentField === "hrMaxValue") clave = "hr_max";
-    else return;
+    // Validaciones de sentido común contra los otros umbrales ya cargados.
+    if (clave === "temp_max" && umbralesActuales.temp_min !== null && valor <= umbralesActuales.temp_min) {
+        mostrarErrorModal(`Debe ser mayor que la temperatura mínima actual (${umbralesActuales.temp_min} °C).`);
+        return;
+    }
+    if (clave === "temp_min" && umbralesActuales.temp_max !== null && valor >= umbralesActuales.temp_max) {
+        mostrarErrorModal(`Debe ser menor que la temperatura máxima actual (${umbralesActuales.temp_max} °C).`);
+        return;
+    }
+    if ((clave === "hr_max" || clave === "hr_reposo") && valor <= 0) {
+        mostrarErrorModal("Debe ser un valor mayor que cero.");
+        return;
+    }
+
+    const btn = document.getElementById("btnSaveValue");
+    const textoOriginal = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Guardando...";
 
     try {
         const res = await fetch(`/api/config/umbral/${clave}`, {
@@ -44,37 +96,44 @@ async function saveValue() {
 
         if (!res.ok) {
             const err = await res.json();
-            alert("Error al guardar: " + (err.error || "Desconocido"));
+            mostrarErrorModal("Error al guardar: " + (err.error || "Desconocido"));
             return;
         }
 
-        // Actualizar visualmente
         const unidad = clave.includes("temp") ? " °C" : " bpm";
         document.getElementById(currentField).innerText = valor + unidad;
-        
+        umbralesActuales[clave] = valor;
+
         closeModal();
-        alert("Umbral actualizado correctamente");
-        
+        showToast("Umbral actualizado correctamente", "success");
+
     } catch (err) {
         console.error(err);
-        alert("Error de conexión al guardar");
+        mostrarErrorModal("Error de conexión al guardar.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = textoOriginal;
     }
 }
 
-// Cerrar modal al hacer clic fuera del contenido
-document.getElementById("editModal").addEventListener("click", function(e) {
-    if (e.target === this) {
-        closeModal();
-    }
+// Cerrar modal al hacer clic fuera del contenido, o con Escape
+document.getElementById("editModal").addEventListener("click", function (e) {
+    if (e.target === this) closeModal();
+});
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.getElementById("editModal").classList.contains("show")) closeModal();
 });
 
 // ==========================
 // MAPEAR ESTADO VISUAL
 // ==========================
+// "Sin señal" se trata como advertencia (naranja), no como el mismo nivel
+// de gravedad que un fallo total — antes ambos casos se veían igual de
+// "peligrosos" en rojo, sin distinguir severidad.
 function mapStatus(status) {
     switch (status) {
         case "Activo": return "status-ok";
-        case "Sin señal": return "status-danger";
+        case "Sin señal": return "status-warn";
         case "Offline": return "status-offline";
         default: return "";
     }
@@ -122,15 +181,15 @@ function evaluateSensors(datos) {
     const gyroY = datos.map(d => d.gyro_y);
     const gyroZ = datos.map(d => d.gyro_z);
 
-    const mpuCongelado = sensorEstaCongelado(gyroX) && 
-                         sensorEstaCongelado(gyroY) && 
+    const mpuCongelado = sensorEstaCongelado(gyroX) &&
+                         sensorEstaCongelado(gyroY) &&
                          sensorEstaCongelado(gyroZ);
 
     // ===== MAX30100 =====
     const ritmos = datos.map(d => d.ritmo_cardiaco);
     const oxigenos = datos.map(d => d.oxigeno);
 
-    const maxCongelado = sensorEstaCongelado(ritmos) && 
+    const maxCongelado = sensorEstaCongelado(ritmos) &&
                          sensorEstaCongelado(oxigenos);
 
     return [
@@ -184,13 +243,16 @@ async function loadSensors() {
                     <div class="sensor-name">${s.name}</div>
                     <div class="sensor-icon">${s.icon}</div>
                 </div>
-                <p>${s.type}</p>
+                <p>${s.type || ""}</p>
                 <span class="sensor-status ${mapStatus(s.status)}">
                     ${s.status}
                 </span>
             </div>
         `;
     });
+
+    document.getElementById("lastCheck").textContent =
+        "Última verificación: " + new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 // ==========================
@@ -204,13 +266,23 @@ async function loadUmbrales() {
         const umbrales = await res.json();
 
         if (umbrales.temp_max !== undefined) {
+            umbralesActuales.temp_max = Number(umbrales.temp_max);
             document.getElementById("tempMaxValue").innerText = umbrales.temp_max + " °C";
         }
         if (umbrales.temp_min !== undefined) {
+            umbralesActuales.temp_min = Number(umbrales.temp_min);
             document.getElementById("tempMinValue").innerText = umbrales.temp_min + " °C";
         }
         if (umbrales.hr_max !== undefined) {
+            umbralesActuales.hr_max = Number(umbrales.hr_max);
             document.getElementById("hrMaxValue").innerText = umbrales.hr_max + " bpm";
+        }
+        // hr_reposo alimenta la fórmula de Gasto Calórico del dashboard.
+        // Antes solo se podía cambiar mandando un PUT a mano a la API;
+        // ahora tiene su fila aquí igual que los demás umbrales.
+        if (umbrales.hr_reposo !== undefined) {
+            umbralesActuales.hr_reposo = Number(umbrales.hr_reposo);
+            document.getElementById("hrReposoValue").innerText = umbrales.hr_reposo + " bpm";
         }
     } catch (err) {
         console.error("Error cargando umbrales:", err);
@@ -222,4 +294,6 @@ async function loadUmbrales() {
 // ==========================
 loadUmbrales();
 loadSensors();
-setInterval(loadSensors, 5000);
+// Antes se pedía cada 5s; los sensores solo reportan cada ~15s, así que
+// no había información nueva que justificara ese ritmo.
+setInterval(loadSensors, 15000);
