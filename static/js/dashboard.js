@@ -29,8 +29,8 @@ function initMap() {
   // Clasificador lógico de comportamiento (Para el reporte de ingeniería)
     function obtenerEstadoVaca(magnitud) {
         if (!magnitud || magnitud < 0.3) return "Reposo";
-        if (magnitud < 1.8) return "Rumia/Descanso";
-        if (magnitud < 4.5) return "Pastoreo";
+        if (magnitud < 1.4) return "Rumia/Descanso";
+        if (magnitud < 5) return "Pastoreo";
         return "Actividad Alta";
     }
 
