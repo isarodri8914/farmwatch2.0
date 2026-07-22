@@ -378,7 +378,7 @@ async function updateCharts() {
       cows.forEach(cow => {
         if (!cow.lat || !cow.lng) return;
 
-        // --- CÁLCULO DE COMPORTAMIENTO (Uso de la función antes transparente) ---
+        // --- CALCULAMOS LA MAGNITUD ---
         // Si tu API no manda 'actividad', calculamos la norma si vienen gyro_x, y, z
         const intensidad = cow.actividad || 
                            (cow.gyro_x ? Math.sqrt(Math.pow(cow.gyro_x,2) + Math.pow(cow.gyro_y,2) + Math.pow(cow.gyro_z,2)) : 0);
