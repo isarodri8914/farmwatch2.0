@@ -34,6 +34,15 @@ WAZUH_INDEXER_USER = os.environ.get("WAZUH_INDEXER_USER")
 WAZUH_INDEXER_PASSWORD = os.environ.get("WAZUH_INDEXER_PASSWORD")
 WAZUH_ALERTS_INDEX = os.environ.get("WAZUH_ALERTS_INDEX", "wazuh-alerts-*")
 
+# El contenedor de Cloud Run no está en tu red local ni tiene una IP pública
+# alcanzable para tu servidor Wazuh (192.168.1.253) — así que en vez de
+# conectarse directo, todo el tráfico hacia el indexer se enruta por el
+# proxy SOCKS5 que expone tailscaled (ver entrypoint.sh), que sí sabe cómo
+# llegar a tu Tailnet. WAZUH_INDEXER_URL debe usar la IP de Tailscale del
+# servidor Wazuh (ej. https://100.87.37.91:9200), no la IP local ni pública.
+TAILSCALE_SOCKS5 = "socks5h://127.0.0.1:1055"
+WAZUH_PROXIES = {"http": TAILSCALE_SOCKS5, "https": TAILSCALE_SOCKS5}
+
 # ---------------------------------------------------------------------------
 # AJUSTA ESTE MAPEO a los nombres reales de tus agentes en Wazuh.
 # Es lo que traduce "qué agente mandó la alerta" a "categoría de negocio"
@@ -81,6 +90,7 @@ def _query(body):
         f"{WAZUH_INDEXER_URL}/{WAZUH_ALERTS_INDEX}/_search",
         json=body,
         auth=(WAZUH_INDEXER_USER, WAZUH_INDEXER_PASSWORD),
+        proxies=WAZUH_PROXIES,
         verify=False,  # ver nota de seguridad arriba
         timeout=15
     )
@@ -163,6 +173,7 @@ def agentes_activos():
     resp = requests.get(
         f"{WAZUH_INDEXER_URL.replace(':9200', ':55000')}/agents/summary/status",
         auth=(WAZUH_INDEXER_USER, WAZUH_INDEXER_PASSWORD),
+        proxies=WAZUH_PROXIES,
         verify=False,
         timeout=10
     )

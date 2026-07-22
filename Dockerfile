@@ -2,18 +2,18 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
+# --- Tailscale (modo userspace, sin privilegios especiales de red) ---
+RUN apt-get update && apt-get install -y curl gnupg ca-certificates \
+    && curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg \
+    && curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list \
+    && apt-get update && apt-get install -y tailscale \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# --preload: gunicorn importa app.py UNA vez en el proceso maestro, antes
-# de bootear workers. Si algo como el "import requests" faltante vuelve a
-# pasar, el contenedor falla inmediatamente con un traceback claro en los
-# logs, en vez de repetir el ciclo de "Booting worker -> WORKER TIMEOUT"
-# que acabamos de diagnosticar a ciegas.
-#
-# --workers 2: explícito en vez de dejarlo en el default silencioso.
-# --timeout 60: un poco más de margen que los 30s por defecto, útil
-# mientras las consultas a Cloud SQL o a Wazuh todavía no están optimizadas.
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--timeout", "60", "--preload", "app:app"]
+ENTRYPOINT ["/entrypoint.sh"]
