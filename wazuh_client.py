@@ -13,6 +13,10 @@ para la base de datos):
     WAZUH_INDEXER_PASSWORD
     WAZUH_ALERTS_INDEX      opcional, por defecto "wazuh-alerts-*"
 
+Estas 4 variables se configuran en Cloud Run (Variables de entorno),
+igual que ya tienes DB_USER, DB_PASSWORD, etc. — NUNCA se escriben aquí
+adentro del archivo.
+
 IMPORTANTE DE SEGURIDAD:
 - Estas credenciales viven SOLO en el servidor (variables de entorno),
   nunca en el HTML/JS del dashboard, igual que ya haces con DB_USER/DB_PASSWORD.
