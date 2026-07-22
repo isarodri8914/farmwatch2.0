@@ -26,8 +26,8 @@ import requests
 from datetime import datetime, timedelta, timezone
 
 WAZUH_INDEXER_URL = os.environ.get("WAZUH_INDEXER_URL", "https://localhost:9200")
-WAZUH_INDEXER_USER = os.environ.get("admin")
-WAZUH_INDEXER_PASSWORD = os.environ.get("?67OUiy5.bTNoZMdmgizELrr*V.T?vsU")
+WAZUH_INDEXER_USER = os.environ.get("WAZUH_INDEXER_USER")
+WAZUH_INDEXER_PASSWORD = os.environ.get("WAZUH_INDEXER_PASSWORD")
 WAZUH_ALERTS_INDEX = os.environ.get("WAZUH_ALERTS_INDEX", "wazuh-alerts-*")
 
 # ---------------------------------------------------------------------------
