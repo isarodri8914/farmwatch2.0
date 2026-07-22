@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmWatch SOC — Dashboard Ejecutivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg: #0c1220;
+    --bg-grid: #0f1626;
+    --surface: #141c30;
+    --surface-2: #1a2338;
+    --border: #263149;
+    --text: #e8ecf4;
+    --text-muted: #8a93a6;
+    --text-faint: #5b6479;
+    --teal: #1ec9b7;
+    --amber: #f5a623;
+    --red: #e5484d;
+    --blue: #5b8cff;
+
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  html, body {
+    margin: 0;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(30,201,183,0.08), transparent 40%),
+      radial-gradient(circle at 85% 10%, rgba(91,140,255,0.07), transparent 45%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.5;
+  }
+
+  a { color: var(--teal); }
+
+  .wrap {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* ============ HEADER ============ */
+  .topbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--teal), var(--blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: #06110f;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .brand-text .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  .brand-text h1 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 2px 0 0;
+    color: var(--text);
+  }
+
+  .meta-block {
+    text-align: right;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .meta-block .period {
+    font-family: var(--font-mono);
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  .demo-banner {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(245, 166, 35, 0.1);
+    border: 1px solid rgba(245, 166, 35, 0.35);
+    color: var(--amber);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    padding: 6px 12px;
+    border-radius: 8px;
+  }
+
+  /* ============ HERO: GAUGE + SUPPORTING STATS ============ */
+  .hero {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  .gauge-card, .side-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .gauge-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .card-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .gauge-svg-wrap { position: relative; width: 230px; height: 188px; margin-top: 6px; }
+
+  .gauge-number {
+    position: absolute;
+    left: 0; right: 0; bottom: 34px;
+    font-family: var(--font-mono);
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .gauge-band {
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 2px;
+    color: var(--amber);
+  }
+
+  .gauge-foot {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    max-width: 240px;
+  }
+
+  .side-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  .side-card .stat-value {
+    font-family: var(--font-mono);
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .side-card .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .trend {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-top: 8px;
+  }
+  .trend.down { color: var(--teal); background: rgba(30,201,183,0.12); }
+  .trend.up { color: var(--red); background: rgba(229,72,77,0.12); }
+  .trend.flat { color: var(--text-muted); background: rgba(138,147,166,0.12); }
+
+  /* ============ SECTION TITLES ============ */
+  .section {
+    margin-bottom: 28px;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text);
+  }
+
+  .section-head .section-sub {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    font-family: var(--font-mono);
+  }
+
+  /* ============ KPI STRIP ============ */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .kpi-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .kpi-value {
+    font-family: var(--font-mono);
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .kpi-name {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .kpi-formula {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ============ ANALYST NOTE ============ */
+  .analyst-note {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 14px;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+  .analyst-note .tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--teal);
+    letter-spacing: 0.08em;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .analyst-note strong { color: var(--text); }
+
+  /* ============ TWO COLUMN ============ */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+  }
+
+  .chart-box { position: relative; height: 260px; }
+
+  /* ============ MITRE TABLE ============ */
+  table.mitre {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  table.mitre th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.mitre td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(38,49,73,0.6);
+    color: var(--text);
+  }
+  table.mitre .tid { font-family: var(--font-mono); color: var(--text-muted); }
+
+  .pill {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.detected { background: rgba(30,201,183,0.14); color: var(--teal); }
+  .pill.partial  { background: rgba(245,166,35,0.14); color: var(--amber); }
+  .pill.none     { background: rgba(229,72,77,0.14); color: var(--red); }
+
+  /* ============ RISK + MATURITY ROW ============ */
+  .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; align-items: start; }
+
+  /* ============ COMPLIANCE METERS ============ */
+  .meter-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 50px;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .meter-track {
+    height: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .meter-fill { height: 100%; border-radius: 999px; background: var(--blue); }
+  .meter-val { font-family: var(--font-mono); text-align: right; color: var(--text-muted); }
+
+  .disclaimer-inline {
+    font-size: 11.5px;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+
+  /* ============ RECOMMENDATIONS ============ */
+  .reco-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .reco-item {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .reco-num {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--teal);
+    align-self: start;
+  }
+  .reco-item h3 {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    margin: 0 0 6px;
+    color: var(--text);
+  }
+  .reco-item p { margin: 0; font-size: 13.5px; color: var(--text-muted); }
+  .reco-impact {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
+  /* ============ MATURITY LEVELS ============ */
+  .maturity-track {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .maturity-step {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+  .maturity-step.current {
+    background: rgba(30,201,183,0.14);
+    border-color: var(--teal);
+    color: var(--teal);
+    font-weight: 700;
+  }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-faint);
+    line-height: 1.7;
+  }
+
+  @media (max-width: 980px) {
+    .hero, .two-col, .grid-2 { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .side-stats { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 560px) {
+    .kpi-grid, .side-stats { grid-template-columns: 1fr 1fr; }
+    .meta-block { text-align: left; }
+    .topbar { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= HEADER ================= -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">FW</div>
+      <div class="brand-text">
+        <div class="eyebrow">Security Operations Center</div>
+        <h1>FarmWatch — Dashboard Ejecutivo SOC</h1>
+      </div>
+    </div>
+    <div class="meta-block">
+      <div class="period">Periodo: Q3 2026 (jul–sep)</div>
+      <div>Preparado para: Dirección General / Comité Ejecutivo</div>
+      <div class="demo-banner">⚠ Datos ilustrativos — actividad académica HEGDSI-P3-A4</div>
+    </div>
+  </div>
+
+  <!-- ================= HERO: RISK GAUGE ================= -->
+  <div class="hero">
+    <div class="gauge-card">
+      <div class="card-label">Índice de riesgo compuesto</div>
+      <div class="gauge-svg-wrap">
+        <svg id="gaugeSvg" viewBox="0 0 230 180" width="230" height="188"></svg>
+        <div class="gauge-number" id="gaugeNumber">32</div>
+      </div>
+      <div class="gauge-band" id="gaugeBand">Riesgo bajo–medio</div>
+      <p class="gauge-foot">Promedio ponderado del riesgo residual en Cloud, IoT, Identidad, Red y Aplicación Web (escala 0–100, menor es mejor).</p>
+    </div>
+
+    <div class="side-card">
+      <div class="card-label" style="margin-bottom:16px;">Contexto ejecutivo del trimestre</div>
+      <div class="side-stats">
+        <div>
+          <div class="stat-value">3<span style="font-size:1.1rem;color:var(--text-faint);">/5</span></div>
+          <div class="stat-label">Nivel de madurez SOC<br>(Definido)</div>
+        </div>
+        <div>
+          <div class="stat-value">64%</div>
+          <div class="stat-label">Cobertura MITRE ATT&CK<br>(técnicas en alcance)</div>
+        </div>
+        <div>
+          <div class="stat-value">14</div>
+          <div class="stat-label">Incidentes críticos<br>en el trimestre</div>
+          <span class="trend down">↓ 22% vs. Q2</span>
+        </div>
+      </div>
+      <div class="analyst-note" style="margin-top:20px;">
+        <span class="tag">LECTURA EJECUTIVA</span>
+        El riesgo compuesto bajó de un estimado de 75 a 32 puntos desde que el SOC entró en operación (–57%). La mayor exposición restante está en <strong>IoT</strong> (sensores de campo) y <strong>Cloud</strong>, que concentran el 47% de los incidentes confirmados del trimestre.
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= KPI STRIP ================= -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Indicadores clave (KPIs)</h2>
+      <span class="section-sub">MTTD / MTTR — Q3 2026</span>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-value">8.4<span style="font-size:1rem;">min</span></span></div>
+        <div class="kpi-name">MTTD — Tiempo medio de detección</div>
+        <span class="trend down">↓ 41% vs. 14.2 min (Q2)</span>
+        <div class="kpi-formula">MTTD = Σ(hora de alerta − hora del evento) / nº incidentes.<br>Ej.: un login de fuerza bruta ocurrido a las 10:00 y alertado a las 10:07 aporta 7 min al promedio.</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-value">37<span style="font-size:1rem;">min</span></span></div>
+        <div class="kpi-name">MTTR — Tiempo medio de respuesta</div>
+        <span class="trend down">↓ 29% vs. 52 min (Q2)</span>
+        <div class="kpi-formula">MTTR = Σ(hora de cierre − hora de detección) / nº incidentes.<br>Ej.: un escaneo Nmap detectado a las 14:00 y contenido a las 14:25 aporta 25 min.</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-value">14</span></div>
+        <div class="kpi-name">Incidentes críticos (9% del total confirmado)</div>
+        <span class="trend down">↓ 22% vs. Q2</span>
+        <div class="kpi-formula">Incidentes con impacto potencial alto: exposición de datos de sensores, acceso no autorizado a Cloud SQL o caída de servicio.</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top"><span class="kpi-value">28.8<span style="font-size:1rem;">%</span></span></div>
+        <div class="kpi-name">Falsos positivos (63 de 219 alertas escaladas)</div>
+        <span class="trend flat">≈ estable vs. Q2</span>
+        <div class="kpi-formula">Consumen tiempo de analista sin aportar riesgo real. Meta: bajar de ~29% a menos de 15% con tuning trimestral de reglas.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INCIDENTS + MITRE ================= -->
+  <div class="section">
+    <div class="two-col">
+      <div class="panel">
+        <div class="section-head"><h2>Incidentes por categoría</h2></div>
+        <div class="chart-box"><canvas id="chartCategorias"></canvas></div>
+        <div class="analyst-note">
+          <span class="tag">¿QUÉ SIGNIFICA?</span>
+          IoT (27%) y Cloud (20%) concentran casi la mitad de los incidentes confirmados. <strong>Decisión sugerida:</strong> priorizar el refuerzo de detección en la capa de sensores antes de invertir más en la capa de red, que ya es la de menor volumen.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-head">
+          <h2>Cobertura MITRE ATT&CK</h2>
+          <span class="section-sub">Técnicas en el alcance del proyecto</span>
+        </div>
+        <table class="mitre">
+          <thead>
+            <tr><th>Táctica</th><th>Técnica</th><th>Estado</th><th>Reglas</th><th>Cobertura</th></tr>
+          </thead>
+          <tbody id="mitreBody"></tbody>
+        </table>
+        <div class="analyst-note">
+          <span class="tag">¿POR QUÉ IMPORTA?</span>
+          9 de 13 técnicas relevantes tienen detección activa (64%). La exfiltración de datos (<strong>T1041</strong>) es la brecha más importante: hoy no dispara ninguna regla. Ver recomendación P4.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= RISK REDUCTION + MATURITY ================= -->
+  <div class="section">
+    <div class="grid-2">
+      <div class="panel">
+        <div class="section-head"><h2>Riesgo antes / después del SOC</h2><span class="section-sub">Escala 0–100, menor es mejor</span></div>
+        <div class="chart-box"><canvas id="chartRiesgo"></canvas></div>
+        <div class="analyst-note">
+          <span class="tag">IMPACTO</span>
+          La reducción más marcada es en <strong>IoT</strong> (85→38) e <strong>Identidad</strong> (72→29), gracias a las reglas de fuerza bruta y cuentas válidas. El impacto de negocio: menos ventanas de exposición de datos del ganado y del acceso administrativo.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-head"><h2>Modelo de madurez</h2></div>
+        <div class="chart-box" style="height:220px;"><canvas id="chartMadurez"></canvas></div>
+        <div class="maturity-track">
+          <div class="maturity-step">1<br>Inicial</div>
+          <div class="maturity-step">2<br>Repetible</div>
+          <div class="maturity-step current">3<br>Definido</div>
+          <div class="maturity-step">4<br>Gestionado</div>
+          <div class="maturity-step">5<br>Optimizado</div>
+        </div>
+        <div class="analyst-note">
+          <span class="tag">JUSTIFICACIÓN</span>
+          Procesos documentados y reglas mapeadas a MITRE (Definido), pero sin automatización de respuesta ni métricas de mejora continua formalizadas (lo que exigiría Nivel 4). <strong>Automatización</strong> es el eje más débil (2/5) — ver recomendación P2.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= COMPLIANCE ================= -->
+  <div class="section">
+    <div class="panel">
+      <div class="section-head">
+        <h2>Nivel de cumplimiento estimado</h2>
+        <span class="section-sub">Autoevaluación interna — no es una certificación</span>
+      </div>
+      <div id="meterList"></div>
+      <p class="disclaimer-inline">Estos porcentajes son una estimación cualitativa del equipo del proyecto contra cada marco, con fines de referencia interna. No sustituyen una auditoría o certificación formal.</p>
+    </div>
+  </div>
+
+  <!-- ================= RECOMMENDATIONS ================= -->
+  <div class="section">
+    <div class="section-head">
+      <h2>Recomendaciones del CISO</h2>
+      <span class="section-sub">Ordenadas por prioridad de implementación</span>
+    </div>
+    <div class="reco-list">
+      <div class="reco-item">
+        <div class="reco-num">P1</div>
+        <div>
+          <h3>Implementar MFA en accesos administrativos</h3>
+          <p>Cloud Run, Cloud SQL y Active Directory hoy dependen de usuario/contraseña. Es la mitigación directa contra T1078 (Valid Accounts), la técnica con más incidentes confirmados de acceso.</p>
+          <span class="reco-impact">Impacto esperado: -40% incidentes de credential access</span>
+        </div>
+      </div>
+      <div class="reco-item">
+        <div class="reco-num">P2</div>
+        <div>
+          <h3>Automatizar respuesta (SOAR) para fuerza bruta y escaneos</h3>
+          <p>Estos dos escenarios concentran el mayor volumen de alertas repetitivas. Bloquear automáticamente tras un umbral de intentos reduciría el MTTR sin intervención manual.</p>
+          <span class="reco-impact">Impacto esperado: MTTR de 37 a &lt;15 min en estos escenarios</span>
+        </div>
+      </div>
+      <div class="reco-item">
+        <div class="reco-num">P3</div>
+        <div>
+          <h3>Ampliar detección en la capa IoT</h3>
+          <p>Sensores (ESP32, MAX30100, GPS) son la categoría con más incidentes (27%) y el mayor riesgo residual (38/100). Se requieren reglas específicas para tráfico anómalo del dispositivo, no solo del backend.</p>
+          <span class="reco-impact">Impacto esperado: reducir riesgo IoT de 38 a &lt;25</span>
+        </div>
+      </div>
+      <div class="reco-item">
+        <div class="reco-num">P4</div>
+        <div>
+          <h3>Cerrar la brecha de exfiltración de datos (T1041)</h3>
+          <p>No existe hoy una regla que detecte transferencia anómala de datos hacia afuera de la infraestructura de Cloud SQL / Cloud Storage.</p>
+          <span class="reco-impact">Impacto esperado: cobertura MITRE de 64% a ~71%</span>
+        </div>
+      </div>
+      <div class="reco-item">
+        <div class="reco-num">P5</div>
+        <div>
+          <h3>Programa trimestral de reducción de falsos positivos</h3>
+          <p>28.8% de las alertas escaladas no resultan en incidente real, consumiendo tiempo de analista que podría redirigirse a detección proactiva (threat hunting).</p>
+          <span class="reco-impact">Impacto esperado: de ~29% a &lt;15% de falsos positivos</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <strong style="color:var(--text-muted);">Nota metodológica:</strong> este dashboard fue generado como entregable de la actividad HEGDSI-P3-A4 (KPIs y Reporte Ejecutivo) del proyecto FarmWatch. Todas las cifras de incidentes, tiempos y porcentajes son <strong>datos ilustrativos coherentes</strong> construidos para fines de demostración académica y de portafolio profesional; no representan mediciones certificadas ni auditadas de un SOC en producción. Los porcentajes de cumplimiento (NIST CSF, ISO 27001, CIS Controls, MITRE ATT&CK, OWASP) son una autoevaluación cualitativa, no una certificación oficial.
+  </footer>
+
+</div>
+
+<script>
+// ============ PALETA COMPARTIDA ============
+const COLORS = { teal: '#1ec9b7', amber: '#f5a623', red: '#e5484d', blue: '#5b8cff', muted: '#8a93a6', grid: 'rgba(255,255,255,0.06)' };
+
+Chart.defaults.color = COLORS.muted;
+Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+Chart.defaults.borderColor = COLORS.grid;
+
+// ============ GAUGE (SVG generado por JS) ============
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const a = (angleDeg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+}
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+(function drawGauge(score) {
+  const svg = document.getElementById('gaugeSvg');
+  const cx = 115, cy = 100, r = 85;
+  // Sweep de -135deg (0) a +135deg (100), pasando por -90/0/90.. mapeamos a 0-270 offset
+  const startDeg = -135, endDeg = 135, span = endDeg - startDeg;
+
+  const zones = [
+    { from: 0, to: 40, color: COLORS.teal },
+    { from: 40, to: 70, color: COLORS.amber },
+    { from: 70, to: 100, color: COLORS.red }
+  ];
+
+  let svgHTML = '';
+  zones.forEach(z => {
+    const a1 = startDeg + (z.from / 100) * span;
+    const a2 = startDeg + (z.to / 100) * span;
+    svgHTML += `<path d="${describeArc(cx, cy, r, a1, a2)}" fill="none" stroke="${z.color}" stroke-width="14" stroke-linecap="round" opacity="0.85"/>`;
+  });
+
+  // Aguja
+  const needleAngle = startDeg + (score / 100) * span;
+  const tip = polarToCartesian(cx, cy, r - 6, needleAngle);
+  const tailA = polarToCartesian(cx, cy, 14, needleAngle + 180);
+  svgHTML += `<line x1="${tailA.x}" y1="${tailA.y}" x2="${tip.x}" y2="${tip.y}" stroke="#e8ecf4" stroke-width="3.5" stroke-linecap="round"/>`;
+  svgHTML += `<circle cx="${cx}" cy="${cy}" r="7" fill="#e8ecf4"/>`;
+
+  svg.innerHTML = svgHTML;
+})(32);
+
+// ============ INCIDENTES POR CATEGORÍA (DONUT) ============
+new Chart(document.getElementById('chartCategorias'), {
+  type: 'doughnut',
+  data: {
+    labels: ['IoT', 'Cloud', 'Web/API', 'Base de datos', 'Usuarios', 'Active Directory', 'Red', 'Docker'],
+    datasets: [{
+      data: [42, 31, 22, 18, 16, 12, 9, 6],
+      backgroundColor: ['#1ec9b7', '#5b8cff', '#f5a623', '#8a93a6', '#e5484d', '#7c6ff2', '#3fb6e8', '#4a5670'],
+      borderColor: '#141c30',
+      borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '62%',
+    plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } } }
+  }
+});
+
+// ============ MITRE TABLE ============
+const mitreData = [
+  ['Reconocimiento', 'T1595', 'Active Scanning', 'detected', 2, 'Alta'],
+  ['Acceso Inicial', 'T1190', 'Exploit Public-Facing App.', 'detected', 3, 'Alta'],
+  ['Acceso Inicial', 'T1078', 'Valid Accounts', 'detected', 2, 'Alta'],
+  ['Ejecución', 'T1059', 'Command & Scripting Interp.', 'partial', 1, 'Media'],
+  ['Persistencia', 'T1136', 'Create Account', 'detected', 1, 'Media'],
+  ['Acceso a Credenciales', 'T1110', 'Brute Force', 'detected', 4, 'Alta'],
+  ['Descubrimiento', 'T1046', 'Network Service Scanning', 'detected', 2, 'Alta'],
+  ['Descubrimiento', 'T1082', 'System Information Disc.', 'partial', 1, 'Baja'],
+  ['Movimiento Lateral', 'T1021', 'Remote Services', 'partial', 1, 'Media'],
+  ['Recolección', 'T1213', 'Data from Info. Repositories', 'detected', 2, 'Media'],
+  ['Exfiltración', 'T1041', 'Exfiltration Over C2 Channel', 'none', 0, 'Baja'],
+  ['Impacto', 'T1499', 'Endpoint Denial of Service', 'detected', 1, 'Media'],
+  ['Impacto', 'T1531', 'Account Access Removal', 'partial', 1, 'Baja']
+];
+const statusLabel = { detected: 'Detectado', partial: 'Parcial', none: 'No cubierto' };
+document.getElementById('mitreBody').innerHTML = mitreData.map(r => `
+  <tr>
+    <td>${r[0]}</td>
+    <td><span class="tid">${r[1]}</span> ${r[2]}</td>
+    <td><span class="pill ${r[3]}">${statusLabel[r[3]]}</span></td>
+    <td>${r[4]}</td>
+    <td>${r[5]}</td>
+  </tr>
+`).join('');
+
+// ============ RIESGO ANTES/DESPUÉS ============
+new Chart(document.getElementById('chartRiesgo'), {
+  type: 'bar',
+  data: {
+    labels: ['Cloud', 'IoT', 'Identidad', 'Red', 'Web/API'],
+    datasets: [
+      { label: 'Antes del SOC', data: [78, 85, 72, 65, 74], backgroundColor: 'rgba(229,72,77,0.55)', borderRadius: 4 },
+      { label: 'Después del SOC', data: [32, 38, 29, 27, 35], backgroundColor: '#1ec9b7', borderRadius: 4 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+    scales: {
+      y: { beginAtZero: true, max: 100, grid: { color: COLORS.grid }, title: { display: true, text: 'Riesgo (0–100)' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ============ RADAR DE MADUREZ ============
+new Chart(document.getElementById('chartMadurez'), {
+  type: 'radar',
+  data: {
+    labels: ['Gobernanza', 'Detección', 'Respuesta', 'Automatización', 'Mejora continua'],
+    datasets: [{
+      label: 'Madurez actual (0–5)',
+      data: [3.5, 4, 3, 2, 2.5],
+      backgroundColor: 'rgba(30,201,183,0.18)',
+      borderColor: '#1ec9b7',
+      pointBackgroundColor: '#1ec9b7'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      r: {
+        min: 0, max: 5, ticks: { stepSize: 1, backdropColor: 'transparent', color: COLORS.muted },
+        grid: { color: COLORS.grid }, angleLines: { color: COLORS.grid },
+        pointLabels: { color: COLORS.muted, font: { size: 11 } }
+      }
+    }
+  }
+});
+
+// ============ CUMPLIMIENTO (METERS) ============
+const compliance = [
+  { name: 'NIST CSF', pct: 61 },
+  { name: 'ISO/IEC 27001', pct: 54 },
+  { name: 'CIS Controls v8', pct: 58 },
+  { name: 'MITRE ATT&CK', pct: 64 },
+  { name: 'OWASP (Web/API)', pct: 47 }
+];
+document.getElementById('meterList').innerHTML = compliance.map(c => `
+  <div class="meter-row">
+    <span>${c.name}</span>
+    <div class="meter-track"><div class="meter-fill" style="width:${c.pct}%;"></div></div>
+    <span class="meter-val">${c.pct}%</span>
+  </div>
+`).join('');
+</script>
+</body>
+</html>

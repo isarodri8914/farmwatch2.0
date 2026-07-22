@@ -50,6 +50,12 @@
             </a>
         </li>
         {% endfor %}
+        <li>
+            <a href="{{ url_for('static', filename='soc_dashboard_ejecutivo.html') }}"
+               target="_blank" rel="noopener" title="Se abre en una pestaña nueva">
+                <i class="fas fa-shield-halved"></i> SOC Ejecutivo
+            </a>
+        </li>
     </ul>
 
     <div class="nav-right">
@@ -74,6 +80,9 @@
         <i class="fas {{ icon }}"></i> {{ label }}
     </a>
     {% endfor %}
+    <a href="{{ url_for('static', filename='soc_dashboard_ejecutivo.html') }}" target="_blank" rel="noopener">
+        <i class="fas fa-shield-halved"></i> SOC Ejecutivo
+    </a>
     <a href="/" class="mobile-logout"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
 </div>
 
