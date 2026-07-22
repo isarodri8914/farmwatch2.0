@@ -1,944 +1,560 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FarmWatch SOC — Dashboard Ejecutivo</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  :root{
-    --bg: #0c1220;
-    --bg-grid: #0f1626;
-    --surface: #141c30;
-    --surface-2: #1a2338;
-    --border: #263149;
-    --text: #e8ecf4;
-    --text-muted: #8a93a6;
-    --text-faint: #5b6479;
-    --teal: #1ec9b7;
-    --amber: #f5a623;
-    --red: #e5484d;
-    --blue: #5b8cff;
-
-    --font-display: 'Space Grotesk', sans-serif;
-    --font-body: 'IBM Plex Sans', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-  }
-
-  * { box-sizing: border-box; }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-  }
-
-  html, body {
-    margin: 0;
-    background:
-      radial-gradient(circle at 15% 0%, rgba(30,201,183,0.08), transparent 40%),
-      radial-gradient(circle at 85% 10%, rgba(91,140,255,0.07), transparent 45%),
-      var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    line-height: 1.5;
-  }
-
-  a { color: var(--teal); }
-
-  .wrap {
-    max-width: 1320px;
-    margin: 0 auto;
-    padding: 28px 24px 80px;
-  }
-
-  /* ============ HEADER ============ */
-  .topbar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 28px;
-    padding-bottom: 22px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .brand-mark {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--teal), var(--blue));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--font-mono);
-    font-weight: 700;
-    color: #06110f;
-    font-size: 15px;
-    flex-shrink: 0;
-  }
-
-  .brand-text .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--teal);
-  }
-
-  .brand-text h1 {
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin: 2px 0 0;
-    color: var(--text);
-  }
-
-  .meta-block {
-    text-align: right;
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-
-  .meta-block .period {
-    font-family: var(--font-mono);
-    color: var(--text);
-    font-size: 14px;
-  }
-
-  .demo-banner {
-    margin-top: 10px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(245, 166, 35, 0.1);
-    border: 1px solid rgba(245, 166, 35, 0.35);
-    color: var(--amber);
-    font-size: 12px;
-    font-family: var(--font-mono);
-    padding: 6px 12px;
-    border-radius: 8px;
-  }
-
-  /* ============ HERO: GAUGE + SUPPORTING STATS ============ */
-  .hero {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 24px;
-    margin-bottom: 28px;
-  }
-
-  .gauge-card, .side-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-  }
-
-  .gauge-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .card-label {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-  }
-
-  .gauge-svg-wrap { position: relative; width: 230px; height: 188px; margin-top: 6px; }
-
-  .gauge-number {
-    position: absolute;
-    left: 0; right: 0; bottom: 34px;
-    font-family: var(--font-mono);
-    font-size: 2.6rem;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .gauge-band {
-    font-size: 13px;
-    font-weight: 600;
-    margin-top: 2px;
-    color: var(--amber);
-  }
-
-  .gauge-foot {
-    font-size: 12.5px;
-    color: var(--text-muted);
-    margin-top: 10px;
-    max-width: 240px;
-  }
-
-  .side-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-
-  .side-card .stat-value {
-    font-family: var(--font-mono);
-    font-size: 1.9rem;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .side-card .stat-label {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-top: 4px;
-  }
-
-  .trend {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    margin-top: 8px;
-  }
-  .trend.down { color: var(--teal); background: rgba(30,201,183,0.12); }
-  .trend.up { color: var(--red); background: rgba(229,72,77,0.12); }
-  .trend.flat { color: var(--text-muted); background: rgba(138,147,166,0.12); }
-
-  /* ============ SECTION TITLES ============ */
-  .section {
-    margin-bottom: 28px;
-  }
-
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .section-head h2 {
-    font-family: var(--font-display);
-    font-size: 1.15rem;
-    font-weight: 600;
-    margin: 0;
-    color: var(--text);
-  }
-
-  .section-head .section-sub {
-    font-size: 12.5px;
-    color: var(--text-faint);
-    font-family: var(--font-mono);
-  }
-
-  /* ============ KPI STRIP ============ */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px;
-  }
-
-  .kpi-top {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-  }
-
-  .kpi-value {
-    font-family: var(--font-mono);
-    font-size: 2.1rem;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .kpi-name {
-    font-size: 13.5px;
-    color: var(--text-muted);
-    margin-top: 6px;
-  }
-
-  .kpi-formula {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-faint);
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-  }
-
-  /* ============ ANALYST NOTE ============ */
-  .analyst-note {
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-top: 14px;
-    font-size: 13.5px;
-    color: var(--text-muted);
-  }
-  .analyst-note .tag {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--teal);
-    letter-spacing: 0.08em;
-    display: block;
-    margin-bottom: 6px;
-  }
-  .analyst-note strong { color: var(--text); }
-
-  /* ============ TWO COLUMN ============ */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1.3fr;
-    gap: 20px;
-    align-items: start;
-  }
-
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 22px;
-  }
-
-  .chart-box { position: relative; height: 260px; }
-
-  /* ============ MITRE TABLE ============ */
-  table.mitre {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-  }
-  table.mitre th {
-    text-align: left;
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border);
-  }
-  table.mitre td {
-    padding: 9px 10px;
-    border-bottom: 1px solid rgba(38,49,73,0.6);
-    color: var(--text);
-  }
-  table.mitre .tid { font-family: var(--font-mono); color: var(--text-muted); }
-
-  .pill {
-    display: inline-block;
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 3px 10px;
-    border-radius: 999px;
-    white-space: nowrap;
-  }
-  .pill.detected { background: rgba(30,201,183,0.14); color: var(--teal); }
-  .pill.partial  { background: rgba(245,166,35,0.14); color: var(--amber); }
-  .pill.none     { background: rgba(229,72,77,0.14); color: var(--red); }
-
-  /* ============ RISK + MATURITY ROW ============ */
-  .grid-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; align-items: start; }
-
-  /* ============ COMPLIANCE METERS ============ */
-  .meter-row {
-    display: grid;
-    grid-template-columns: 150px 1fr 50px;
-    align-items: center;
-    gap: 12px;
-    font-size: 13px;
-    margin-bottom: 14px;
-  }
-  .meter-track {
-    height: 8px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    overflow: hidden;
-  }
-  .meter-fill { height: 100%; border-radius: 999px; background: var(--blue); }
-  .meter-val { font-family: var(--font-mono); text-align: right; color: var(--text-muted); }
-
-  .disclaimer-inline {
-    font-size: 11.5px;
-    color: var(--text-faint);
-    margin-top: 6px;
-  }
-
-  /* ============ RECOMMENDATIONS ============ */
-  .reco-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .reco-item {
-    display: grid;
-    grid-template-columns: 52px 1fr;
-    gap: 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 18px 20px;
-  }
-  .reco-num {
-    font-family: var(--font-mono);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--teal);
-    align-self: start;
-  }
-  .reco-item h3 {
-    font-family: var(--font-display);
-    font-size: 1rem;
-    margin: 0 0 6px;
-    color: var(--text);
-  }
-  .reco-item p { margin: 0; font-size: 13.5px; color: var(--text-muted); }
-  .reco-impact {
-    display: inline-block;
-    margin-top: 8px;
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: var(--text-faint);
-  }
-
-  /* ============ MATURITY LEVELS ============ */
-  .maturity-track {
-    display: flex;
-    gap: 6px;
-    margin-top: 14px;
-  }
-  .maturity-step {
-    flex: 1;
-    text-align: center;
-    padding: 10px 4px;
-    border-radius: 10px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    font-size: 11.5px;
-    color: var(--text-faint);
-  }
-  .maturity-step.current {
-    background: rgba(30,201,183,0.14);
-    border-color: var(--teal);
-    color: var(--teal);
-    font-weight: 700;
-  }
-
-  footer {
-    margin-top: 40px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-faint);
-    line-height: 1.7;
-  }
-
-  @media (max-width: 980px) {
-    .hero, .two-col, .grid-2 { grid-template-columns: 1fr; }
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .side-stats { grid-template-columns: repeat(3, 1fr); }
-  }
-  @media (max-width: 560px) {
-    .kpi-grid, .side-stats { grid-template-columns: 1fr 1fr; }
-    .meta-block { text-align: left; }
-    .topbar { flex-direction: column; }
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FarmWatch | Dashboard Ejecutivo SOC</title>
+  <meta name="description" content="Dashboard Ejecutivo SOC de FarmWatch basado en evidencia Wazuh y métricas demostrativas claramente identificadas.">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --fw-navy:#0b1f33;
+      --fw-blue:#123b63;
+      --fw-teal:#0f8b8d;
+      --fw-green:#39a96b;
+      --fw-lime:#84c341;
+      --fw-gold:#e2b93b;
+      --fw-orange:#e67e22;
+      --fw-red:#cf3c3c;
+      --fw-bg:#f4f7fa;
+      --fw-card:#ffffff;
+      --fw-muted:#64748b;
+      --fw-border:#dfe7ef;
+    }
+    html{scroll-behavior:smooth}
+    body{background:var(--fw-bg); color:#1f2937; font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+    .navbar{background:linear-gradient(90deg,var(--fw-navy),var(--fw-blue)); box-shadow:0 8px 24px rgba(11,31,51,.18)}
+    .brand-mark{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--fw-green),var(--fw-teal));font-weight:800;color:#fff}
+    .hero{background:
+      radial-gradient(circle at 88% 20%,rgba(57,169,107,.22),transparent 25%),
+      radial-gradient(circle at 70% 90%,rgba(15,139,141,.18),transparent 28%),
+      linear-gradient(135deg,var(--fw-navy),#153a5d 72%,#0e5b60);
+      color:#fff; border-radius:0 0 28px 28px; padding:48px 0 36px;
+    }
+    .eyebrow{letter-spacing:.14em;text-transform:uppercase;font-size:.78rem;font-weight:700;color:#b8e7d1}
+    .glass{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(8px);border-radius:18px}
+    .section-title{font-weight:800;color:var(--fw-navy)}
+    .section-subtitle{color:var(--fw-muted)}
+    .card-pro{background:var(--fw-card);border:1px solid var(--fw-border);border-radius:18px;box-shadow:0 10px 25px rgba(15,23,42,.05)}
+    .kpi-card{position:relative;overflow:hidden;min-height:150px}
+    .kpi-card:after{content:"";position:absolute;right:-28px;bottom:-38px;width:120px;height:120px;border-radius:50%;background:var(--accent);opacity:.1}
+    .kpi-icon{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--accent) 13%,white);color:var(--accent);font-size:1.25rem}
+    .kpi-value{font-size:2.2rem;font-weight:800;line-height:1;color:var(--fw-navy)}
+    .badge-soft{border-radius:999px;padding:.4rem .7rem;font-weight:700;font-size:.72rem}
+    .chart-wrap{height:320px}
+    .chart-wrap-sm{height:260px}
+    .insight{border-left:4px solid var(--fw-teal);background:#f7fbfb;border-radius:10px;padding:14px 16px;color:#334155}
+    .signal{display:inline-flex;align-items:center;gap:.45rem;font-weight:700}
+    .signal-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+    .progress{height:10px;border-radius:99px;background:#e7edf3}
+    .progress-bar{border-radius:99px}
+    .table thead th{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:#475569;background:#f8fafc}
+    .table td,.table th{vertical-align:middle}
+    .status-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .65rem;border-radius:999px;font-size:.75rem;font-weight:700}
+    .status-detect{background:#e8f7ef;color:#157347}
+    .status-partial{background:#fff6df;color:#8a5a00}
+    .status-plan{background:#eef2f7;color:#536273}
+    .rec-item{border-left:4px solid var(--priority);padding:12px 14px;background:#fff;border-radius:10px}
+    .timeline{position:relative;padding-left:28px}
+    .timeline:before{content:"";position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:#dbe4ec}
+    .timeline-item{position:relative;margin-bottom:18px}
+    .timeline-item:before{content:"";position:absolute;left:-25px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--fw-teal);box-shadow:0 0 0 4px #d9f0ef}
+    .nav-pills .nav-link{color:#dbeafe}
+    .nav-pills .nav-link:hover{color:#fff}
+    footer{background:var(--fw-navy);color:#cbd5e1}
+    /* ---- Leyenda de fuentes (real vs. ilustrativo) ---- */
+    .source-legend{border:1px dashed #cbd5e1;border-radius:14px;background:#fbfdff}
+    .source-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #eef2f7}
+    .source-row:last-child{border-bottom:none}
+    .source-tag{flex-shrink:0;width:88px;text-align:center}
+    @media print{
+      .navbar,.no-print{display:none!important}
+      body{background:#fff}
+      .hero{border-radius:0;padding:24px 0}
+      .card-pro{box-shadow:none;break-inside:avoid}
+      .chart-wrap,.chart-wrap-sm{height:260px}
+      section{break-inside:auto}
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
-
-  <!-- ================= HEADER ================= -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-mark">FW</div>
-      <div class="brand-text">
-        <div class="eyebrow">Security Operations Center</div>
-        <h1>FarmWatch — Dashboard Ejecutivo SOC</h1>
-      </div>
-    </div>
-    <div class="meta-block">
-      <div class="period">Periodo: Q3 2026 (jul–sep)</div>
-      <div>Preparado para: Dirección General / Comité Ejecutivo</div>
-      <div class="demo-banner" id="demoBanner">⚠ Datos ilustrativos — actividad académica HEGDSI-P3-A4</div>
-    </div>
-  </div>
-
-  <!-- ================= HERO: RISK GAUGE ================= -->
-  <div class="hero">
-    <div class="gauge-card">
-      <div class="card-label">Índice de riesgo compuesto</div>
-      <div class="gauge-svg-wrap">
-        <svg id="gaugeSvg" viewBox="0 0 230 180" width="230" height="188"></svg>
-        <div class="gauge-number" id="gaugeNumber">32</div>
-      </div>
-      <div class="gauge-band" id="gaugeBand">Riesgo bajo–medio</div>
-      <p class="gauge-foot">Promedio ponderado del riesgo residual en Cloud, IoT, Identidad, Red y Aplicación Web (escala 0–100, menor es mejor).</p>
-    </div>
-
-    <div class="side-card">
-      <div class="card-label" style="margin-bottom:16px;">Contexto ejecutivo del trimestre</div>
-      <div class="side-stats">
-        <div>
-          <div class="stat-value">3<span style="font-size:1.1rem;color:var(--text-faint);">/5</span></div>
-          <div class="stat-label">Nivel de madurez SOC<br>(Definido)</div>
-        </div>
-        <div>
-          <div class="stat-value">64%</div>
-          <div class="stat-label">Cobertura MITRE ATT&CK<br>(técnicas en alcance)</div>
-        </div>
-        <div>
-          <div class="stat-value">14</div>
-          <div class="stat-label">Incidentes críticos<br>en el trimestre</div>
-          <span class="trend down">↓ 22% vs. Q2</span>
-        </div>
-      </div>
-      <div class="analyst-note" style="margin-top:20px;">
-        <span class="tag">LECTURA EJECUTIVA</span>
-        El riesgo compuesto bajó de un estimado de 75 a 32 puntos desde que el SOC entró en operación (–57%). La mayor exposición restante está en <strong>IoT</strong> (sensores de campo) y <strong>Cloud</strong>, que concentran el 47% de los incidentes confirmados del trimestre.
-      </div>
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container-fluid px-lg-4">
+    <a class="navbar-brand d-flex align-items-center gap-3" href="#inicio">
+      <span class="brand-mark">FW</span>
+      <span><strong>FarmWatch</strong><small class="d-block opacity-75">SOC Executive</small></span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain"
+            aria-controls="navMain" aria-expanded="false" aria-label="Abrir menú de navegación">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMain">
+      <ul class="navbar-nav ms-auto gap-lg-2">
+        <li class="nav-item"><a class="nav-link" href="#fuentes">Fuentes</a></li>
+        <li class="nav-item"><a class="nav-link" href="#kpis">KPIs</a></li>
+        <li class="nav-item"><a class="nav-link" href="#riesgo">Riesgo</a></li>
+        <li class="nav-item"><a class="nav-link" href="#mitre">MITRE</a></li>
+        <li class="nav-item"><a class="nav-link" href="#madurez">Madurez</a></li>
+        <li class="nav-item"><a class="nav-link" href="#recomendaciones">CISO</a></li>
+      </ul>
+      <button class="btn btn-outline-light btn-sm ms-lg-3 no-print" onclick="window.print()"><i class="bi bi-printer me-1"></i> Exportar PDF</button>
     </div>
   </div>
+</nav>
 
-  <!-- ================= KPI STRIP ================= -->
-  <div class="section">
-    <div class="section-head">
-      <h2>Indicadores clave (KPIs)</h2>
-      <span class="section-sub" id="kpiSourceTag">Datos ilustrativos — MTTD/MTTR/22% Q2 no disponibles aún</span>
-    </div>
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value" id="kpiMttd">8.4<span style="font-size:1rem;">min</span></span></div>
-        <div class="kpi-name">MTTD — Tiempo medio de detección</div>
-        <span class="trend down" id="kpiMttdTrend">↓ 41% vs. 14.2 min (Q2)</span>
-        <div class="kpi-formula">MTTD = Σ(hora de alerta − hora del evento) / nº incidentes.<br>Ej.: un login de fuerza bruta ocurrido a las 10:00 y alertado a las 10:07 aporta 7 min al promedio.</div>
+<header id="inicio" class="hero">
+  <div class="container">
+    <div class="row align-items-center g-4">
+      <div class="col-lg-8">
+        <div class="eyebrow mb-2">HEGDSI-P3-A4 · KPIs y Reporte Ejecutivo</div>
+        <h1 class="display-5 fw-bold mb-3">Dashboard Ejecutivo SOC — FarmWatch</h1>
+        <p class="lead mb-4">Visión C-Level de la postura de seguridad de una plataforma IoT ganadera integrada con Google Cloud, Wazuh SIEM, Active Directory, Docker y sensores de campo.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge rounded-pill text-bg-success"><i class="bi bi-shield-check me-1"></i> SOC operativo en laboratorio</span>
+          <span class="badge rounded-pill text-bg-light text-dark"><i class="bi bi-diagram-3 me-1"></i> Cobertura híbrida Cloud + IoT + Windows</span>
+          <span class="badge rounded-pill text-bg-warning text-dark"><i class="bi bi-info-circle me-1"></i> Evaluación no certificante</span>
+        </div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value" id="kpiMttr">37<span style="font-size:1rem;">min</span></span></div>
-        <div class="kpi-name">MTTR — Tiempo medio de respuesta</div>
-        <span class="trend down" id="kpiMttrTrend">↓ 29% vs. 52 min (Q2)</span>
-        <div class="kpi-formula">MTTR = Σ(hora de cierre − hora de detección) / nº incidentes.<br>Ej.: un escaneo Nmap detectado a las 14:00 y contenido a las 14:25 aporta 25 min.</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value" id="kpiCriticos">14</span></div>
-        <div class="kpi-name" id="kpiCriticosName">Incidentes críticos (9% del total confirmado)</div>
-        <span class="trend down" id="kpiCriticosTrend">↓ 22% vs. Q2</span>
-        <div class="kpi-formula">Incidentes con impacto potencial alto: exposición de datos de sensores, acceso no autorizado a Cloud SQL o caída de servicio.</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value" id="kpiFalsos">28.8<span style="font-size:1rem;">%</span></span></div>
-        <div class="kpi-name" id="kpiFalsosName">Falsos positivos (63 de 219 alertas escaladas)</div>
-        <span class="trend flat" id="kpiFalsosTrend">≈ estable vs. Q2</span>
-        <div class="kpi-formula">Consumen tiempo de analista sin aportar riesgo real. Meta: bajar de ~29% a menos de 15% con tuning trimestral de reglas.</div>
+      <div class="col-lg-4">
+        <div class="glass p-4">
+          <div class="small text-uppercase opacity-75 fw-bold">Semáforo ejecutivo</div>
+          <div class="d-flex align-items-center gap-3 my-3">
+            <span style="width:22px;height:22px;border-radius:50%;background:#e2b93b;box-shadow:0 0 0 8px rgba(226,185,59,.18)"></span>
+            <div>
+              <div class="h4 fw-bold mb-0">Riesgo moderado</div>
+              <small>Detección sólida; respuesta y continuidad aún en maduración.</small>
+            </div>
+          </div>
+          <hr class="border-light opacity-25">
+          <div class="small"><strong>Alcance:</strong> capturas Wazuh de 24 h y pruebas puntuales realizadas durante varios días.</div>
+        </div>
       </div>
     </div>
   </div>
+</header>
 
-  <!-- ================= INCIDENTS + MITRE ================= -->
-  <div class="section">
-    <div class="two-col">
-      <div class="panel">
-        <div class="section-head">
-          <h2>Incidentes por categoría</h2>
-          <span class="section-sub" id="catSourceTag">Datos ilustrativos</span>
+<main class="container py-5">
+  <section class="mb-5">
+    <div class="card-pro p-4">
+      <div class="row g-4 align-items-center">
+        <div class="col-lg-8">
+          <h2 class="section-title h4">Resumen ejecutivo</h2>
+          <p class="mb-2">FarmWatch ya cuenta con una capacidad real de observabilidad y detección sobre infraestructura híbrida. La evidencia confirma ingestión de eventos de Cloud Run, Cloud SQL, GCP Audit, Windows, Active Directory, Raspberry Pi, Docker y el propio Wazuh Manager.</p>
+          <p class="mb-0">El SOC se clasifica en <strong>Nivel 3 — Definido</strong>: dispone de arquitectura, reglas personalizadas, correlación, severidad y mapeo MITRE ATT&CK; sin embargo, aún no opera de forma continua, no utiliza Active Response y no mide formalmente MTTD/MTTR mediante gestión de casos.</p>
         </div>
-        <div class="chart-box"><canvas id="chartCategorias"></canvas></div>
-        <div class="analyst-note" id="catNote">
-          <span class="tag">¿QUÉ SIGNIFICA?</span>
-          IoT (27%) y Cloud (20%) concentran casi la mitad de los incidentes confirmados. <strong>Decisión sugerida:</strong> priorizar el refuerzo de detección en la capa de sensores antes de invertir más en la capa de red, que ya es la de menor volumen.
+        <div class="col-lg-4">
+          <div class="p-3 rounded-4" style="background:#eef8f3">
+            <div class="small text-uppercase fw-bold text-success">Decisión ejecutiva recomendada</div>
+            <div class="fw-bold mt-1">Consolidar operación antes de ampliar alcance</div>
+            <small class="text-secondary">Priorizar continuidad de agentes, MFA, gestión de incidentes y automatización controlada.</small>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
 
-      <div class="panel">
-        <div class="section-head">
-          <h2>Cobertura MITRE ATT&CK</h2>
-          <span class="section-sub" id="mitreSourceTag">Técnicas en el alcance del proyecto — ilustrativo</span>
+  <!-- ================= FUENTES DE LOS DATOS (nuevo) ================= -->
+  <section id="fuentes" class="mb-5">
+    <div class="mb-4">
+      <h2 class="section-title">Fuentes de los datos de este reporte</h2>
+      <p class="section-subtitle">Para leer cada cifra con el contexto correcto: qué viene directo de Wazuh y qué es una estimación de referencia.</p>
+    </div>
+    <div class="card-pro p-4 source-legend">
+      <div class="source-row">
+        <div class="source-tag"><span class="badge text-bg-success w-100">Real</span></div>
+        <div>
+          <strong>Capturado directo de tu Wazuh</strong> (ventana de 24 h, más pruebas puntuales de varios días):
+          alertas totales, distribución por severidad, top de técnicas MITRE observadas, cobertura por táctica,
+          conteo de reglas y declaraciones, y el estado de los activos monitoreados.
         </div>
-        <table class="mitre">
-          <thead>
-            <tr><th>Táctica</th><th>Técnica</th><th>Estado</th><th id="mitreColHeader">Reglas</th><th>Cobertura</th></tr>
-          </thead>
-          <tbody id="mitreBody"></tbody>
+      </div>
+      <div class="source-row">
+        <div class="source-tag"><span class="badge text-bg-warning text-dark w-100">Ejemplo</span></div>
+        <div>
+          <strong>Conjunto demostrativo</strong> — la gráfica de "Incidentes por categoría" usa datos de ejemplo
+          coherentes, no una exportación real de tu SIEM. Está marcada con una insignia "Ejemplo" en la propia tarjeta;
+          sustitúyela cuando tengas una exportación CSV real por categoría de activo.
+        </div>
+      </div>
+      <div class="source-row">
+        <div class="source-tag"><span class="badge text-bg-secondary w-100">Estimado</span></div>
+        <div>
+          <strong>Evaluación cualitativa del equipo del proyecto</strong>, no una medición automática: el índice de
+          riesgo antes/después, el radar de madurez y los porcentajes de alineación con NIST CSF / ISO 27001 / CIS
+          Controls / MITRE ATT&CK / OWASP. No son certificaciones ni auditorías oficiales.
+        </div>
+      </div>
+      <div class="source-row">
+        <div class="source-tag"><span class="badge text-bg-light text-dark w-100">N/D</span></div>
+        <div>
+          <strong>Aún no calculable</strong>: MTTD y MTTR requieren gestión de casos (marcar cuándo un analista
+          detecta y cuándo se cierra cada incidente), algo que Wazuh no registra solo. Ver la sección "MTTD, MTTR y
+          falsos positivos" más abajo para la fórmula y qué hace falta para medirlos con datos reales.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="kpis" class="mb-5">
+    <div class="mb-4">
+      <h2 class="section-title">KPIs SOC</h2>
+      <p class="section-subtitle">Indicadores observados en Wazuh y métricas de gobierno claramente diferenciadas.</p>
+    </div>
+    <div class="row g-3">
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#0f8b8d">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-activity"></i></div><span class="badge-soft" style="background:#e7f7f6;color:#0f7779">Real · 24 h</span></div>
+          <div class="kpi-value mt-3">2,098</div><div class="fw-semibold">Alertas totales</div>
+          <small class="text-secondary">Volumen capturado en Threat Hunting.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#cf3c3c">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-exclamation-octagon"></i></div><span class="badge-soft" style="background:#fdecec;color:#b42323">Real · 24 h</span></div>
+          <div class="kpi-value mt-3">0</div><div class="fw-semibold">Alertas críticas</div>
+          <small class="text-secondary">Nivel 15 o superior.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#e2b93b">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div><span class="badge-soft" style="background:#fff5d7;color:#8a6700">Real · 24 h</span></div>
+          <div class="kpi-value mt-3">1</div><div class="fw-semibold">Alerta alta</div>
+          <small class="text-secondary">Nivel 12–14; 0.05% de eventos clasificados.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#39a96b">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-broadcast-pin"></i></div><span class="badge-soft" style="background:#e9f8ef;color:#187347">Puntual</span></div>
+          <div class="kpi-value mt-3">20%</div><div class="fw-semibold">Telemetría remota activa</div>
+          <small class="text-secondary">1 de 5 agentes remotos; los demás estaban apagados durante la captura.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#123b63">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-journal-code"></i></div><span class="badge-soft" style="background:#eaf0f6;color:#123b63">Real</span></div>
+          <div class="kpi-value mt-3">49</div><div class="fw-semibold">Declaraciones de reglas</div>
+          <small class="text-secondary">48 IDs únicos; se detectó duplicidad del ID 110023.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#7c5cbf">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-crosshair"></i></div><span class="badge-soft" style="background:#f1edfb;color:#6a4bb0">Real</span></div>
+          <div class="kpi-value mt-3">10</div><div class="fw-semibold">Técnicas MITRE destacadas</div>
+          <small class="text-secondary">Top 10 visible en el dashboard Wazuh.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#e67e22">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-stopwatch"></i></div><span class="badge-soft" style="background:#fff0e5;color:#a94f0b">No formalizado</span></div>
+          <div class="kpi-value mt-3">N/D</div><div class="fw-semibold">MTTD</div>
+          <small class="text-secondary">Requiere registrar inicio y detección por incidente.</small>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="card-pro kpi-card p-4 h-100" style="--accent:#64748b">
+          <div class="d-flex justify-content-between"><div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div><span class="badge-soft" style="background:#eef2f6;color:#52606d">No formalizado</span></div>
+          <div class="kpi-value mt-3">N/D</div><div class="fw-semibold">MTTR</div>
+          <small class="text-secondary">No existe ticketing ni Active Response para medir cierre.</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-5">
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h5 fw-bold">Distribución por severidad</h3>
+            <span class="badge text-bg-success">Real</span>
+          </div>
+          <div class="chart-wrap-sm"><canvas id="severityChart"></canvas></div>
+          <div class="insight mt-3"><strong>Lectura ejecutiva:</strong> 74.6% de los eventos visibles son de baja severidad y 25.4% de severidad media. La dirección debe impulsar afinación de reglas para reducir ruido sin perder cobertura.</div>
+          <p class="small text-secondary mt-2 mb-0">Nota: 5 eventos del total de 2,098 no traían un nivel de severidad clasificable en esta captura (se muestran como "Sin clasificar").</p>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <div><h3 class="h5 fw-bold mb-1">Incidentes por categoría</h3><small class="text-secondary">Conjunto demostrativo coherente; sustituir con exportación CSV para operación real.</small></div>
+            <span class="badge text-bg-warning text-dark">Ejemplo</span>
+          </div>
+          <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+          <div class="insight mt-3"><strong>Decisión:</strong> Cloud, Active Directory y Web concentran la mayor prioridad de negocio por su relación con identidad, disponibilidad de la aplicación y datos productivos.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="riesgo" class="mb-5">
+    <div class="mb-4"><h2 class="section-title">Riesgo mitigado y postura de seguridad</h2><p class="section-subtitle">Estimación cualitativa del proyecto; no representa una auditoría certificada.</p></div>
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h5 fw-bold">Índice de riesgo</h3>
+            <span class="badge text-bg-secondary">Estimado</span>
+          </div>
+          <div class="chart-wrap-sm"><canvas id="riskGauge"></canvas></div>
+          <div class="text-center">
+            <span class="badge text-bg-danger me-1">Antes: 78/100</span>
+            <span class="badge text-bg-warning">Después: 44/100</span>
+          </div>
+          <p class="small text-secondary mt-3 mb-0">Reducción estimada: <strong>43.6%</strong>, atribuible a centralización de logs, correlación, reglas personalizadas y visibilidad MITRE.</p>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h5 fw-bold">Riesgos antes y después del SOC</h3>
+            <span class="badge text-bg-secondary">Estimado</span>
+          </div>
+          <div class="chart-wrap"><canvas id="riskBeforeAfter"></canvas></div>
+          <div class="insight mt-3"><strong>Impacto al negocio:</strong> disminuye la probabilidad de ataques no observados sobre identidad, APIs, infraestructura cloud y dispositivos de campo. El riesgo residual sigue siendo relevante por operación intermitente y ausencia de respuesta automatizada.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="mitre" class="mb-5">
+    <div class="mb-4"><h2 class="section-title">Cobertura MITRE ATT&CK</h2><p class="section-subtitle">Técnicas directamente relacionadas con las reglas y eventos observados en FarmWatch.</p></div>
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h5 fw-bold">Top técnicas observadas</h3>
+            <span class="badge text-bg-success">Real</span>
+          </div>
+          <div class="chart-wrap"><canvas id="mitreChart"></canvas></div>
+          <div class="insight mt-3"><strong>Interpretación:</strong> Modify Registry domina el volumen visible, seguido por Data Destruction, File Deletion y Stored Data Manipulation. Esto refleja una fuerte presencia de telemetría Windows y control de cambios.</div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h5 fw-bold">Cobertura por táctica</h3>
+            <span class="badge text-bg-success">Real</span>
+          </div>
+          <div class="chart-wrap"><canvas id="tacticChart"></canvas></div>
+          <div class="insight mt-3"><strong>Decisión:</strong> mantener cobertura en Credential Access y Lateral Movement, e incrementar detecciones para Discovery, Command and Control y Exfiltration.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-pro p-3 p-lg-4">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead><tr><th>Táctica</th><th>ID</th><th>Técnica</th><th>Estado</th><th>Reglas / evidencia</th><th>Cobertura</th></tr></thead>
+          <tbody>
+            <tr><td>Credential Access</td><td>T1110</td><td>Brute Force</td><td><span class="status-pill status-detect">Detectada</span></td><td>110113, 100502, 120511, 5763</td><td>Alta</td></tr>
+            <tr><td>Defense Evasion / Persistence</td><td>T1078</td><td>Valid Accounts</td><td><span class="status-pill status-detect">Detectada</span></td><td>Logon Windows / RDP / PAM</td><td>Media-Alta</td></tr>
+            <tr><td>Lateral Movement</td><td>T1021.002</td><td>SMB/Windows Admin Shares</td><td><span class="status-pill status-detect">Detectada</span></td><td>67017, reglas SMB/PsExec</td><td>Alta</td></tr>
+            <tr><td>Discovery</td><td>T1046</td><td>Network Service Scanning</td><td><span class="status-pill status-detect">Detectada</span></td><td>100500, 110500, 120601</td><td>Alta</td></tr>
+            <tr><td>Initial Access</td><td>T1190</td><td>Exploit Public-Facing Application</td><td><span class="status-pill status-partial">Parcial</span></td><td>SQLi, RCE, command injection</td><td>Media</td></tr>
+            <tr><td>Credential Access</td><td>T1003.001</td><td>LSASS Memory</td><td><span class="status-pill status-detect">Detectada</span></td><td>110043</td><td>Alta</td></tr>
+            <tr><td>Credential Access</td><td>T1558.003</td><td>Kerberoasting</td><td><span class="status-pill status-detect">Detectada</span></td><td>110030, 110040</td><td>Alta</td></tr>
+            <tr><td>Defense Evasion / Lateral Movement</td><td>T1550.002</td><td>Pass the Hash</td><td><span class="status-pill status-detect">Detectada</span></td><td>110031, 110041, 120530</td><td>Alta</td></tr>
+            <tr><td>Execution</td><td>T1569.002</td><td>Service Execution</td><td><span class="status-pill status-detect">Detectada</span></td><td>PsExec / servicio remoto</td><td>Alta</td></tr>
+            <tr><td>Defense Evasion</td><td>T1112</td><td>Modify Registry</td><td><span class="status-pill status-detect">Observada</span></td><td>998 eventos visibles</td><td>Alta</td></tr>
+            <tr><td>Impact</td><td>T1485</td><td>Data Destruction</td><td><span class="status-pill status-detect">Observada</span></td><td>358 eventos visibles</td><td>Media-Alta</td></tr>
+            <tr><td>Defense Evasion</td><td>T1070.004</td><td>File Deletion</td><td><span class="status-pill status-detect">Observada</span></td><td>358 eventos visibles</td><td>Media-Alta</td></tr>
+          </tbody>
         </table>
-        <div class="analyst-note" id="mitreNote">
-          <span class="tag">¿POR QUÉ IMPORTA?</span>
-          9 de 13 técnicas relevantes tienen detección activa (64%). La exfiltración de datos (<strong>T1041</strong>) es la brecha más importante: hoy no dispara ninguna regla. Ver recomendación P4.
+      </div>
+      <p class="small text-secondary mt-3 mb-0">"Detectada" = existe una regla dedicada que dispara sobre esa técnica. "Observada" = la técnica aparece en la telemetría/eventos, aunque la regla que la marca sea más genérica (p. ej. cambios de registro de Windows en general).</p>
+    </div>
+  </section>
+
+  <section id="madurez" class="mb-5">
+    <div class="mb-4"><h2 class="section-title">Madurez y alineación GRC</h2><p class="section-subtitle">Evaluación interna del proyecto, no certificación ni auditoría de conformidad.</p></div>
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between"><div><h3 class="h5 fw-bold">Modelo de madurez SOC</h3><p class="small text-secondary">Nivel objetivo actual: 3 — Definido</p></div><span class="badge text-bg-success align-self-start">Nivel 3</span></div>
+          <div class="chart-wrap"><canvas id="maturityRadar"></canvas></div>
+          <div class="insight mt-3"><strong>Brecha principal:</strong> la detección supera la capacidad de respuesta. Para alcanzar Nivel 4 se requiere operación continua, SLAs, métricas reales y automatización controlada.</div>
         </div>
       </div>
+      <div class="col-lg-6">
+        <div class="card-pro p-4 h-100">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h5 fw-bold">Alineación estimada</h3>
+            <span class="badge text-bg-secondary">Estimado</span>
+          </div>
+          <div id="complianceBars" class="mt-4"></div>
+          <div class="alert alert-warning mt-4 mb-0 small"><i class="bi bi-exclamation-triangle me-1"></i> Los porcentajes representan cobertura del proyecto frente a dominios seleccionados. No equivalen a certificación ISO, validación NIST ni cumplimiento legal.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-5">
+    <div class="mb-4"><h2 class="section-title">Estado de activos monitoreados</h2><p class="section-subtitle">La desconexión observada se debió a que las máquinas del laboratorio estaban apagadas.</p></div>
+    <div class="card-pro p-4">
+      <div class="row g-3" id="assetGrid"></div>
+      <hr>
+      <div class="small text-secondary"><strong>Lectura ejecutiva:</strong> la cobertura lógica existe, pero la continuidad de telemetría depende de mantener los laboratorios encendidos. En producción se recomienda supervisión 24/7, alertas de pérdida de agente y redundancia del colector.</div>
+    </div>
+  </section>
+
+  <section class="mb-5">
+    <div class="mb-4"><h2 class="section-title">MTTD, MTTR y falsos positivos</h2></div>
+    <div class="row g-4">
+      <div class="col-lg-4"><div class="card-pro p-4 h-100">
+        <h3 class="h5 fw-bold">MTTD</h3><p><code>Σ(tiempo detección − inicio) / incidentes</code></p>
+        <p class="small">Mide la rapidez para identificar una amenaza. En FarmWatch no existe aún un promedio formal; como ejemplo de laboratorio, una regla correlacionada puede detectar 5 fallos dentro de una ventana de 120 segundos.</p>
+        <div class="alert alert-info small mb-0">Recomendación: almacenar <em>first_seen</em>, <em>alert_time</em> e ID de caso.</div>
+      </div></div>
+      <div class="col-lg-4"><div class="card-pro p-4 h-100">
+        <h3 class="h5 fw-bold">MTTR</h3><p><code>Σ(tiempo contención − detección) / incidentes</code></p>
+        <p class="small">Mide cuánto tarda el SOC en analizar y contener. Actualmente no es calculable porque no hay ticketing ni Active Response.</p>
+        <div class="alert alert-warning small mb-0">Recomendación: crear runbooks, SLAs y registro de cierre.</div>
+      </div></div>
+      <div class="col-lg-4"><div class="card-pro p-4 h-100">
+        <h3 class="h5 fw-bold">Falsos positivos</h3><p><code>alertas descartadas / alertas investigadas × 100</code></p>
+        <p class="small">Eventos genéricos de Rootcheck sobre varios binarios ilustran por qué se requiere validación antes de declarar compromiso.</p>
+        <div class="alert alert-success small mb-0">Reducir con listas de exclusión justificadas, contexto por activo, umbrales y revisión mensual.</div>
+      </div></div>
+    </div>
+  </section>
+
+  <section id="recomendaciones" class="mb-5">
+    <div class="mb-4"><h2 class="section-title">Recomendaciones del CISO</h2><p class="section-subtitle">Hoja de ruta priorizada por reducción de riesgo y viabilidad.</p></div>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card-pro p-4">
+          <div class="rec-item mb-3" style="--priority:#cf3c3c"><div class="d-flex justify-content-between"><strong>1. Implementar MFA y fortalecer identidad</strong><span class="badge text-bg-danger">Crítica</span></div><small>Aplicar MFA a administración, GCP, Wazuh y cuentas privilegiadas; eliminar credenciales compartidas.</small></div>
+          <div class="rec-item mb-3" style="--priority:#cf3c3c"><div class="d-flex justify-content-between"><strong>2. Formalizar gestión de incidentes</strong><span class="badge text-bg-danger">Crítica</span></div><small>Crear clasificación, propietarios, SLAs, evidencias y campos para MTTD/MTTR.</small></div>
+          <div class="rec-item mb-3" style="--priority:#e2b93b"><div class="d-flex justify-content-between"><strong>3. Mantener telemetría continua</strong><span class="badge text-bg-warning">Alta</span></div><small>Supervisar agentes, alertar desconexiones y diseñar operación 24/7 para una futura fase productiva.</small></div>
+          <div class="rec-item mb-3" style="--priority:#e2b93b"><div class="d-flex justify-content-between"><strong>4. Activar respuesta automatizada gradual</strong><span class="badge text-bg-warning">Alta</span></div><small>Iniciar con bloqueo temporal de IP para fuerza bruta, sujeto a validación y lista segura.</small></div>
+          <div class="rec-item mb-3" style="--priority:#0f8b8d"><div class="d-flex justify-content-between"><strong>5. Afinar reglas y falsos positivos</strong><span class="badge text-bg-info">Media</span></div><small>Corregir ID duplicado 110023, revisar Rootcheck y medir tasa de descarte.</small></div>
+          <div class="rec-item" style="--priority:#0f8b8d"><div class="d-flex justify-content-between"><strong>6. Avanzar hacia Zero Trust y SOAR</strong><span class="badge text-bg-info">Evolutiva</span></div><small>Segmentar IoT, mínimo privilegio, identidad por servicio y playbooks automatizados.</small></div>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="card-pro p-4 h-100">
+          <h3 class="h5 fw-bold">Plan 30–60–90 días</h3>
+          <div class="timeline mt-4">
+            <div class="timeline-item"><strong>0–30 días</strong><div class="small text-secondary">Corregir duplicidad de regla, habilitar MFA, documentar activos, validar alertas Rootcheck y definir severidades.</div></div>
+            <div class="timeline-item"><strong>31–60 días</strong><div class="small text-secondary">Implementar ticketing ligero, SLAs, runbooks, métricas MTTD/MTTR y revisión de falsos positivos.</div></div>
+            <div class="timeline-item"><strong>61–90 días</strong><div class="small text-secondary">Piloto de Active Response, endurecimiento CIS, segmentación IoT y expansión MITRE hacia exfiltración/C2.</div></div>
+          </div>
+          <div class="p-3 rounded-4 mt-4" style="background:#eef6ff"><strong>Resultado esperado:</strong><div class="small text-secondary">Transición de un SOC definido a un SOC gestionado con métricas, continuidad y respuesta repetible.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-3">
+    <div class="card-pro p-4">
+      <h2 class="section-title h4">Conclusión ejecutiva</h2>
+      <p>FarmWatch demuestra que una plataforma IoT académica puede incorporar controles de ciberseguridad de nivel profesional. La integración Wazuh–Google Cloud–Windows–IoT ya genera visibilidad y detecciones relevantes. El mayor valor creado es la capacidad de convertir eventos técnicos en señales priorizadas sobre amenazas a identidad, disponibilidad, integridad de datos y continuidad del monitoreo ganadero.</p>
+      <p class="mb-0">La siguiente inversión no debe enfocarse únicamente en crear más reglas, sino en <strong>operar mejor las existentes</strong>: continuidad, gestión de casos, MFA, afinación y automatización responsable.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="py-4">
+  <div class="container d-flex flex-column flex-md-row justify-content-between gap-2">
+    <div><strong>FarmWatch SOC Executive Dashboard</strong><div class="small">Entregable HEGDSI-P3-A4</div></div>
+    <div class="small text-md-end">
+      Datos reales de Wazuh + estimaciones demostrativas señaladas (ver sección "Fuentes de los datos").<br>
+      Evaluación interna; no representa certificación oficial.<br>
+      <span id="footerDate"></span>
     </div>
   </div>
+</footer>
 
-  <!-- ================= RISK REDUCTION + MATURITY ================= -->
-  <div class="section">
-    <div class="grid-2">
-      <div class="panel">
-        <div class="section-head"><h2>Riesgo antes / después del SOC</h2><span class="section-sub">Escala 0–100, menor es mejor</span></div>
-        <div class="chart-box"><canvas id="chartRiesgo"></canvas></div>
-        <div class="analyst-note">
-          <span class="tag">IMPACTO</span>
-          La reducción más marcada es en <strong>IoT</strong> (85→38) e <strong>Identidad</strong> (72→29), gracias a las reglas de fuerza bruta y cuentas válidas. El impacto de negocio: menos ventanas de exposición de datos del ganado y del acceso administrativo.
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="section-head"><h2>Modelo de madurez</h2></div>
-        <div class="chart-box" style="height:220px;"><canvas id="chartMadurez"></canvas></div>
-        <div class="maturity-track">
-          <div class="maturity-step">1<br>Inicial</div>
-          <div class="maturity-step">2<br>Repetible</div>
-          <div class="maturity-step current">3<br>Definido</div>
-          <div class="maturity-step">4<br>Gestionado</div>
-          <div class="maturity-step">5<br>Optimizado</div>
-        </div>
-        <div class="analyst-note">
-          <span class="tag">JUSTIFICACIÓN</span>
-          Procesos documentados y reglas mapeadas a MITRE (Definido), pero sin automatización de respuesta ni métricas de mejora continua formalizadas (lo que exigiría Nivel 4). <strong>Automatización</strong> es el eje más débil (2/5) — ver recomendación P2.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= COMPLIANCE ================= -->
-  <div class="section">
-    <div class="panel">
-      <div class="section-head">
-        <h2>Nivel de cumplimiento estimado</h2>
-        <span class="section-sub">Autoevaluación interna — no es una certificación</span>
-      </div>
-      <div id="meterList"></div>
-      <p class="disclaimer-inline">Estos porcentajes son una estimación cualitativa del equipo del proyecto contra cada marco, con fines de referencia interna. No sustituyen una auditoría o certificación formal.</p>
-    </div>
-  </div>
-
-  <!-- ================= RECOMMENDATIONS ================= -->
-  <div class="section">
-    <div class="section-head">
-      <h2>Recomendaciones del CISO</h2>
-      <span class="section-sub">Ordenadas por prioridad de implementación</span>
-    </div>
-    <div class="reco-list">
-      <div class="reco-item">
-        <div class="reco-num">P1</div>
-        <div>
-          <h3>Implementar MFA en accesos administrativos</h3>
-          <p>Cloud Run, Cloud SQL y Active Directory hoy dependen de usuario/contraseña. Es la mitigación directa contra T1078 (Valid Accounts), la técnica con más incidentes confirmados de acceso.</p>
-          <span class="reco-impact">Impacto esperado: -40% incidentes de credential access</span>
-        </div>
-      </div>
-      <div class="reco-item">
-        <div class="reco-num">P2</div>
-        <div>
-          <h3>Automatizar respuesta (SOAR) para fuerza bruta y escaneos</h3>
-          <p>Estos dos escenarios concentran el mayor volumen de alertas repetitivas. Bloquear automáticamente tras un umbral de intentos reduciría el MTTR sin intervención manual.</p>
-          <span class="reco-impact">Impacto esperado: MTTR de 37 a &lt;15 min en estos escenarios</span>
-        </div>
-      </div>
-      <div class="reco-item">
-        <div class="reco-num">P3</div>
-        <div>
-          <h3>Ampliar detección en la capa IoT</h3>
-          <p>Sensores (ESP32, MAX30100, GPS) son la categoría con más incidentes (27%) y el mayor riesgo residual (38/100). Se requieren reglas específicas para tráfico anómalo del dispositivo, no solo del backend.</p>
-          <span class="reco-impact">Impacto esperado: reducir riesgo IoT de 38 a &lt;25</span>
-        </div>
-      </div>
-      <div class="reco-item">
-        <div class="reco-num">P4</div>
-        <div>
-          <h3>Cerrar la brecha de exfiltración de datos (T1041)</h3>
-          <p>No existe hoy una regla que detecte transferencia anómala de datos hacia afuera de la infraestructura de Cloud SQL / Cloud Storage.</p>
-          <span class="reco-impact">Impacto esperado: cobertura MITRE de 64% a ~71%</span>
-        </div>
-      </div>
-      <div class="reco-item">
-        <div class="reco-num">P5</div>
-        <div>
-          <h3>Programa trimestral de reducción de falsos positivos</h3>
-          <p>28.8% de las alertas escaladas no resultan en incidente real, consumiendo tiempo de analista que podría redirigirse a detección proactiva (threat hunting).</p>
-          <span class="reco-impact">Impacto esperado: de ~29% a &lt;15% de falsos positivos</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <strong style="color:var(--text-muted);">Nota metodológica:</strong> este dashboard fue generado como entregable de la actividad HEGDSI-P3-A4 (KPIs y Reporte Ejecutivo) del proyecto FarmWatch. Todas las cifras de incidentes, tiempos y porcentajes son <strong>datos ilustrativos coherentes</strong> construidos para fines de demostración académica y de portafolio profesional; no representan mediciones certificadas ni auditadas de un SOC en producción. Los porcentajes de cumplimiento (NIST CSF, ISO 27001, CIS Controls, MITRE ATT&CK, OWASP) son una autoevaluación cualitativa, no una certificación oficial.
-  </footer>
-
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ============ PALETA COMPARTIDA ============
-const COLORS = { teal: '#1ec9b7', amber: '#f5a623', red: '#e5484d', blue: '#5b8cff', muted: '#8a93a6', grid: 'rgba(255,255,255,0.06)' };
+const navy='#0b1f33', teal='#0f8b8d', green='#39a96b', gold='#e2b93b', orange='#e67e22', red='#cf3c3c', blue='#4f8cc9', purple='#7c5cbf', gray='#94a3b8';
+Chart.defaults.font.family='Inter, system-ui, sans-serif';
+Chart.defaults.color='#475569';
 
-Chart.defaults.color = COLORS.muted;
-Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
-Chart.defaults.borderColor = COLORS.grid;
+document.getElementById('footerDate').textContent = 'Generado el ' + new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
 
-// ============ GAUGE (SVG generado por JS) ============
-function polarToCartesian(cx, cy, r, angleDeg) {
-  const a = (angleDeg - 90) * Math.PI / 180;
-  return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-}
-function describeArc(cx, cy, r, startAngle, endAngle) {
-  const start = polarToCartesian(cx, cy, r, endAngle);
-  const end = polarToCartesian(cx, cy, r, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
-}
-
-(function drawGauge(score) {
-  const svg = document.getElementById('gaugeSvg');
-  const cx = 115, cy = 100, r = 85;
-  // Sweep de -135deg (0) a +135deg (100), pasando por -90/0/90.. mapeamos a 0-270 offset
-  const startDeg = -135, endDeg = 135, span = endDeg - startDeg;
-
-  const zones = [
-    { from: 0, to: 40, color: COLORS.teal },
-    { from: 40, to: 70, color: COLORS.amber },
-    { from: 70, to: 100, color: COLORS.red }
-  ];
-
-  let svgHTML = '';
-  zones.forEach(z => {
-    const a1 = startDeg + (z.from / 100) * span;
-    const a2 = startDeg + (z.to / 100) * span;
-    svgHTML += `<path d="${describeArc(cx, cy, r, a1, a2)}" fill="none" stroke="${z.color}" stroke-width="14" stroke-linecap="round" opacity="0.85"/>`;
-  });
-
-  // Aguja
-  const needleAngle = startDeg + (score / 100) * span;
-  const tip = polarToCartesian(cx, cy, r - 6, needleAngle);
-  const tailA = polarToCartesian(cx, cy, 14, needleAngle + 180);
-  svgHTML += `<line x1="${tailA.x}" y1="${tailA.y}" x2="${tip.x}" y2="${tip.y}" stroke="#e8ecf4" stroke-width="3.5" stroke-linecap="round"/>`;
-  svgHTML += `<circle cx="${cx}" cy="${cy}" r="7" fill="#e8ecf4"/>`;
-
-  svg.innerHTML = svgHTML;
-})(32);
-
-// ============ INCIDENTES POR CATEGORÍA (DONUT) ============
-const categoriaColores = ['#1ec9b7', '#5b8cff', '#f5a623', '#8a93a6', '#e5484d', '#7c6ff2', '#3fb6e8', '#4a5670'];
-const chartCategorias = new Chart(document.getElementById('chartCategorias'), {
-  type: 'doughnut',
-  data: {
-    labels: ['IoT', 'Cloud', 'Web/API', 'Base de datos', 'Usuarios', 'Active Directory', 'Red', 'Docker'],
-    datasets: [{
-      data: [42, 31, 22, 18, 16, 12, 9, 6],
-      backgroundColor: categoriaColores,
-      borderColor: '#141c30',
-      borderWidth: 2
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false, cutout: '62%',
-    plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 } } } }
-  }
+// Nota: 0 (crítica) + 1 (alta) + 531 (media) + 1561 (baja) = 2,093.
+// El KPI "Alertas totales" reporta 2,098 → se agregan los 5 eventos
+// restantes como "Sin clasificar" para que el gráfico sume el total real,
+// en vez de dejar una diferencia sin explicar.
+new Chart(document.getElementById('severityChart'),{
+ type:'doughnut',
+ data:{labels:['Crítica','Alta','Media','Baja','Sin clasificar'],datasets:[{data:[0,1,531,1561,5],backgroundColor:[red,orange,blue,teal,gray],borderWidth:0}]},
+ options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom'}}}
 });
 
-// ============ MITRE TABLE ============
-// Catálogo fijo: qué técnica pertenece a qué táctica y cómo se llama.
-// Esto no cambia; lo que sí puede cambiar es el CONTEO de alertas reales
-// por técnica, que llega de Wazuh (rule.mitre.id) cuando hay conexión.
-const mitreCatalogo = [
-  ['Reconocimiento', 'T1595', 'Active Scanning'],
-  ['Acceso Inicial', 'T1190', 'Exploit Public-Facing App.'],
-  ['Acceso Inicial', 'T1078', 'Valid Accounts'],
-  ['Ejecución', 'T1059', 'Command & Scripting Interp.'],
-  ['Persistencia', 'T1136', 'Create Account'],
-  ['Acceso a Credenciales', 'T1110', 'Brute Force'],
-  ['Descubrimiento', 'T1046', 'Network Service Scanning'],
-  ['Descubrimiento', 'T1082', 'System Information Disc.'],
-  ['Movimiento Lateral', 'T1021', 'Remote Services'],
-  ['Recolección', 'T1213', 'Data from Info. Repositories'],
-  ['Exfiltración', 'T1041', 'Exfiltration Over C2 Channel'],
-  ['Impacto', 'T1499', 'Endpoint Denial of Service'],
-  ['Impacto', 'T1531', 'Account Access Removal']
+new Chart(document.getElementById('categoryChart'),{
+ type:'bar',
+ data:{labels:['Cloud','IoT','Web','Docker','Active Directory','Red','Base de datos','Usuarios','API'],datasets:[{label:'Eventos demostrativos',data:[760,180,290,120,310,160,110,80,88],backgroundColor:[teal,green,blue,gray,purple,orange,gold,'#5b8e7d','#3b82f6'],borderRadius:8}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#e9eef3'}},x:{grid:{display:false}}}}
+});
+
+new Chart(document.getElementById('riskGauge'),{
+ type:'doughnut',
+ data:{datasets:[{data:[44,56],backgroundColor:[gold,'#e8eef3'],borderWidth:0,circumference:180,rotation:270}]},
+ options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}
+});
+
+new Chart(document.getElementById('riskBeforeAfter'),{
+ type:'bar',
+ data:{labels:['Identidad','Cloud','IoT','Aplicación Web','Movimiento lateral','Integridad de datos'],datasets:[
+  {label:'Antes del SOC',data:[85,80,78,82,76,70],backgroundColor:'#d96d6d',borderRadius:7},
+  {label:'Después del SOC',data:[48,40,46,42,44,38],backgroundColor:teal,borderRadius:7}
+ ]},
+ options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,max:100,title:{display:true,text:'Índice estimado de riesgo'},grid:{color:'#e9eef3'}},x:{grid:{display:false}}}}
+});
+
+new Chart(document.getElementById('mitreChart'),{
+ type:'bar',
+ data:{labels:['Modify Registry','Data Destruction','File Deletion','Stored Data Manipulation','Domain Policy Modification','Valid Accounts','Sudo Caching','Account Manipulation','Service Stop','Remote Services'],
+ datasets:[{data:[998,358,358,204,24,24,22,16,4,1],backgroundColor:[teal,blue,'#d45679',purple,'#c98bb3',gold,'#a49a78',orange,'#ad6a53','#d65f45'],borderRadius:6}]},
+ options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#e9eef3'}},y:{grid:{display:false}}}}
+});
+
+new Chart(document.getElementById('tacticChart'),{
+ type:'polarArea',
+ data:{labels:['Defense Evasion','Impact','Privilege Escalation','Persistence','Initial Access','Credential Access','Lateral Movement'],datasets:[{data:[46,28,12,8,7,5,3],backgroundColor:['#8f75b7aa','#d49ab2aa','#dfc465aa','#b9ad91aa','#e4a06caa','#ba7f76aa','#db7869aa'],borderWidth:1}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}
+});
+
+new Chart(document.getElementById('maturityRadar'),{
+ type:'radar',
+ data:{labels:['Gobierno','Detección','Respuesta','Automatización','Cobertura','Métricas'],datasets:[{label:'Madurez actual',data:[3,3.6,2.1,1.2,3.5,2.2],backgroundColor:'rgba(15,139,141,.18)',borderColor:teal,pointBackgroundColor:teal,borderWidth:2}]},
+ options:{responsive:true,maintainAspectRatio:false,scales:{r:{beginAtZero:true,max:5,ticks:{stepSize:1,display:false},grid:{color:'#dfe7ef'},angleLines:{color:'#dfe7ef'},pointLabels:{font:{size:12}}}},plugins:{legend:{display:false}}}
+});
+
+const compliance=[
+ ['NIST CSF',64,teal],['ISO/IEC 27001',58,blue],['CIS Controls',62,green],['MITRE ATT&CK',68,purple],['OWASP',60,orange]
 ];
-// Valores ilustrativos por defecto (estado, "reglas", cobertura) — se usan
-// mientras no hay conexión real a Wazuh.
-const mitreIlustrativo = {
-  T1595: ['detected', 2, 'Alta'], T1190: ['detected', 3, 'Alta'], T1078: ['detected', 2, 'Alta'],
-  T1059: ['partial', 1, 'Media'], T1136: ['detected', 1, 'Media'], T1110: ['detected', 4, 'Alta'],
-  T1046: ['detected', 2, 'Alta'], T1082: ['partial', 1, 'Baja'], T1021: ['partial', 1, 'Media'],
-  T1213: ['detected', 2, 'Media'], T1041: ['none', 0, 'Baja'], T1499: ['detected', 1, 'Media'],
-  T1531: ['partial', 1, 'Baja']
-};
-const statusLabel = { detected: 'Detectado', partial: 'Parcial', none: 'No cubierto' };
+document.getElementById('complianceBars').innerHTML=compliance.map(([n,v,c])=>`
+  <div class="mb-4">
+    <div class="d-flex justify-content-between mb-1"><strong>${n}</strong><span>${v}%</span></div>
+    <div class="progress"><div class="progress-bar" style="width:${v}%;background:${c}"></div></div>
+  </div>`).join('');
 
-function renderMitreTable(conteosReales) {
-  document.getElementById('mitreBody').innerHTML = mitreCatalogo.map(([tactica, id, nombre]) => {
-    let estado, valor, cobertura;
-    if (conteosReales) {
-      const alertas = conteosReales[id] || 0;
-      estado = alertas > 0 ? 'detected' : 'none';
-      valor = alertas;
-      cobertura = alertas >= 5 ? 'Alta' : alertas > 0 ? 'Media' : 'Baja';
-    } else {
-      [estado, valor, cobertura] = mitreIlustrativo[id];
-    }
-    return `
-      <tr>
-        <td>${tactica}</td>
-        <td><span class="tid">${id}</span> ${nombre}</td>
-        <td><span class="pill ${estado}">${statusLabel[estado]}</span></td>
-        <td>${valor}</td>
-        <td>${cobertura}</td>
-      </tr>`;
-  }).join('');
-}
-renderMitreTable(null);
-
-// ============ RIESGO ANTES/DESPUÉS ============
-new Chart(document.getElementById('chartRiesgo'), {
-  type: 'bar',
-  data: {
-    labels: ['Cloud', 'IoT', 'Identidad', 'Red', 'Web/API'],
-    datasets: [
-      { label: 'Antes del SOC', data: [78, 85, 72, 65, 74], backgroundColor: 'rgba(229,72,77,0.55)', borderRadius: 4 },
-      { label: 'Después del SOC', data: [32, 38, 29, 27, 35], backgroundColor: '#1ec9b7', borderRadius: 4 }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
-    scales: {
-      y: { beginAtZero: true, max: 100, grid: { color: COLORS.grid }, title: { display: true, text: 'Riesgo (0–100)' } },
-      x: { grid: { display: false } }
-    }
-  }
-});
-
-// ============ RADAR DE MADUREZ ============
-new Chart(document.getElementById('chartMadurez'), {
-  type: 'radar',
-  data: {
-    labels: ['Gobernanza', 'Detección', 'Respuesta', 'Automatización', 'Mejora continua'],
-    datasets: [{
-      label: 'Madurez actual (0–5)',
-      data: [3.5, 4, 3, 2, 2.5],
-      backgroundColor: 'rgba(30,201,183,0.18)',
-      borderColor: '#1ec9b7',
-      pointBackgroundColor: '#1ec9b7'
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      r: {
-        min: 0, max: 5, ticks: { stepSize: 1, backdropColor: 'transparent', color: COLORS.muted },
-        grid: { color: COLORS.grid }, angleLines: { color: COLORS.grid },
-        pointLabels: { color: COLORS.muted, font: { size: 11 } }
-      }
-    }
-  }
-});
-
-// ============ CUMPLIMIENTO (METERS) ============
-const compliance = [
-  { name: 'NIST CSF', pct: 61 },
-  { name: 'ISO/IEC 27001', pct: 54 },
-  { name: 'CIS Controls v8', pct: 58 },
-  { name: 'MITRE ATT&CK', pct: 64 },
-  { name: 'OWASP (Web/API)', pct: 47 }
+const assets=[
+ ['Wazuh Manager','Activo local','success','Ubuntu'],
+ ['Windows11prueba','Activo','success','Windows 11'],
+ ['DockerCloud','Apagado en captura','secondary','Ubuntu / GCP'],
+ ['RasberryIOT','Apagado en captura','secondary','Ubuntu / IoT'],
+ ['ActiveDirectory','Apagado en captura','secondary','Windows Server 2022'],
+ ['ActiveDNew','Apagado en captura','secondary','Windows Server 2022'],
+ ['Cloud Run','Monitoreado por logs','info','GCP'],
+ ['Cloud SQL','Monitoreado por logs','info','MySQL / GCP'],
+ ['API REST','Monitoreada','info','Flask'],
+ ['Sensores IoT','Cobertura por reglas','warning','MAX30100 / MLX / MPU / GPS']
 ];
-document.getElementById('meterList').innerHTML = compliance.map(c => `
-  <div class="meter-row">
-    <span>${c.name}</span>
-    <div class="meter-track"><div class="meter-fill" style="width:${c.pct}%;"></div></div>
-    <span class="meter-val">${c.pct}%</span>
-  </div>
-`).join('');
-
-// ============================================================
-// CONEXIÓN CON DATOS REALES (Wazuh + tabla soc_incidents)
-// ============================================================
-// Este dashboard funciona solo (con datos ilustrativos) aunque este fetch
-// falle — por ejemplo, si lo abres directamente desde tu computadora sin
-// pasar por Flask, o si Wazuh no responde. Solo reemplaza lo que SÍ pudo
-// traer; el resto se queda con el valor ilustrativo de referencia.
-async function cargarDatosReales() {
-  try {
-    const res = await fetch('/api/soc/kpis', { credentials: 'same-origin' });
-    if (!res.ok) return; // 502/500/404 -> se queda todo ilustrativo
-    const d = await res.json();
-    if (d.error) return;
-
-    // ---- Banner general ----
-    const banner = document.getElementById('demoBanner');
-    banner.textContent = '● Conectado a Wazuh — datos en vivo (últimos 90 días)';
-    banner.style.color = '#1ec9b7';
-    banner.style.background = 'rgba(30,201,183,0.1)';
-    banner.style.borderColor = 'rgba(30,201,183,0.35)';
-
-    // ---- KPIs (MTTD/MTTR reales solo si ya tienes soc_incidents con datos) ----
-    if (d.mttd_minutos !== undefined) {
-      document.getElementById('kpiMttd').innerHTML = `${d.mttd_minutos}<span style="font-size:1rem;">min</span>`;
-      document.getElementById('kpiMttdTrend').textContent = 'Calculado con tus incidentes registrados';
-    }
-    if (d.mttr_minutos !== undefined) {
-      document.getElementById('kpiMttr').innerHTML = `${d.mttr_minutos}<span style="font-size:1rem;">min</span>`;
-      document.getElementById('kpiMttrTrend').textContent = 'Calculado con tus incidentes registrados';
-    }
-    if (d.incidentes_criticos !== undefined) {
-      document.getElementById('kpiCriticos').textContent = d.incidentes_criticos;
-      document.getElementById('kpiCriticosName').textContent = `Incidentes críticos (de ${d.total_incidentes || 0} registrados)`;
-      document.getElementById('kpiCriticosTrend').textContent = 'Dato real — soc_incidents';
-    }
-    if (d.falsos_positivos_pct !== undefined) {
-      document.getElementById('kpiFalsos').innerHTML = `${d.falsos_positivos_pct}<span style="font-size:1rem;">%</span>`;
-      document.getElementById('kpiFalsosName').textContent = `Falsos positivos (${d.falsos_positivos || 0} de ${d.total_incidentes || 0} incidentes)`;
-      document.getElementById('kpiFalsosTrend').textContent = 'Dato real — soc_incidents';
-    }
-    document.getElementById('kpiSourceTag').textContent = 'MTTD / MTTR — calculado con soc_incidents (MySQL)';
-
-    // ---- Incidentes por categoría (real, desde Wazuh por agente) ----
-    if (d.alertas_por_categoria && Object.keys(d.alertas_por_categoria).length) {
-      const labels = Object.keys(d.alertas_por_categoria);
-      const valores = Object.values(d.alertas_por_categoria);
-      chartCategorias.data.labels = labels;
-      chartCategorias.data.datasets[0].data = valores;
-      chartCategorias.data.datasets[0].backgroundColor = labels.map((_, i) => categoriaColores[i % categoriaColores.length]);
-      chartCategorias.update();
-      document.getElementById('catSourceTag').textContent = `Datos en vivo — ${d.total_alertas_wazuh ?? valores.reduce((a,b)=>a+b,0)} alertas Wazuh (90 días)`;
-      document.getElementById('catNote').innerHTML = `<span class="tag">FUENTE</span> Conteo real de alertas de Wazuh, agrupado por agente y traducido a categoría de negocio (ver <code>AGENTE_A_CATEGORIA</code> en <code>wazuh_client.py</code>).`;
-    }
-
-    // ---- MITRE (real, desde rule.mitre.id) ----
-    if (d.mitre && d.mitre.length) {
-      const conteos = {};
-      d.mitre.forEach(m => { conteos[m.tecnica] = m.alertas; });
-      renderMitreTable(conteos);
-      document.getElementById('mitreSourceTag').textContent = 'Datos en vivo — alertas reales de Wazuh (90 días)';
-      document.getElementById('mitreColHeader').textContent = 'Alertas (90d)';
-      document.getElementById('mitreNote').innerHTML = `<span class="tag">FUENTE</span> "Detectado" = al menos una alerta real de Wazuh mapeada a esa técnica en los últimos 90 días. Las técnicas en "No cubierto" no dispararon ninguna alerta — pueden significar que no ha habido ataques de ese tipo, o que falta una regla que lo detecte.`;
-    }
-
-  } catch (err) {
-    console.warn('No se pudo conectar con /api/soc/kpis — se mantienen los datos ilustrativos.', err);
-  }
-}
-cargarDatosReales();
-
+document.getElementById('assetGrid').innerHTML=assets.map(([n,s,b,p])=>`
+  <div class="col-sm-6 col-lg-4 col-xl-3">
+    <div class="border rounded-4 p-3 h-100 bg-white">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="fw-bold">${n}</div><span class="badge text-bg-${b}">${s}</span>
+      </div>
+      <small class="text-secondary">${p}</small>
+    </div>
+  </div>`).join('');
 </script>
 </body>
 </html>
