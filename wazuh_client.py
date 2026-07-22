@@ -38,16 +38,31 @@ WAZUH_ALERTS_INDEX = os.environ.get("WAZUH_ALERTS_INDEX", "wazuh-alerts-*")
 # AJUSTA ESTE MAPEO a los nombres reales de tus agentes en Wazuh.
 # Es lo que traduce "qué agente mandó la alerta" a "categoría de negocio"
 # que usa el dashboard (Cloud, IoT, Web/API, Docker, Active Directory...).
-# Puedes ver los nombres exactos en Wazuh Dashboard > Agents.
+# Puedes ver los nombres exactos en Wazuh Dashboard > Endpoints > Agents.
+#
+# Actualizado según Wazuh > Endpoints (4 agentes reales, jul 2026):
+#   003  DockerCloud      -> Docker
+#   005  RasberryIOT      -> IoT
+#   007  ActiveDirectory  -> Active Directory
+#   012  ActiveDNew       -> Active Directory
+#
+# NOTA IMPORTANTE: no tienes un agente Wazuh tradicional para Cloud Run
+# ni Cloud SQL (son servicios serverless/managed — no se les instala un
+# agente). Esas alertas llegan por la otra ruta de tu arquitectura
+# (Cloud Logging -> Pub/Sub -> Compute Engine -> Wazuh), normalmente
+# distinguibles por otro campo del evento (p. ej. "agent.name": "compute-
+# engine-wazuh" actuando como receptor, o un campo custom como
+# "data.gcp.resource.type"). Si quieres que "Cloud" también salga
+# correctamente en la gráfica de categorías, dime qué campo/valor usan
+# esos eventos reenviados desde Pub/Sub y ajustamos esta función para
+# clasificarlos aparte del mapeo por agente.
 # ---------------------------------------------------------------------------
 AGENTE_A_CATEGORIA = {
-    "cloud-run-farmwatch": "Cloud",
-    "cloudsql-farmwatch": "Base de datos",
-    "raspberrypi-iot": "IoT",
-    "docker-host": "Docker",
-    "windows-server-ad": "Active Directory",
-    "compute-engine-wazuh": "Cloud",
-    # agrega aquí el resto de tus agentes reales...
+    "DockerCloud": "Docker",
+    "RasberryIOT": "IoT",
+    "ActiveDirectory": "Active Directory",
+    "ActiveDNew": "Active Directory",
+    # agrega aquí cualquier agente nuevo que despliegues más adelante...
 }
 CATEGORIA_DEFAULT = "Otros / sin clasificar"
 
@@ -101,7 +116,7 @@ def alertas_por_categoria(dias=90):
         categoria = AGENTE_A_CATEGORIA.get(b["key"], CATEGORIA_DEFAULT)
         conteo[categoria] = conteo.get(categoria, 0) + b["doc_count"]
 
-    return conteo  # ej. {"IoT": 42, "Cloud": 31, ...}
+    return conteo  # ej. {"IoT": 42, "Docker": 31, ...}
 
 
 def cobertura_mitre(dias=90, top=20):
@@ -135,6 +150,24 @@ def alertas_criticas(dias=90, nivel_minimo=12):
     }
     data = _query(body)
     return data["hits"]["total"]["value"]
+
+
+def agentes_activos():
+    """
+    Cuenta agentes por estado (active / disconnected / pending / never_connected).
+    Útil para que el dashboard avise si el SOC está viendo datos "en vivo" de
+    verdad o si sus agentes están caídos (como en tu captura actual: 4/4
+    desconectados) — un SOC con agentes desconectados no está monitoreando
+    nada, aunque el dashboard cargue sin errores.
+    """
+    resp = requests.get(
+        f"{WAZUH_INDEXER_URL.replace(':9200', ':55000')}/agents/summary/status",
+        auth=(WAZUH_INDEXER_USER, WAZUH_INDEXER_PASSWORD),
+        verify=False,
+        timeout=10
+    )
+    resp.raise_for_status()
+    return resp.json().get("data", {})
 
 
 def obtener_resumen_wazuh(dias=90):
