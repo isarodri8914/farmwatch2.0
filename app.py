@@ -10,6 +10,59 @@ import math
 
 import math
 
+from wazuh_client import obtener_resumen_wazuh
+
+@app.route("/api/soc/kpis")
+@login_required
+def soc_kpis():
+    try:
+        resumen_wazuh = obtener_resumen_wazuh(dias=90)
+    except Exception as e:
+        # Si Wazuh no responde, el dashboard debe poder seguir mostrando
+        # algo (sus datos ilustrativos de respaldo) en vez de romperse.
+        return jsonify({"error": f"No se pudo conectar a Wazuh: {e}"}), 502
+ 
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+ 
+        cursor.execute("""
+            SELECT
+                COUNT(*) AS total,
+                SUM(es_falso_positivo) AS falsos_positivos,
+                AVG(TIMESTAMPDIFF(SECOND, detectado_en, reconocido_en)) AS mttd_seg,
+                AVG(TIMESTAMPDIFF(SECOND, reconocido_en, resuelto_en)) AS mttr_seg,
+                SUM(CASE WHEN nivel >= 12 THEN 1 ELSE 0 END) AS criticos
+            FROM soc_incidents
+            WHERE detectado_en >= NOW() - INTERVAL 90 DAY
+        """)
+        resumen_incidentes = cursor.fetchone()
+ 
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        return jsonify({"error": f"No se pudo consultar soc_incidents: {e}"}), 500
+ 
+    total = resumen_incidentes["total"] or 0
+    falsos = resumen_incidentes["falsos_positivos"] or 0
+ 
+    return jsonify({
+        "generado_en": datetime.utcnow().isoformat(),
+        "fuente": "wazuh+mysql",  # el dashboard usa esto para saber que ya NO son datos ilustrativos
+ 
+        "total_alertas_wazuh": resumen_wazuh["total_alertas"],
+        "alertas_por_categoria": resumen_wazuh["por_categoria"],
+        "mitre": resumen_wazuh["por_tecnica"],
+        "alertas_criticas_wazuh": resumen_wazuh["criticas"],
+ 
+        "total_incidentes": total,
+        "falsos_positivos": falsos,
+        "falsos_positivos_pct": round((falsos / total * 100), 1) if total else 0,
+        "incidentes_criticos": resumen_incidentes["criticos"] or 0,
+        "mttd_minutos": round((resumen_incidentes["mttd_seg"] or 0) / 60, 1),
+        "mttr_minutos": round((resumen_incidentes["mttr_seg"] or 0) / 60, 1)
+    })
+    
 def distancia(lat1, lon1, lat2, lon2):
 
     R = 6371
@@ -1036,6 +1089,9 @@ def update_umbral(clave):
         return jsonify({"error": "El valor debe ser numérico"}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
+    
 
 
 # ---------- EJECUCIÓN ----------

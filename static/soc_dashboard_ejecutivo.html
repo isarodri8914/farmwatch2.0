@@ -480,7 +480,7 @@
     <div class="meta-block">
       <div class="period">Periodo: Q3 2026 (jul–sep)</div>
       <div>Preparado para: Dirección General / Comité Ejecutivo</div>
-      <div class="demo-banner">⚠ Datos ilustrativos — actividad académica HEGDSI-P3-A4</div>
+      <div class="demo-banner" id="demoBanner">⚠ Datos ilustrativos — actividad académica HEGDSI-P3-A4</div>
     </div>
   </div>
 
@@ -524,31 +524,31 @@
   <div class="section">
     <div class="section-head">
       <h2>Indicadores clave (KPIs)</h2>
-      <span class="section-sub">MTTD / MTTR — Q3 2026</span>
+      <span class="section-sub" id="kpiSourceTag">Datos ilustrativos — MTTD/MTTR/22% Q2 no disponibles aún</span>
     </div>
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value">8.4<span style="font-size:1rem;">min</span></span></div>
+        <div class="kpi-top"><span class="kpi-value" id="kpiMttd">8.4<span style="font-size:1rem;">min</span></span></div>
         <div class="kpi-name">MTTD — Tiempo medio de detección</div>
-        <span class="trend down">↓ 41% vs. 14.2 min (Q2)</span>
+        <span class="trend down" id="kpiMttdTrend">↓ 41% vs. 14.2 min (Q2)</span>
         <div class="kpi-formula">MTTD = Σ(hora de alerta − hora del evento) / nº incidentes.<br>Ej.: un login de fuerza bruta ocurrido a las 10:00 y alertado a las 10:07 aporta 7 min al promedio.</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value">37<span style="font-size:1rem;">min</span></span></div>
+        <div class="kpi-top"><span class="kpi-value" id="kpiMttr">37<span style="font-size:1rem;">min</span></span></div>
         <div class="kpi-name">MTTR — Tiempo medio de respuesta</div>
-        <span class="trend down">↓ 29% vs. 52 min (Q2)</span>
+        <span class="trend down" id="kpiMttrTrend">↓ 29% vs. 52 min (Q2)</span>
         <div class="kpi-formula">MTTR = Σ(hora de cierre − hora de detección) / nº incidentes.<br>Ej.: un escaneo Nmap detectado a las 14:00 y contenido a las 14:25 aporta 25 min.</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value">14</span></div>
-        <div class="kpi-name">Incidentes críticos (9% del total confirmado)</div>
-        <span class="trend down">↓ 22% vs. Q2</span>
+        <div class="kpi-top"><span class="kpi-value" id="kpiCriticos">14</span></div>
+        <div class="kpi-name" id="kpiCriticosName">Incidentes críticos (9% del total confirmado)</div>
+        <span class="trend down" id="kpiCriticosTrend">↓ 22% vs. Q2</span>
         <div class="kpi-formula">Incidentes con impacto potencial alto: exposición de datos de sensores, acceso no autorizado a Cloud SQL o caída de servicio.</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-top"><span class="kpi-value">28.8<span style="font-size:1rem;">%</span></span></div>
-        <div class="kpi-name">Falsos positivos (63 de 219 alertas escaladas)</div>
-        <span class="trend flat">≈ estable vs. Q2</span>
+        <div class="kpi-top"><span class="kpi-value" id="kpiFalsos">28.8<span style="font-size:1rem;">%</span></span></div>
+        <div class="kpi-name" id="kpiFalsosName">Falsos positivos (63 de 219 alertas escaladas)</div>
+        <span class="trend flat" id="kpiFalsosTrend">≈ estable vs. Q2</span>
         <div class="kpi-formula">Consumen tiempo de analista sin aportar riesgo real. Meta: bajar de ~29% a menos de 15% con tuning trimestral de reglas.</div>
       </div>
     </div>
@@ -558,9 +558,12 @@
   <div class="section">
     <div class="two-col">
       <div class="panel">
-        <div class="section-head"><h2>Incidentes por categoría</h2></div>
+        <div class="section-head">
+          <h2>Incidentes por categoría</h2>
+          <span class="section-sub" id="catSourceTag">Datos ilustrativos</span>
+        </div>
         <div class="chart-box"><canvas id="chartCategorias"></canvas></div>
-        <div class="analyst-note">
+        <div class="analyst-note" id="catNote">
           <span class="tag">¿QUÉ SIGNIFICA?</span>
           IoT (27%) y Cloud (20%) concentran casi la mitad de los incidentes confirmados. <strong>Decisión sugerida:</strong> priorizar el refuerzo de detección en la capa de sensores antes de invertir más en la capa de red, que ya es la de menor volumen.
         </div>
@@ -569,15 +572,15 @@
       <div class="panel">
         <div class="section-head">
           <h2>Cobertura MITRE ATT&CK</h2>
-          <span class="section-sub">Técnicas en el alcance del proyecto</span>
+          <span class="section-sub" id="mitreSourceTag">Técnicas en el alcance del proyecto — ilustrativo</span>
         </div>
         <table class="mitre">
           <thead>
-            <tr><th>Táctica</th><th>Técnica</th><th>Estado</th><th>Reglas</th><th>Cobertura</th></tr>
+            <tr><th>Táctica</th><th>Técnica</th><th>Estado</th><th id="mitreColHeader">Reglas</th><th>Cobertura</th></tr>
           </thead>
           <tbody id="mitreBody"></tbody>
         </table>
-        <div class="analyst-note">
+        <div class="analyst-note" id="mitreNote">
           <span class="tag">¿POR QUÉ IMPORTA?</span>
           9 de 13 técnicas relevantes tienen detección activa (64%). La exfiltración de datos (<strong>T1041</strong>) es la brecha más importante: hoy no dispara ninguna regla. Ver recomendación P4.
         </div>
@@ -733,13 +736,14 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
 })(32);
 
 // ============ INCIDENTES POR CATEGORÍA (DONUT) ============
-new Chart(document.getElementById('chartCategorias'), {
+const categoriaColores = ['#1ec9b7', '#5b8cff', '#f5a623', '#8a93a6', '#e5484d', '#7c6ff2', '#3fb6e8', '#4a5670'];
+const chartCategorias = new Chart(document.getElementById('chartCategorias'), {
   type: 'doughnut',
   data: {
     labels: ['IoT', 'Cloud', 'Web/API', 'Base de datos', 'Usuarios', 'Active Directory', 'Red', 'Docker'],
     datasets: [{
       data: [42, 31, 22, 18, 16, 12, 9, 6],
-      backgroundColor: ['#1ec9b7', '#5b8cff', '#f5a623', '#8a93a6', '#e5484d', '#7c6ff2', '#3fb6e8', '#4a5670'],
+      backgroundColor: categoriaColores,
       borderColor: '#141c30',
       borderWidth: 2
     }]
@@ -751,31 +755,57 @@ new Chart(document.getElementById('chartCategorias'), {
 });
 
 // ============ MITRE TABLE ============
-const mitreData = [
-  ['Reconocimiento', 'T1595', 'Active Scanning', 'detected', 2, 'Alta'],
-  ['Acceso Inicial', 'T1190', 'Exploit Public-Facing App.', 'detected', 3, 'Alta'],
-  ['Acceso Inicial', 'T1078', 'Valid Accounts', 'detected', 2, 'Alta'],
-  ['Ejecución', 'T1059', 'Command & Scripting Interp.', 'partial', 1, 'Media'],
-  ['Persistencia', 'T1136', 'Create Account', 'detected', 1, 'Media'],
-  ['Acceso a Credenciales', 'T1110', 'Brute Force', 'detected', 4, 'Alta'],
-  ['Descubrimiento', 'T1046', 'Network Service Scanning', 'detected', 2, 'Alta'],
-  ['Descubrimiento', 'T1082', 'System Information Disc.', 'partial', 1, 'Baja'],
-  ['Movimiento Lateral', 'T1021', 'Remote Services', 'partial', 1, 'Media'],
-  ['Recolección', 'T1213', 'Data from Info. Repositories', 'detected', 2, 'Media'],
-  ['Exfiltración', 'T1041', 'Exfiltration Over C2 Channel', 'none', 0, 'Baja'],
-  ['Impacto', 'T1499', 'Endpoint Denial of Service', 'detected', 1, 'Media'],
-  ['Impacto', 'T1531', 'Account Access Removal', 'partial', 1, 'Baja']
+// Catálogo fijo: qué técnica pertenece a qué táctica y cómo se llama.
+// Esto no cambia; lo que sí puede cambiar es el CONTEO de alertas reales
+// por técnica, que llega de Wazuh (rule.mitre.id) cuando hay conexión.
+const mitreCatalogo = [
+  ['Reconocimiento', 'T1595', 'Active Scanning'],
+  ['Acceso Inicial', 'T1190', 'Exploit Public-Facing App.'],
+  ['Acceso Inicial', 'T1078', 'Valid Accounts'],
+  ['Ejecución', 'T1059', 'Command & Scripting Interp.'],
+  ['Persistencia', 'T1136', 'Create Account'],
+  ['Acceso a Credenciales', 'T1110', 'Brute Force'],
+  ['Descubrimiento', 'T1046', 'Network Service Scanning'],
+  ['Descubrimiento', 'T1082', 'System Information Disc.'],
+  ['Movimiento Lateral', 'T1021', 'Remote Services'],
+  ['Recolección', 'T1213', 'Data from Info. Repositories'],
+  ['Exfiltración', 'T1041', 'Exfiltration Over C2 Channel'],
+  ['Impacto', 'T1499', 'Endpoint Denial of Service'],
+  ['Impacto', 'T1531', 'Account Access Removal']
 ];
+// Valores ilustrativos por defecto (estado, "reglas", cobertura) — se usan
+// mientras no hay conexión real a Wazuh.
+const mitreIlustrativo = {
+  T1595: ['detected', 2, 'Alta'], T1190: ['detected', 3, 'Alta'], T1078: ['detected', 2, 'Alta'],
+  T1059: ['partial', 1, 'Media'], T1136: ['detected', 1, 'Media'], T1110: ['detected', 4, 'Alta'],
+  T1046: ['detected', 2, 'Alta'], T1082: ['partial', 1, 'Baja'], T1021: ['partial', 1, 'Media'],
+  T1213: ['detected', 2, 'Media'], T1041: ['none', 0, 'Baja'], T1499: ['detected', 1, 'Media'],
+  T1531: ['partial', 1, 'Baja']
+};
 const statusLabel = { detected: 'Detectado', partial: 'Parcial', none: 'No cubierto' };
-document.getElementById('mitreBody').innerHTML = mitreData.map(r => `
-  <tr>
-    <td>${r[0]}</td>
-    <td><span class="tid">${r[1]}</span> ${r[2]}</td>
-    <td><span class="pill ${r[3]}">${statusLabel[r[3]]}</span></td>
-    <td>${r[4]}</td>
-    <td>${r[5]}</td>
-  </tr>
-`).join('');
+
+function renderMitreTable(conteosReales) {
+  document.getElementById('mitreBody').innerHTML = mitreCatalogo.map(([tactica, id, nombre]) => {
+    let estado, valor, cobertura;
+    if (conteosReales) {
+      const alertas = conteosReales[id] || 0;
+      estado = alertas > 0 ? 'detected' : 'none';
+      valor = alertas;
+      cobertura = alertas >= 5 ? 'Alta' : alertas > 0 ? 'Media' : 'Baja';
+    } else {
+      [estado, valor, cobertura] = mitreIlustrativo[id];
+    }
+    return `
+      <tr>
+        <td>${tactica}</td>
+        <td><span class="tid">${id}</span> ${nombre}</td>
+        <td><span class="pill ${estado}">${statusLabel[estado]}</span></td>
+        <td>${valor}</td>
+        <td>${cobertura}</td>
+      </tr>`;
+  }).join('');
+}
+renderMitreTable(null);
 
 // ============ RIESGO ANTES/DESPUÉS ============
 new Chart(document.getElementById('chartRiesgo'), {
@@ -838,6 +868,77 @@ document.getElementById('meterList').innerHTML = compliance.map(c => `
     <span class="meter-val">${c.pct}%</span>
   </div>
 `).join('');
+
+// ============================================================
+// CONEXIÓN CON DATOS REALES (Wazuh + tabla soc_incidents)
+// ============================================================
+// Este dashboard funciona solo (con datos ilustrativos) aunque este fetch
+// falle — por ejemplo, si lo abres directamente desde tu computadora sin
+// pasar por Flask, o si Wazuh no responde. Solo reemplaza lo que SÍ pudo
+// traer; el resto se queda con el valor ilustrativo de referencia.
+async function cargarDatosReales() {
+  try {
+    const res = await fetch('/api/soc/kpis', { credentials: 'same-origin' });
+    if (!res.ok) return; // 502/500/404 -> se queda todo ilustrativo
+    const d = await res.json();
+    if (d.error) return;
+
+    // ---- Banner general ----
+    const banner = document.getElementById('demoBanner');
+    banner.textContent = '● Conectado a Wazuh — datos en vivo (últimos 90 días)';
+    banner.style.color = '#1ec9b7';
+    banner.style.background = 'rgba(30,201,183,0.1)';
+    banner.style.borderColor = 'rgba(30,201,183,0.35)';
+
+    // ---- KPIs (MTTD/MTTR reales solo si ya tienes soc_incidents con datos) ----
+    if (d.mttd_minutos !== undefined) {
+      document.getElementById('kpiMttd').innerHTML = `${d.mttd_minutos}<span style="font-size:1rem;">min</span>`;
+      document.getElementById('kpiMttdTrend').textContent = 'Calculado con tus incidentes registrados';
+    }
+    if (d.mttr_minutos !== undefined) {
+      document.getElementById('kpiMttr').innerHTML = `${d.mttr_minutos}<span style="font-size:1rem;">min</span>`;
+      document.getElementById('kpiMttrTrend').textContent = 'Calculado con tus incidentes registrados';
+    }
+    if (d.incidentes_criticos !== undefined) {
+      document.getElementById('kpiCriticos').textContent = d.incidentes_criticos;
+      document.getElementById('kpiCriticosName').textContent = `Incidentes críticos (de ${d.total_incidentes || 0} registrados)`;
+      document.getElementById('kpiCriticosTrend').textContent = 'Dato real — soc_incidents';
+    }
+    if (d.falsos_positivos_pct !== undefined) {
+      document.getElementById('kpiFalsos').innerHTML = `${d.falsos_positivos_pct}<span style="font-size:1rem;">%</span>`;
+      document.getElementById('kpiFalsosName').textContent = `Falsos positivos (${d.falsos_positivos || 0} de ${d.total_incidentes || 0} incidentes)`;
+      document.getElementById('kpiFalsosTrend').textContent = 'Dato real — soc_incidents';
+    }
+    document.getElementById('kpiSourceTag').textContent = 'MTTD / MTTR — calculado con soc_incidents (MySQL)';
+
+    // ---- Incidentes por categoría (real, desde Wazuh por agente) ----
+    if (d.alertas_por_categoria && Object.keys(d.alertas_por_categoria).length) {
+      const labels = Object.keys(d.alertas_por_categoria);
+      const valores = Object.values(d.alertas_por_categoria);
+      chartCategorias.data.labels = labels;
+      chartCategorias.data.datasets[0].data = valores;
+      chartCategorias.data.datasets[0].backgroundColor = labels.map((_, i) => categoriaColores[i % categoriaColores.length]);
+      chartCategorias.update();
+      document.getElementById('catSourceTag').textContent = `Datos en vivo — ${d.total_alertas_wazuh ?? valores.reduce((a,b)=>a+b,0)} alertas Wazuh (90 días)`;
+      document.getElementById('catNote').innerHTML = `<span class="tag">FUENTE</span> Conteo real de alertas de Wazuh, agrupado por agente y traducido a categoría de negocio (ver <code>AGENTE_A_CATEGORIA</code> en <code>wazuh_client.py</code>).`;
+    }
+
+    // ---- MITRE (real, desde rule.mitre.id) ----
+    if (d.mitre && d.mitre.length) {
+      const conteos = {};
+      d.mitre.forEach(m => { conteos[m.tecnica] = m.alertas; });
+      renderMitreTable(conteos);
+      document.getElementById('mitreSourceTag').textContent = 'Datos en vivo — alertas reales de Wazuh (90 días)';
+      document.getElementById('mitreColHeader').textContent = 'Alertas (90d)';
+      document.getElementById('mitreNote').innerHTML = `<span class="tag">FUENTE</span> "Detectado" = al menos una alerta real de Wazuh mapeada a esa técnica en los últimos 90 días. Las técnicas en "No cubierto" no dispararon ninguna alerta — pueden significar que no ha habido ataques de ese tipo, o que falta una regla que lo detecte.`;
+    }
+
+  } catch (err) {
+    console.warn('No se pudo conectar con /api/soc/kpis — se mantienen los datos ilustrativos.', err);
+  }
+}
+cargarDatosReales();
+
 </script>
 </body>
 </html>
